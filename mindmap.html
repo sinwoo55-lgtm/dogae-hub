@@ -191,13 +191,7 @@
     }
 
     /* ═══ RIGHT: 상세 패널 ═══ */
-    .detail-panel {
-      background: var(--surface);
-      border-left: 1px solid var(--border);
-      display: flex; flex-direction: column;
-      overflow: hidden;
-      min-width: 0;
-    }
+
     /* 패널 닫기 버튼 */
     .panel-close-btn {
       position: absolute; top: 18px; right: 18px;
@@ -251,9 +245,7 @@
       border-radius: 100px; padding: 3px 10px;
     }
 
-    .panel-body { flex: 1; overflow-y: auto; padding: 16px 24px 24px; }
-    .panel-body::-webkit-scrollbar { width: 4px; }
-    .panel-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
 
     .member-card {
       border: 1px solid var(--border); border-radius: 10px;
@@ -283,8 +275,8 @@
     .no-result { text-align:center; color:var(--muted); font-size:13px; padding:36px 0; }
 
     @media (max-width: 900px) {
-      .main-wrap.panel-open { grid-template-columns: 1fr; grid-template-rows: 1fr 50vh; }
-      .detail-panel { border-left: none; border-top: 1px solid var(--border); }
+
+
     }
     @media (max-width: 640px) {
       header, .search-bar { padding: 0 16px; }
@@ -324,24 +316,6 @@
     <div class="dept-grid" id="deptGrid"></div>
   </div>
 
-  <div class="detail-panel" id="detailPanel">
-    <div id="panelContent">
-      <div class="panel-head" id="panelHead">
-        <button class="panel-close-btn" id="panelCloseBtn" title="패널 닫기">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
-        <div class="panel-head-icon" id="phIcon"></div>
-        <div class="panel-head-text">
-          <div class="panel-dept-name" id="pdName"></div>
-          <div class="panel-meta">
-            <div class="head-chip"><span class="role">부장</span><span class="name" id="pdHead"></span></div>
-            <span class="count-chip" id="pdCount"></span>
-          </div>
-        </div>
-      </div>
-      <div class="panel-body" id="panelBody"></div>
-    </div>
-  </div>
 </div>
 
 <script>
