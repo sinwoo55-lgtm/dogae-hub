@@ -318,6 +318,28 @@
 
 </div>
 
+
+<!-- 부서 상세 팝업 -->
+<div class="dept-popup-overlay" id="deptPopupOverlay">
+  <div class="dept-popup">
+    <div class="dept-popup-head">
+      <div class="dept-popup-icon" id="dpIcon"></div>
+      <div class="dept-popup-head-text">
+        <div class="dept-popup-name" id="dpName"></div>
+        <div class="dept-popup-meta">
+          <div class="head-chip">
+            <span class="role">부장</span>
+            <span class="name" id="dpHead"></span>
+          </div>
+          <span class="count-chip" id="dpCount"></span>
+        </div>
+      </div>
+      <button class="dept-popup-close" id="deptPopupClose">×</button>
+    </div>
+    <div class="dept-popup-body" id="dpBody"></div>
+  </div>
+</div>
+
 <script>
 /* ════════════════════════════════════════════════════════════════
    ★★★ 매년 이 DATA 블록만 수정하면 됩니다 ★★★
