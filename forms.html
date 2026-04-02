@@ -436,20 +436,7 @@
     select.form-input { cursor:pointer; }
     .form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
 
-    /* 파일 업로드 드롭존 */
-    .dropzone {
-      border:2px dashed var(--border); border-radius:10px;
-      padding:24px 16px; text-align:center;
-      cursor:pointer; transition:var(--tr);
-      background:var(--bg);
-    }
-    .dropzone:hover, .dropzone.over { border-color:var(--navy); background:var(--navy-pale); }
-    .dropzone-icon { color:#C5CDE0; margin-bottom:8px; }
-    .dropzone-icon svg { width:28px; height:28px; }
-    .dropzone-text { font-size:13px; color:var(--muted); }
-    .dropzone-text strong { color:var(--navy); }
-    .dropzone-hint { font-size:11px; color:#B0BAC8; margin-top:4px; }
-    .file-selected { font-size:12.5px; color:var(--navy); font-weight:600; margin-top:8px; display:none; }
+
 
     .link-or { display:flex; align-items:center; gap:10px; margin:14px 0; }
     .link-or-line { flex:1; height:1px; background:var(--border); }
@@ -709,7 +696,7 @@
 <div class="modal-overlay" id="fileModal" onclick="handleFileModalOverlay(event)">
   <div class="modal">
     <div class="modal-header">
-      <span class="modal-title" id="fileModalTitle">파일 업로드</span>
+      <span class="modal-title" id="fileModalTitle">양식 등록</span>
       <button class="modal-close" onclick="closeFileModal()">×</button>
     </div>
 
@@ -739,13 +726,15 @@
       <div class="tag-hint"># 기호는 자동으로 붙습니다</div>
     </div>
 
-    <!-- 파일 업로드 -->
+    <!-- 파일 첨부 -->
     <div class="form-group">
-      <label class="form-label">파일 첨부 <small>(또는 링크 중 하나 선택)</small></label>
+      <label class="form-label">파일 첨부 <small>(파일 선택 또는 링크 직접 입력)</small></label>
       <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()">
-        <div class="dropzone-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+        <div class="dropzone-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        </div>
         <div class="dropzone-text"><strong>클릭</strong>하거나 파일을 여기에 드래그하세요</div>
-        <div class="dropzone-hint">HWP · DOCX · XLSX · PDF 지원</div>
+        <div class="dropzone-hint">HWP · DOCX · XLSX · PDF 지원 · 자동으로 Google Drive에 업로드됩니다</div>
         <div class="file-selected" id="fileSelected"></div>
       </div>
       <input type="file" id="fileInput" accept=".hwp,.doc,.docx,.xls,.xlsx,.pdf" style="display:none"/>
@@ -753,15 +742,20 @@
 
     <div class="link-or">
       <div class="link-or-line"></div>
-      <span class="link-or-text">또는 링크 입력</span>
+      <span class="link-or-text">또는 링크 직접 입력</span>
       <div class="link-or-line"></div>
     </div>
 
     <div class="form-group" style="margin-bottom:0">
-      <label class="form-label">파일 링크 <small>(Google Drive 등 외부 링크)</small></label>
+      <label class="form-label">Google Drive 링크</label>
       <input class="form-input" id="fLink" type="url" placeholder="https://drive.google.com/..."/>
+      <div class="link-guide">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        파일 선택 시 Drive 자동 업로드 · 또는 Drive 링크 직접 입력 가능
+      </div>
     </div>
 
+    <div class="upload-progress" id="uploadProgress"><div class="upload-spinner"></div><span class="upload-progress-text" id="uploadProgressText">Drive에 업로드 중...</span></div>
     <div class="modal-footer">
       <button class="btn-cancel-m" onclick="closeFileModal()">취소</button>
       <button class="btn-submit" id="fileSubmitBtn" onclick="submitFile()">추가하기</button>
@@ -847,421 +841,271 @@
   </div>
 </div>
 
-<script>
-/* ═══════════════════════════════════════════════════
-   ★ 관리자 자격증명
-   ★ Firebase 설정 (값 채우면 자동 연동)
-═══════════════════════════════════════════════════ */
-var ADMIN_ID = 'admin';
-var ADMIN_PW = 'admin';
+<script type="module">
+import { initializeApp }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, addDoc, updateDoc, deleteDoc,
+         doc, onSnapshot, query, orderBy, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-var FB_CONFIG = {
-  apiKey: '', authDomain: '', projectId: '',
-  storageBucket: '', messagingSenderId: '', appId: ''
+
+/* ═══ Apps Script (Drive 파일 업로드) ═══ */
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby1qH88hvklDug2ZMT-gAJdRVWby-mMIg6PnHtg4ny5cXk5Xi76y0x3vRorWmIe01yy/exec';
+
+/* ═══ Firebase ═══ */
+const firebaseConfig = {
+  apiKey:            "AIzaSyCtrmjngavD91SRzv6ECUPZWI3JRWTSaxM",
+  authDomain:        "dogae-school-hub.firebaseapp.com",
+  projectId:         "dogae-school-hub",
+  storageBucket:     "dogae-school-hub.firebasestorage.app",
+  messagingSenderId: "396914634674",
+  appId:             "1:396914634674:web:464ab689726e2c5586feab"
 };
-var USE_FIREBASE = FB_CONFIG.apiKey !== '';
+const app       = initializeApp(firebaseConfig);
+const db        = getFirestore(app);
+const colRef    = collection(db, "forms_files");
+const trashCol  = collection(db, "forms_trash");
 
-/* ─── 카테고리 정의 ─── */
-/* ─── 부서 목록 ─── */
-var DEPTS = [
+/* ═══ 관리자 ═══ */
+const ADMIN_ID = 'admin';
+const ADMIN_PW = 'admin';
+
+const DEPTS = [
   '공통','교무기획부','학생안전부','교육연구부','교육과정부',
   '학력관리부','진로상담부','정보부','정보환경부','교육지원부',
   '체육부','1학년부','2학년부','3학년부'
 ];
-var DEPT_COLORS = {
+const DEPT_COLORS = {
   '공통':'#253E8A','교무기획부':'#1E7C5A','학생안전부':'#B5500A','교육연구부':'#6B3FA0',
   '교육과정부':'#2B8AB5','학력관리부':'#C9284D','진로상담부':'#3A6B3A','정보부':'#1A6B6B',
   '정보환경부':'#7A5C00','교육지원부':'#2A5A8A','체육부':'#8B3A3A',
   '1학년부':'#5A3A7A','2학년부':'#253E8A','3학년부':'#1E7C5A'
 };
 
-/* ─── 상태 ─── */
-var files        = [];
-var deletedFiles = [];   // 휴지통
-var isAdmin      = sessionStorage.getItem('forms_admin') === 'true';
-var activeFilter = { dept: '전체' };
-var searchQ     = '';
-var editingId   = null;
-var logoClicks  = 0, logoTimer = null;
+/* ═══ 상태 ═══ */
+let files        = [];
+let deletedFiles = [];
+let isAdmin      = sessionStorage.getItem('forms_admin') === 'true';
+let activeFilter = { dept: '전체' };
+let searchQ      = '';
+let editingId    = null;
+let currentTags  = [];
+let tagPopupFileId  = null;
+let tagPopupTags    = [];
+let tagPopupIsEdit  = false;
+let deletePendingId = null;
+let logoClicks = 0, logoTimer = null;
 
-/* ─── 유틸 ─── */
-function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+/* ═══ 유틸 ═══ */
 function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function hl(t,q){
-  if(!q) return t;
-  var e=q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
-  return t.replace(new RegExp('('+e+')','gi'),'<mark>$1</mark>');
+function hl(text,q){
+  if(!q) return text;
+  const e = q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  return text.replace(new RegExp('('+e+')','gi'),'<mark>$1</mark>');
 }
 function nowDate(){
-  var d=new Date();
+  const d=new Date();
   return d.getFullYear()+'.'+(d.getMonth()+1).toString().padStart(2,'0')+'.'+d.getDate().toString().padStart(2,'0');
 }
-function extOf(name){
-  var m=(name||'').match(/\.(\w+)$/);
-  return m ? m[1].toLowerCase() : 'etc';
-}
-function typeClass(ext){
-  if(ext==='hwp') return 'hwp';
-  if(['doc','docx'].includes(ext)) return 'docx';
-  if(['xls','xlsx'].includes(ext)) return 'xlsx';
-  if(ext==='pdf') return 'pdf';
-  return 'etc';
-}
-function typeLabel(ext){
-  if(ext==='hwp') return 'HWP';
-  if(['doc','docx'].includes(ext)) return 'DOCX';
-  if(['xls','xlsx'].includes(ext)) return 'XLSX';
-  if(ext==='pdf') return 'PDF';
-  return 'FILE';
-}
+function extOf(name){ const m=(name||'').match(/\.(\w+)$/); return m?m[1].toLowerCase():'etc'; }
+function typeClass(ext){ if(ext==='hwp')return'hwp'; if(['doc','docx'].includes(ext))return'docx'; if(['xls','xlsx'].includes(ext))return'xlsx'; if(ext==='pdf')return'pdf'; return'etc'; }
+function typeLabel(ext){ if(ext==='hwp')return'HWP'; if(['doc','docx'].includes(ext))return'DOCX'; if(['xls','xlsx'].includes(ext))return'XLSX'; if(ext==='pdf')return'PDF'; return'FILE'; }
 
-/* ─── 저장 ─── */
-function saveLs(){
-  try{
-    localStorage.setItem('dogae_forms', JSON.stringify(files));
-    localStorage.setItem('dogae_forms_trash', JSON.stringify(deletedFiles));
-  }catch(e){}
-}
-function loadLs(){
-  try{ return JSON.parse(localStorage.getItem('dogae_forms'))||[]; }catch(e){return [];}
-}
-function loadTrashLs(){
-  try{ return JSON.parse(localStorage.getItem('dogae_forms_trash'))||[]; }catch(e){return [];}
-}
-function purgeOldTrash(){
-  var now = Date.now();
-  var before = deletedFiles.length;
-  deletedFiles = deletedFiles.filter(function(f){
-    return now - (f.deletedAt||0) < 30*24*60*60*1000; // 30일
-  });
-  if(deletedFiles.length < before) saveLs();
-}
-function updateTrashBadge(){
-  var badge = document.getElementById('trashCountBadge');
-  if(deletedFiles.length > 0){
-    badge.textContent = deletedFiles.length;
-    badge.style.display = 'flex';
-  } else {
-    badge.style.display = 'none';
-  }
-}
-
-/* ─── 사이드바 (부서별) ─── */
+/* ═══ 사이드바 ═══ */
 function buildSidebar(){
-  var sb = document.getElementById('sidebar');
+  const sb = document.getElementById('sidebar');
   sb.innerHTML = '';
-
-  // 전체
-  var allSec = document.createElement('div'); allSec.className='sidebar-section';
-  var allItem = document.createElement('div');
-  allItem.className = 'sidebar-item' + (activeFilter.dept==='전체' ? ' active' : '');
-  allItem.innerHTML =
-    '<div class="sidebar-item-left"><div class="sidebar-dot" style="background:var(--navy)"></div>전체</div>'+
-    '<span class="sidebar-count">'+files.length+'</span>';
-  allItem.addEventListener('click', function(){ activeFilter.dept='전체'; buildSidebar(); render(); });
+  const allSec = document.createElement('div'); allSec.className='sidebar-section';
+  const allItem = document.createElement('div');
+  allItem.className='sidebar-item'+(activeFilter.dept==='전체'?' active':'');
+  allItem.innerHTML='<div class="sidebar-item-left"><div class="sidebar-dot" style="background:var(--navy)"></div>전체</div><span class="sidebar-count">'+files.length+'</span>';
+  allItem.addEventListener('click',()=>{ activeFilter.dept='전체'; buildSidebar(); render(); });
   allSec.appendChild(allItem); sb.appendChild(allSec);
-
-  var div = document.createElement('div'); div.className='sidebar-divider'; sb.appendChild(div);
-
-  // 부서별
-  var deptSec = document.createElement('div'); deptSec.className='sidebar-section';
-  var lbl = document.createElement('div'); lbl.className='sidebar-section-label'; lbl.textContent='부서별'; deptSec.appendChild(lbl);
-  DEPTS.forEach(function(dept){
-    var cnt = files.filter(function(f){ return f.dept===dept; }).length;
-    if(!cnt) return; // 파일 없는 부서는 숨김
-    var col = DEPT_COLORS[dept] || '#888';
-    var item = document.createElement('div');
-    item.className = 'sidebar-item' + (activeFilter.dept===dept ? ' active' : '');
-    item.innerHTML =
-      '<div class="sidebar-item-left"><div class="sidebar-dot" style="background:'+col+'"></div>'+esc(dept)+'</div>'+
-      '<span class="sidebar-count">'+cnt+'</span>';
-    item.addEventListener('click', function(){ activeFilter.dept=dept; buildSidebar(); render(); });
+  const div=document.createElement('div'); div.className='sidebar-divider'; sb.appendChild(div);
+  const deptSec=document.createElement('div'); deptSec.className='sidebar-section';
+  const lbl=document.createElement('div'); lbl.className='sidebar-section-label'; lbl.textContent='부서별'; deptSec.appendChild(lbl);
+  DEPTS.forEach(dept=>{
+    const cnt=files.filter(f=>f.dept===dept).length;
+    if(!cnt) return;
+    const col=DEPT_COLORS[dept]||'#888';
+    const item=document.createElement('div');
+    item.className='sidebar-item'+(activeFilter.dept===dept?' active':'');
+    item.innerHTML='<div class="sidebar-item-left"><div class="sidebar-dot" style="background:'+col+'"></div>'+esc(dept)+'</div><span class="sidebar-count">'+cnt+'</span>';
+    item.addEventListener('click',()=>{ activeFilter.dept=dept; buildSidebar(); render(); });
     deptSec.appendChild(item);
   });
   sb.appendChild(deptSec);
 }
 
-/* ─── 렌더 ─── */
+/* ═══ 렌더 ═══ */
 function render(){
-  var grid = document.getElementById('fileGrid');
-  grid.querySelectorAll('.file-card').forEach(function(el){el.remove();});
-
-  var q = searchQ.trim();
-  var filtered = files.filter(function(f){
-    var deptOk = activeFilter.dept==='전체' || f.dept===activeFilter.dept;
+  const grid=document.getElementById('fileGrid');
+  grid.querySelectorAll('.file-card').forEach(el=>el.remove());
+  const q=searchQ.trim();
+  let filtered=files.filter(f=>{
+    const deptOk=activeFilter.dept==='전체'||f.dept===activeFilter.dept;
     if(!deptOk) return false;
     if(!q) return true;
-    var lq=q.toLowerCase();
-    return f.name.toLowerCase().includes(lq)
-        || (f.desc||'').toLowerCase().includes(lq)
-        || (f.tags||[]).some(function(t){ return t.toLowerCase().includes(lq); });
+    const lq=q.toLowerCase();
+    return f.name.toLowerCase().includes(lq)||(f.desc||'').toLowerCase().includes(lq)||(f.tags||[]).some(t=>t.toLowerCase().includes(lq));
   });
-
-  var empty = document.getElementById('emptyState');
-  document.getElementById('fileCount').textContent = filtered.length+'개 파일';
-
-  // 브레드크럼
-  var bc = document.getElementById('filterBreadcrumb');
-  var deptColor = activeFilter.dept!=='전체' ? (DEPT_COLORS[activeFilter.dept]||'var(--navy)') : 'var(--navy)';
+  const empty=document.getElementById('emptyState');
+  document.getElementById('fileCount').textContent=filtered.length+'개 파일';
+  const bc=document.getElementById('filterBreadcrumb');
   if(activeFilter.dept==='전체'){
-    bc.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg> <strong>전체 양식</strong>';
+    bc.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg> <strong>전체 양식</strong>';
   } else {
-    bc.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg> <strong style="color:'+deptColor+'">'+esc(activeFilter.dept)+'</strong>';
+    const col=DEPT_COLORS[activeFilter.dept]||'var(--navy)';
+    bc.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg> <strong style="color:'+col+'">'+esc(activeFilter.dept)+'</strong>';
   }
-
-  if(filtered.length===0){
-    empty.classList.add('show');
-    document.getElementById('emptyMsg').textContent = q ? '"'+q+'" 검색 결과가 없습니다' : '등록된 양식이 없습니다';
-    return;
-  }
+  if(filtered.length===0){ empty.classList.add('show'); document.getElementById('emptyMsg').textContent=q?'"'+q+'" 검색 결과가 없습니다':'등록된 양식이 없습니다'; return; }
   empty.classList.remove('show');
 
-  filtered.forEach(function(f){
-    var ext=extOf(f.name); var tc=typeClass(ext); var tl=typeLabel(ext);
-    var allTags = f.tags||[];
-    var tagsHtml = allTags.map(function(t){
-      return '<span class="file-htag" data-tag="'+esc(t)+'">#'+esc(t)+'</span>';
-    }).join('');
-    // +N개 버튼은 항상 포함, JS로 동적 처리
-    if(allTags.length > 0){
-      tagsHtml += '<button class="htag-more-btn" data-id="'+f.id+'" >+0개</button>';
-    }
-
-    var deptColor = DEPT_COLORS[f.dept] || '#253E8A';
-    var deptTag = f.dept
-      ? '<span class="file-tag tag-dept" style="background:'+deptColor+'18;color:'+deptColor+'">'+esc(f.dept)+'</span>'
-      : '';
-    var editSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>';
-    var delSvg  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>';
-    var menuItems =
-      '<div class="card-menu-item" data-action="edit" data-id="'+f.id+'">'+
-        editSvg+'수정하기'+
-      '</div>'+
-      (isAdmin
-        ? '<div class="card-menu-item danger" data-action="del" data-id="'+f.id+'">'+
-            delSvg+'삭제하기'+
-          '</div>'
-        : '');
-
-    var card=document.createElement('div');
+  filtered.forEach(f=>{
+    const ext=extOf(f.name), tc=typeClass(ext);
+    const deptColor=DEPT_COLORS[f.dept]||'#253E8A';
+    const allTags=f.tags||[];
+    const tagsHtml=allTags.map(t=>'<span class="file-htag" data-tag="'+esc(t)+'">#'+esc(t)+'</span>').join('');
+    const moreBtnHtml=allTags.length>0?'<button class="htag-more-btn" data-id="'+f.id+'">+0개</button>':'';
+    const deptTag=f.dept?'<span class="file-tag tag-dept" style="background:'+deptColor+'18;color:'+deptColor+'">'+esc(f.dept)+'</span>':'';
+    const card=document.createElement('div');
     card.className='file-card'+(isAdmin?' admin-mode':'');
-    card.style.setProperty('--card-accent', deptColor);
+    card.style.setProperty('--card-accent',deptColor);
     card.innerHTML=
       '<div class="card-menu-wrap">'+
         '<button class="card-menu-btn" data-id="'+f.id+'">'+
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="5" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="12" cy="19" r="1" fill="currentColor"/></svg>'+
         '</button>'+
-        '<div class="card-menu-dropdown" data-id="'+f.id+'">'+menuItems+'</div>'+
+        '<div class="card-menu-dropdown" data-id="'+f.id+'">'+
+          '<div class="card-menu-item" data-action="edit" data-id="'+f.id+'">'+
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>수정하기'+
+          '</div>'+
+          (isAdmin?'<div class="card-menu-item danger" data-action="del" data-id="'+f.id+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>삭제하기</div>':'')+
+        '</div>'+
       '</div>'+
       '<div class="file-name">'+hl(esc(f.name),q)+'</div>'+
       (f.desc?'<div class="file-desc">'+hl(esc(f.desc),q)+'</div>':'')+
       '<div style="display:flex;align-items:center;gap:6px;flex-wrap:nowrap;overflow:hidden;width:100%">'+
         deptTag+
-        (tagsHtml?'<div class="file-hashtags" data-id="'+f.id+'">'+tagsHtml+'</div>':'')+
+        (tagsHtml?'<div class="file-hashtags" data-id="'+f.id+'">'+tagsHtml+moreBtnHtml+'</div>':'')+
       '</div>'+
       '<div class="file-card-footer">'+
         '<span class="file-date">'+esc(f.date||'')+'</span>'+
-        '<div class="file-actions">'+
-
-          '<button class="btn-download" data-id="'+f.id+'">'+
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>'+
-            '다운로드'+
-          '</button>'+
-        '</div>'+
+        '<button class="btn-download" data-id="'+f.id+'">'+
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>'+
+          '열기'+
+        '</button>'+
       '</div>';
     grid.appendChild(card);
   });
 
-  // 다운로드
-  grid.querySelectorAll('.btn-download').forEach(function(btn){
-    btn.addEventListener('click',function(){
-      var id=this.dataset.id;
-      var f=files.find(function(x){return x.id===id;});
+  // 이벤트
+  grid.querySelectorAll('.btn-download').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const f=files.find(x=>x.id===btn.dataset.id);
       if(!f) return;
       if(f.link){ window.open(f.link,'_blank','noopener'); }
-      else if(f.dataUrl){ var a=document.createElement('a'); a.href=f.dataUrl; a.download=f.name; a.click(); }
-      else { alert('다운로드 링크가 없습니다.'); }
+      else { alert('등록된 링크가 없습니다.'); }
     });
   });
-
-  // ⋮ 메뉴 버튼 토글
-  grid.querySelectorAll('.card-menu-btn').forEach(function(btn){
-    btn.addEventListener('click',function(e){
+  grid.querySelectorAll('.card-menu-btn').forEach(btn=>{
+    btn.addEventListener('click',e=>{
       e.stopPropagation();
-      var id = this.dataset.id;
-      // 다른 열린 드롭다운 닫기
-      grid.querySelectorAll('.card-menu-dropdown.open').forEach(function(d){
-        if(d.dataset.id !== id) d.classList.remove('open');
-      });
-      var dd = grid.querySelector('.card-menu-dropdown[data-id="'+id+'"]');
+      const id=btn.dataset.id;
+      grid.querySelectorAll('.card-menu-dropdown.open').forEach(d=>{ if(d.dataset.id!==id) d.classList.remove('open'); });
+      const dd=grid.querySelector('.card-menu-dropdown[data-id="'+id+'"]');
       if(dd) dd.classList.toggle('open');
     });
   });
-
-  // 메뉴 아이템 클릭
-  grid.querySelectorAll('.card-menu-item').forEach(function(item){
-    item.addEventListener('click',function(e){
+  grid.querySelectorAll('.card-menu-item').forEach(item=>{
+    item.addEventListener('click',e=>{
       e.stopPropagation();
-      var action = this.dataset.action;
-      var id     = this.dataset.id;
-      // 드롭다운 닫기
-      grid.querySelectorAll('.card-menu-dropdown.open').forEach(function(d){ d.classList.remove('open'); });
-      if(action==='edit'){ openEditFile(id); }
-      else if(action==='del'){
-        openDeleteModal(id);
-      }
+      const {action,id}=item.dataset;
+      grid.querySelectorAll('.card-menu-dropdown.open').forEach(d=>d.classList.remove('open'));
+      if(action==='edit') openEditFile(id);
+      else if(action==='del') openDeleteModal(id);
     });
   });
-
-  // 외부 클릭 시 드롭다운 닫기
-  document.addEventListener('click', function(){
-    grid.querySelectorAll('.card-menu-dropdown.open').forEach(function(d){ d.classList.remove('open'); });
-  }, { once: false });
-  grid.querySelectorAll('.file-htag').forEach(function(el){
-    el.addEventListener('click',function(e){
+  grid.querySelectorAll('.file-htag').forEach(el=>{
+    el.addEventListener('click',e=>{
       e.stopPropagation();
-      var tag=this.dataset.tag;
-      document.getElementById('searchInput').value=tag;
-      searchQ=tag;
+      document.getElementById('searchInput').value=el.dataset.tag;
+      searchQ=el.dataset.tag;
       document.getElementById('searchClear').classList.add('show');
       render();
     });
   });
-  // +N개 버튼: 모든 태그 팝업으로 보기
-  grid.querySelectorAll('.htag-more-btn').forEach(function(btn){
-    btn.addEventListener('click',function(e){
-      e.stopPropagation();
-      openTagViewPopup(this.dataset.id);
-    });
+  grid.querySelectorAll('.htag-more-btn').forEach(btn=>{
+    btn.addEventListener('click',e=>{ e.stopPropagation(); openTagViewPopup(btn.dataset.id); });
   });
+  document.addEventListener('click',()=>{ grid.querySelectorAll('.card-menu-dropdown.open').forEach(d=>d.classList.remove('open')); });
 
-  // 태그 동적 트리밍
-  requestAnimationFrame(function(){
-    grid.querySelectorAll('.file-hashtags').forEach(function(wrap){
-      var tags    = Array.from(wrap.querySelectorAll('.file-htag'));
-      var moreBtn = wrap.querySelector('.htag-more-btn');
+  // 태그 트리밍
+  requestAnimationFrame(()=>{
+    grid.querySelectorAll('.file-hashtags').forEach(wrap=>{
+      const tags=Array.from(wrap.querySelectorAll('.file-htag'));
+      const moreBtn=wrap.querySelector('.htag-more-btn');
       if(!tags.length) return;
-
-      var GAP = 5;
-
-      // 초기화: 태그 전부 보임, 버튼 숨김(visibility)
-      tags.forEach(function(t){ t.style.visibility='visible'; t.style.display='inline-flex'; });
-      if(moreBtn){
-        moreBtn.style.visibility='hidden';
-        moreBtn.style.display='inline-flex';
-        moreBtn.style.marginLeft='0';
+      const GAP=5;
+      tags.forEach(t=>{ t.style.visibility='visible'; t.style.display='inline-flex'; });
+      if(moreBtn){ moreBtn.style.visibility='hidden'; moreBtn.style.display='inline-flex'; moreBtn.style.marginLeft='0'; }
+      const containerW=wrap.clientWidth;
+      const btnW=moreBtn?(moreBtn.offsetWidth+GAP):0;
+      const totalW=tags.reduce((acc,t,i)=>acc+t.offsetWidth+(i>0?GAP:0),0);
+      if(totalW<=containerW){ if(moreBtn)moreBtn.style.display='none'; return; }
+      let usedW=0, visibleCount=0;
+      for(let i=0;i<tags.length;i++){
+        const tagW=tags[i].offsetWidth+(i>0?GAP:0);
+        const needBtn=(tags.length-i-1)>0;
+        if(usedW+tagW+(needBtn?btnW:0)<=containerW){ usedW+=tagW; visibleCount++; } else break;
       }
-
-      // 실제 사용 가능한 너비: wrap 자신의 clientWidth
-      var containerW = wrap.clientWidth;
-
-      // 버튼 너비 미리 측정 (visibility:hidden 상태에서 offsetWidth 측정)
-      var btnW = moreBtn ? (moreBtn.offsetWidth + GAP) : 0;
-
-      // 전체 태그가 들어가는지 확인
-      var totalW = tags.reduce(function(acc, t, i){
-        return acc + t.offsetWidth + (i > 0 ? GAP : 0);
-      }, 0);
-
-      if(totalW <= containerW){
-        // 전부 들어감 → 버튼 완전 숨김
-        if(moreBtn) moreBtn.style.display = 'none';
-        return;
-      }
-
-      // 앞에서부터 너비 누적 → 몇 개까지 표시 가능한지 계산
-      var usedW = 0;
-      var visibleCount = 0;
-      for(var i = 0; i < tags.length; i++){
-        var tagW = tags[i].offsetWidth + (i > 0 ? GAP : 0);
-        var needBtn = (tags.length - i - 1) > 0; // 이후 태그가 남으면 버튼 필요
-        if(usedW + tagW + (needBtn ? btnW : 0) <= containerW){
-          usedW += tagW;
-          visibleCount++;
-        } else {
-          break;
-        }
-      }
-
-      // 초과 태그 숨김
-      var hidden = 0;
-      for(var j = visibleCount; j < tags.length; j++){
-        tags[j].style.visibility = 'hidden';
-        tags[j].style.display = 'none';
-        hidden++;
-      }
-
-      // 버튼 표시 (맨 우측)
-      if(hidden > 0 && moreBtn){
-        moreBtn.textContent = '+' + hidden + '개';
-        moreBtn.style.visibility = 'visible';
-        moreBtn.style.display = 'inline-flex';
-        moreBtn.style.marginLeft = 'auto';
-        moreBtn.style.flexShrink = '0';
-      }
+      let hidden=0;
+      for(let j=visibleCount;j<tags.length;j++){ tags[j].style.visibility='hidden'; tags[j].style.display='none'; hidden++; }
+      if(hidden>0&&moreBtn){ moreBtn.textContent='+'+hidden+'개'; moreBtn.style.visibility='visible'; moreBtn.style.display='inline-flex'; moreBtn.style.marginLeft='auto'; moreBtn.style.flexShrink='0'; }
     });
   });
 }
 
-/* ─── 파일 모달 ─── */
-
-
-/* ─── 해시태그 입력 관리 ─── */
-var currentTags = [];
-
+/* ═══ 파일 모달 ═══ */
 function renderTagChips(){
-  var wrap = document.getElementById('hashtagWrap');
-  wrap.querySelectorAll('.hashtag-chip').forEach(function(c){c.remove();});
-  currentTags.forEach(function(tag){
-    var chip = document.createElement('span');
-    chip.className = 'hashtag-chip';
-    chip.innerHTML = '#'+esc(tag)+'<button class="hashtag-chip-x" data-tag="'+esc(tag)+'">×</button>';
+  const wrap=document.getElementById('hashtagWrap');
+  wrap.querySelectorAll('.hashtag-chip').forEach(c=>c.remove());
+  currentTags.forEach((tag,idx)=>{
+    const chip=document.createElement('span'); chip.className='hashtag-chip';
+    chip.innerHTML='#'+esc(tag)+'<button class="hashtag-chip-x" data-idx="'+idx+'">×</button>';
     chip.querySelector('.hashtag-chip-x').addEventListener('click',function(){
-      currentTags = currentTags.filter(function(t){return t!==this.dataset.tag;}.bind(this));
-      renderTagChips();
+      currentTags.splice(parseInt(this.dataset.idx),1); renderTagChips();
     });
-    wrap.insertBefore(chip, document.getElementById('hashtagInput'));
+    wrap.insertBefore(chip,document.getElementById('hashtagInput'));
   });
 }
-
-function addTag(raw){
-  var tag = raw.replace(/^#+/,'').trim();
-  if(tag && !currentTags.includes(tag)) currentTags.push(tag);
-  document.getElementById('hashtagInput').value='';
-  renderTagChips();
+function addTagFromInput(){
+  const val=document.getElementById('hashtagInput').value.replace(/^#+/,'').trim();
+  if(val&&!currentTags.includes(val)) currentTags.push(val);
+  document.getElementById('hashtagInput').value=''; renderTagChips();
 }
-
 document.getElementById('hashtagInput').addEventListener('keydown',function(e){
-  if(e.key==='Enter'||e.key===' '){
-    e.preventDefault();
-    if(this.value.trim()) addTag(this.value);
-  }
-  if(e.key==='Backspace'&&!this.value&&currentTags.length){
-    currentTags.pop(); renderTagChips();
-  }
+  if(e.key==='Enter'||e.key===' '){ e.preventDefault(); if(this.value.trim()) addTagFromInput(); }
+  if(e.key==='Backspace'&&!this.value&&currentTags.length){ currentTags.pop(); renderTagChips(); }
 });
-document.getElementById('hashtagInput').addEventListener('blur',function(){
-  if(this.value.trim()) addTag(this.value);
-});
+document.getElementById('hashtagInput').addEventListener('blur',()=>{ if(document.getElementById('hashtagInput').value.trim()) addTagFromInput(); });
 
 function openFileModal(){
   editingId=null; currentTags=[];
-  document.getElementById('fileModalTitle').textContent='양식 업로드';
-  document.getElementById('fileSubmitBtn').textContent='업로드';
-  document.getElementById('fName').value='';
-  document.getElementById('fDept').value='';
-  document.getElementById('fDesc').value='';
-  document.getElementById('fLink').value='';
+  document.getElementById('fileModalTitle').textContent='양식 등록';
+  document.getElementById('fileSubmitBtn').textContent='등록하기';
+  document.getElementById('fName').value=''; document.getElementById('fDept').value='';
+  document.getElementById('fDesc').value=''; document.getElementById('fLink').value='';
   document.getElementById('fileSelected').style.display='none';
   document.getElementById('fileSelected').textContent='';
   document.getElementById('fileInput').value='';
+  document.getElementById('uploadProgress').classList.remove('show');
   renderTagChips();
   document.getElementById('fileModal').classList.add('active');
-  setTimeout(function(){document.getElementById('fName').focus();},160);
+  setTimeout(()=>document.getElementById('fName').focus(),160);
 }
-
 function openEditFile(id){
-  var f=files.find(function(x){return x.id===id;});
+  const f=files.find(x=>x.id===id);
   if(!f) return;
   editingId=id; currentTags=(f.tags||[]).slice();
   document.getElementById('fileModalTitle').textContent='양식 수정';
@@ -1273,346 +1117,291 @@ function openEditFile(id){
   renderTagChips();
   document.getElementById('fileModal').classList.add('active');
 }
-
 function closeFileModal(){ document.getElementById('fileModal').classList.remove('active'); }
-function handleFileModalOverlay(e){ if(e.target===document.getElementById('fileModal')) closeFileModal(); }
+document.getElementById('fileModal').addEventListener('click',e=>{ if(e.target===document.getElementById('fileModal')) closeFileModal(); });
 
-function submitFile(){
-  var name=document.getElementById('fName').value.trim();
-  var desc=document.getElementById('fDesc').value.trim();
-  var link=document.getElementById('fLink').value.trim();
-  var fileInput=document.getElementById('fileInput');
-
-  var dept=document.getElementById('fDept').value;
+/* 업로드 제출 */
+document.getElementById('fileSubmitBtn').addEventListener('click', async ()=>{
+  const name=document.getElementById('fName').value.trim();
+  const desc=document.getElementById('fDesc').value.trim();
+  const dept=document.getElementById('fDept').value;
+  let   link=document.getElementById('fLink').value.trim();
+  const fileObj2=document.getElementById('fileInput').files[0];
   if(!name||!dept){ alert('제목과 부서는 필수입니다.'); return; }
-  if(link && !/^https?:\/\//.test(link)) link='https://'+link;
+  if(!link&&!fileObj2){ alert('파일을 선택하거나 Drive 링크를 입력해주세요.'); return; }
+  if(link&&!/^https?:\/\//.test(link)) link='https://'+link;
 
-  var tags = currentTags.slice();
-  var fileObj = fileInput.files[0];
+  // 입력중인 태그 자동 추가
+  const pending=document.getElementById('hashtagInput').value.replace(/^#+/,'').trim();
+  if(pending&&!currentTags.includes(pending)) currentTags.push(pending);
+  const tags=currentTags.slice();
 
-  function save(dataUrl){
+  const fileInput=document.getElementById('fileInput');
+  const fileObj=fileInput.files[0];
+
+  const btn=document.getElementById('fileSubmitBtn');
+  const progress=document.getElementById('uploadProgress');
+  const progressText=document.getElementById('uploadProgressText');
+  const fileInput=document.getElementById('fileInput');
+  const fileObj=fileInput.files[0];
+
+  btn.disabled=true;
+
+  try {
+    // 파일이 선택된 경우 → Apps Script로 Drive에 업로드
+    if(fileObj){
+      btn.textContent='업로드 중...';
+      progress.classList.add('show');
+      progressText.textContent='Drive에 업로드 중...';
+
+      // 파일을 base64로 변환
+      const base64 = await new Promise((resolve, reject)=>{
+        const reader = new FileReader();
+        reader.onload  = ()=> resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(fileObj);
+      });
+
+      const res  = await fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+          fileName: fileObj.name,
+          mimeType: fileObj.type || 'application/octet-stream',
+          fileData: base64
+        })
+      });
+      const json = await res.json();
+      if(json.error) throw new Error(json.error);
+
+      // Apps Script가 반환한 Drive 링크를 link 변수에 저장
+      link = json.url;
+      progressText.textContent='Drive 업로드 완료!';
+    }
+
+    // Firestore에 메타데이터 저장
+    btn.textContent='저장 중...';
     if(editingId){
-      var idx=files.findIndex(function(f){return f.id===editingId;});
-      if(idx>-1){
-        files[idx]=Object.assign(files[idx],{name,desc,dept,tags,link});
-        if(dataUrl) files[idx].dataUrl=dataUrl;
-      }
+      await updateDoc(doc(db,'forms_files',editingId),{name,desc,dept,tags,link,date:nowDate()});
     } else {
-      var entry={id:uid(),name,desc,dept,tags,link,date:nowDate()};
-      if(dataUrl) entry.dataUrl=dataUrl;
-      files.unshift(entry);
+      await addDoc(colRef,{name,desc,dept,tags,link,date:nowDate(),ts:serverTimestamp()});
     }
-    saveLs(); buildSidebar(); render(); closeFileModal();
+    progress.classList.remove('show');
+    closeFileModal();
+
+  } catch(err){
+    console.error(err);
+    progress.classList.remove('show');
+    alert('오류가 발생했습니다: '+err.message);
   }
-
-  if(fileObj){
-    var reader=new FileReader();
-    reader.onload=function(e){ save(e.target.result); };
-    reader.readAsDataURL(fileObj);
-  } else {
-    save(null);
-  }
-}
-
-/* ─── 관리자 ─── */
-function updateAdminUI(){
-  var badge    = document.getElementById('adminBadge');
-  var trashBtn = document.getElementById('btnTrash');
-  badge.classList.toggle('show', isAdmin);
-  trashBtn.classList.toggle('admin-show', isAdmin);
-  render();
-}
-
-function confirmAdmin(){
-  var id=document.getElementById('adminId').value.trim();
-  var pw=document.getElementById('adminPw').value;
-  if(id===ADMIN_ID&&pw===ADMIN_PW){
-    isAdmin=true;
-    sessionStorage.setItem('forms_admin','true');
-    updateAdminUI(); closeAdminModal();
-  } else {
-    document.getElementById('adminErr').style.display='block';
-  }
-}
-
-function closeAdminModal(){
-  document.getElementById('adminModal').classList.remove('active');
-  document.getElementById('adminId').value='';
-  document.getElementById('adminPw').value='';
-  document.getElementById('adminErr').style.display='none';
-}
-function handleAdminOverlay(e){ if(e.target===document.getElementById('adminModal')) closeAdminModal(); }
-
-// 로고 5번 클릭
-document.getElementById('logoWrap').addEventListener('click',function(){
-  if(isAdmin) return;
-  logoClicks++;
-  if(logoTimer) clearTimeout(logoTimer);
-  if(logoClicks>=5){
-    logoClicks=0;
-    document.getElementById('adminModal').classList.add('active');
-    setTimeout(function(){document.getElementById('adminId').focus();},160);
-  } else {
-    logoTimer=setTimeout(function(){logoClicks=0;},2000);
-  }
+  btn.textContent=editingId?'수정 완료':'등록하기';
+  btn.disabled=false;
 });
 
-document.getElementById('adminLogout').addEventListener('click',function(){
-  isAdmin=false; sessionStorage.removeItem('forms_admin'); updateAdminUI();
-});
-
-/* ─── 검색 ─── */
-document.getElementById('searchInput').addEventListener('input',function(){
-  searchQ=this.value;
-  document.getElementById('searchClear').classList.toggle('show',!!searchQ.trim());
-  render();
-});
-document.getElementById('searchClear').addEventListener('click',function(){
-  document.getElementById('searchInput').value=''; searchQ='';
-  this.classList.remove('show'); render();
-  document.getElementById('searchInput').focus();
-});
-
-/* ─── 파일 드롭존 ─── */
-var dz=document.getElementById('dropzone');
-document.getElementById('fileInput').addEventListener('change',function(){
-  var f=this.files[0];
-  if(f){
-    var sel=document.getElementById('fileSelected');
-    sel.textContent='✓ '+f.name; sel.style.display='block';
-    if(!document.getElementById('fName').value) document.getElementById('fName').value=f.name;
-  }
-});
-dz.addEventListener('dragover',function(e){e.preventDefault();this.classList.add('over');});
-dz.addEventListener('dragleave',function(){this.classList.remove('over');});
-dz.addEventListener('drop',function(e){
-  e.preventDefault(); this.classList.remove('over');
-  var fi=document.getElementById('fileInput');
-  if(e.dataTransfer.files.length){
-    // DataTransfer → 파일 인풋에 반영
-    var dt=new DataTransfer();
-    dt.items.add(e.dataTransfer.files[0]);
-    fi.files=dt.files;
-    fi.dispatchEvent(new Event('change'));
-  }
-});
-
-/* ─── 휴지통 ─── */
-function openTrash(){
-  renderTrash();
-  document.getElementById('trashOverlay').classList.add('active');
-}
-function closeTrash(){
-  document.getElementById('trashOverlay').classList.remove('active');
-}
-
-function renderTrash(){
-  var body = document.getElementById('trashBody');
-  var emptyBtn = document.getElementById('btnEmptyTrash');
-  body.innerHTML = '';
-
-  if(!deletedFiles.length){
-    body.innerHTML =
-      '<div class="trash-empty">'+
-        '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>'+
-        '<h3>휴지통이 비어있습니다</h3>'+
-        '<p>삭제된 양식이 여기에 보관돼요</p>'+
-      '</div>';
-    emptyBtn.classList.remove('show');
-    return;
-  }
-  emptyBtn.classList.add('show');
-
-  deletedFiles.forEach(function(f){
-    var daysLeft = Math.max(0, 30 - Math.floor((Date.now()-(f.deletedAt||0))/(24*60*60*1000)));
-    var item = document.createElement('div');
-    item.className = 'trash-item';
-    item.innerHTML =
-      '<div class="trash-item-icon">'+
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>'+
-      '</div>'+
-      '<div class="trash-item-info">'+
-        '<div class="trash-item-name">'+esc(f.name)+'</div>'+
-        '<div class="trash-item-meta">'+
-          '<span>'+esc(f.dept||'')+'</span>'+
-          '<span>삭제일: '+esc(f.deletedDate||'')+'</span>'+
-          '<span style="color:'+(daysLeft<=7?'#C53030':'var(--muted)')+'">'+daysLeft+'일 후 영구 삭제</span>'+
-        '</div>'+
-      '</div>'+
-      '<div class="trash-item-actions">'+
-        '<button class="btn-restore" data-id="'+f.id+'">'+
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.12"/></svg>'+
-          '복구'+
-        '</button>'+
-        '<button class="btn-perm-del" data-id="'+f.id+'" title="영구 삭제">'+
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>'+
-        '</button>'+
-      '</div>';
-
-    item.querySelector('.btn-restore').addEventListener('click', function(){
-      var id = this.dataset.id;
-      var idx = deletedFiles.findIndex(function(x){ return x.id===id; });
-      if(idx>-1){
-        var f = deletedFiles.splice(idx,1)[0];
-        delete f.deletedAt; delete f.deletedDate;
-        files.unshift(f);
-        saveLs(); buildSidebar(); render(); updateTrashBadge(); renderTrash();
-      }
-    });
-
-    item.querySelector('.btn-perm-del').addEventListener('click', function(){
-      var id = this.dataset.id;
-      var f  = deletedFiles.find(function(x){ return x.id===id; });
-      if(!f) return;
-      if(!confirm('"'+f.name+'" 을(를) 영구 삭제할까요? 복구할 수 없습니다.')) return;
-      deletedFiles = deletedFiles.filter(function(x){ return x.id!==id; });
-      saveLs(); updateTrashBadge(); renderTrash();
-    });
-
-    body.appendChild(item);
-  });
-}
-
-document.getElementById('btnEmptyTrash').addEventListener('click', function(){
-  if(!confirm('휴지통을 완전히 비울까요? 모든 양식이 영구 삭제됩니다.')) return;
-  deletedFiles = [];
-  saveLs(); updateTrashBadge(); renderTrash();
-});
-
-document.getElementById('btnTrash').addEventListener('click', openTrash);
-
-/* ─── 삭제 확인 팝업 ─── */
-var deletePendingId = null;
-
-function openDeleteModal(fileId){
-  var f = files.find(function(x){ return x.id===fileId; });
+/* ═══ 태그 팝업 ═══ */
+function openTagViewPopup(id){ openTagPopup(id,false); }
+function openTagPopup(id,isEdit){
+  const f=files.find(x=>x.id===id);
   if(!f) return;
-  deletePendingId = fileId;
-  document.getElementById('deleteFileName').textContent = '"' + f.name + '"';
-  document.getElementById('deleteConfirmBtn').onclick = function(){
-    var idx = files.findIndex(function(x){ return x.id === deletePendingId; });
-    if(idx > -1){
-      var removed = files.splice(idx, 1)[0];
-      removed.deletedAt = Date.now();
-      removed.deletedDate = new Date().toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric'});
-      deletedFiles.unshift(removed);
-    }
-    saveLs(); buildSidebar(); render(); updateTrashBadge();
-    closeDeleteModal();
-  };
-  document.getElementById('deleteModal').classList.add('active');
-}
-
-function closeDeleteModal(){
-  document.getElementById('deleteModal').classList.remove('active');
-  deletePendingId = null;
-}
-
-/* ─── 태그 팝업 (보기 전용 + 수정 분리) ─── */
-var tagPopupFileId = null;
-var tagPopupTags   = [];
-var tagPopupIsEdit = false;
-
-function openTagViewPopup(fileId){
-  // +N개 버튼: 모든 태그 보기 전용
-  openTagPopup(fileId, false);
-}
-
-function openTagPopup(fileId, isEdit){
-  var f = files.find(function(x){ return x.id===fileId; });
-  if(!f) return;
-  tagPopupFileId = fileId;
-  tagPopupTags   = (f.tags||[]).slice();
-  tagPopupIsEdit = (isEdit !== false); // 메뉴에서 열면 수정모드
-  document.getElementById('tagPopupSubtitle').textContent = '"'+f.name+'" 태그';
-  document.getElementById('tagPopupInput').value = '';
-  // 수정 모드 여부에 따라 입력 영역 + 저장 버튼 표시
-  var editArea = document.getElementById('tagPopupEditArea');
-  var saveBtn  = document.getElementById('tagPopupSave');
-  if(editArea) editArea.style.display = tagPopupIsEdit ? '' : 'none';
-  if(saveBtn)  saveBtn.style.display  = tagPopupIsEdit ? '' : 'none';
+  tagPopupFileId=id; tagPopupTags=(f.tags||[]).slice(); tagPopupIsEdit=(isEdit!==false);
+  document.getElementById('tagPopupSubtitle').textContent='"'+f.name+'" 태그';
+  document.getElementById('tagPopupInput').value='';
+  const ea=document.getElementById('tagPopupEditArea'), sb=document.getElementById('tagPopupSave');
+  if(ea) ea.style.display=tagPopupIsEdit?'':'none';
+  if(sb) sb.style.display=tagPopupIsEdit?'':'none';
   renderTagPopupChips();
   document.getElementById('tagPopupOverlay').classList.add('active');
-  if(tagPopupIsEdit) setTimeout(function(){ document.getElementById('tagPopupInput').focus(); }, 160);
+  if(tagPopupIsEdit) setTimeout(()=>document.getElementById('tagPopupInput').focus(),160);
 }
-
-function closeTagPopup(){
-  document.getElementById('tagPopupOverlay').classList.remove('active');
-  tagPopupFileId = null; tagPopupTags = []; tagPopupIsEdit = false;
-}
-
+function closeTagPopup(){ document.getElementById('tagPopupOverlay').classList.remove('active'); tagPopupFileId=null; tagPopupTags=[]; }
 function renderTagPopupChips(){
-  var container = document.getElementById('tagPopupChips');
-  container.innerHTML = '';
-  if(!tagPopupTags.length){
-    container.innerHTML = '<span class="tag-popup-empty">태그가 없습니다</span>';
-    return;
-  }
-  tagPopupTags.forEach(function(tag, idx){
-    var chip = document.createElement('span');
-    chip.className = 'tag-popup-chip';
+  const container=document.getElementById('tagPopupChips');
+  container.innerHTML='';
+  if(!tagPopupTags.length){ container.innerHTML='<span class="tag-popup-empty">태그가 없습니다</span>'; return; }
+  tagPopupTags.forEach((tag,idx)=>{
+    const chip=document.createElement('span'); chip.className='tag-popup-chip';
     if(tagPopupIsEdit){
-      chip.innerHTML = '#'+esc(tag)+
-        '<button class="tag-popup-chip-x" data-idx="'+idx+'">×</button>';
-      chip.querySelector('.tag-popup-chip-x').addEventListener('click',function(){
-        tagPopupTags.splice(parseInt(this.dataset.idx),1);
-        renderTagPopupChips();
-      });
-    } else {
-      chip.innerHTML = '#'+esc(tag);
-    }
+      chip.innerHTML='#'+esc(tag)+'<button class="tag-popup-chip-x" data-idx="'+idx+'">×</button>';
+      chip.querySelector('.tag-popup-chip-x').addEventListener('click',function(){ tagPopupTags.splice(parseInt(this.dataset.idx),1); renderTagPopupChips(); });
+    } else { chip.innerHTML='#'+esc(tag); }
     container.appendChild(chip);
   });
 }
-
 function addTagPopupTag(){
-  var val = document.getElementById('tagPopupInput').value.replace(/^#+/,'').trim();
+  const val=document.getElementById('tagPopupInput').value.replace(/^#+/,'').trim();
   if(!val) return;
   if(!tagPopupTags.includes(val)) tagPopupTags.push(val);
-  document.getElementById('tagPopupInput').value = '';
-  renderTagPopupChips();
+  document.getElementById('tagPopupInput').value=''; renderTagPopupChips();
   document.getElementById('tagPopupInput').focus();
 }
-
-document.getElementById('tagPopupAddBtn').addEventListener('click', addTagPopupTag);
-document.getElementById('tagPopupInput').addEventListener('keydown',function(e){
-  if(e.key==='Enter'){ e.preventDefault(); addTagPopupTag(); }
-});
-document.getElementById('tagPopupSave').addEventListener('click',function(){
-  // 입력창에 미처 추가 안 한 태그 자동 추가
-  var pending = document.getElementById('tagPopupInput').value.replace(/^#+/,'').trim();
-  if(pending && !tagPopupTags.includes(pending)) tagPopupTags.push(pending);
-
-  var idx = files.findIndex(function(f){ return f.id===tagPopupFileId; });
-  if(idx>-1){ files[idx].tags = tagPopupTags.slice(); saveLs(); buildSidebar(); render(); }
+document.getElementById('tagPopupAddBtn').addEventListener('click',addTagPopupTag);
+document.getElementById('tagPopupInput').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); addTagPopupTag(); } });
+document.getElementById('tagPopupSave').addEventListener('click',async ()=>{
+  const pending=document.getElementById('tagPopupInput').value.replace(/^#+/,'').trim();
+  if(pending&&!tagPopupTags.includes(pending)) tagPopupTags.push(pending);
+  const idx=files.findIndex(f=>f.id===tagPopupFileId);
+  if(idx>-1){ await updateDoc(doc(db,'forms_files',tagPopupFileId),{tags:tagPopupTags.slice()}); }
   closeTagPopup();
 });
-document.getElementById('tagPopupCancel').addEventListener('click', closeTagPopup);
-document.getElementById('tagPopupClose').addEventListener('click', closeTagPopup);
-document.getElementById('tagPopupOverlay').addEventListener('click',function(e){
-  if(e.target===this) closeTagPopup();
+document.getElementById('tagPopupCancel').addEventListener('click',closeTagPopup);
+document.getElementById('tagPopupClose').addEventListener('click',closeTagPopup);
+document.getElementById('tagPopupOverlay').addEventListener('click',e=>{ if(e.target===document.getElementById('tagPopupOverlay')) closeTagPopup(); });
+
+/* ═══ 삭제 모달 ═══ */
+function openDeleteModal(id){
+  const f=files.find(x=>x.id===id);
+  if(!f) return;
+  deletePendingId=id;
+  document.getElementById('deleteFileName').textContent='"'+f.name+'"';
+  document.getElementById('deleteModal').classList.add('active');
+}
+function closeDeleteModal(){ document.getElementById('deleteModal').classList.remove('active'); deletePendingId=null; }
+document.getElementById('deleteModal').addEventListener('click',e=>{ if(e.target===document.getElementById('deleteModal')) closeDeleteModal(); });
+document.getElementById('deleteConfirmBtn').addEventListener('click', async ()=>{
+  const f=files.find(x=>x.id===deletePendingId);
+  if(!f) return;
+  // Storage 파일 삭제
+  // Firestore 이동 (휴지통)
+  const now=Date.now();
+  await addDoc(trashCol,{...f,deletedAt:now,deletedDate:new Date().toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric'}),origId:deletePendingId});
+  await deleteDoc(doc(db,'forms_files',deletePendingId));
+  closeDeleteModal();
 });
 
-/* ─── 업로드 버튼 ─── */
+/* ═══ 휴지통 ═══ */
+function openTrash(){ renderTrash(); document.getElementById('trashOverlay').classList.add('active'); }
+function closeTrash(){ document.getElementById('trashOverlay').classList.remove('active'); }
+function renderTrash(){
+  const body=document.getElementById('trashBody');
+  const emptyBtn=document.getElementById('btnEmptyTrash');
+  body.innerHTML='';
+  if(!deletedFiles.length){
+    body.innerHTML='<div class="trash-empty"><div class="trash-empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></div><h3>휴지통이 비어있습니다</h3><p>삭제된 양식이 여기에 보관됩니다</p></div>';
+    emptyBtn.classList.remove('show'); return;
+  }
+  emptyBtn.classList.add('show');
+  deletedFiles.forEach(f=>{
+    const daysLeft=Math.max(0,30-Math.floor((Date.now()-(f.deletedAt||0))/(24*60*60*1000)));
+    const item=document.createElement('div'); item.className='trash-item';
+    item.innerHTML=
+      '<div class="trash-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>'+
+      '<div class="trash-item-info"><div class="trash-item-name">'+esc(f.name)+'</div>'+
+      '<div class="trash-item-meta"><span>'+esc(f.dept||'')+'</span><span>삭제일: '+esc(f.deletedDate||'')+'</span><span style="color:'+(daysLeft<=7?'#C53030':'var(--muted)')+'">'+daysLeft+'일 후 영구 삭제</span></div></div>'+
+      '<div class="trash-item-actions">'+
+        '<button class="btn-restore" data-id="'+f.id+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.12"/></svg>복구</button>'+
+        '<button class="btn-perm-del" data-id="'+f.id+'" title="영구 삭제"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>'+
+      '</div>';
+    item.querySelector('.btn-restore').addEventListener('click', async ()=>{
+      const id=item.querySelector('.btn-restore').dataset.id;
+      const tf=deletedFiles.find(x=>x.id===id); if(!tf) return;
+      const {deletedAt,deletedDate,origId,...rest}=tf;
+      await addDoc(colRef,{...rest,ts:serverTimestamp()});
+      await deleteDoc(doc(db,'forms_trash',id));
+      renderTrash();
+    });
+    item.querySelector('.btn-perm-del').addEventListener('click', async ()=>{
+      const id=item.querySelector('.btn-perm-del').dataset.id;
+      const tf=deletedFiles.find(x=>x.id===id);
+      if(!confirm('"'+(tf?.name||'')+'" 을(를) 영구 삭제할까요?')) return;
+        await deleteDoc(doc(db,'forms_trash',id));
+      renderTrash(); updateTrashBadge();
+    });
+    body.appendChild(item);
+  });
+}
+document.getElementById('btnEmptyTrash').addEventListener('click', async ()=>{
+  if(!confirm('휴지통을 완전히 비울까요?')) return;
+  await Promise.all(deletedFiles.map(async f=>{
+      return deleteDoc(doc(db,'forms_trash',f.id));
+  }));
+  renderTrash(); updateTrashBadge();
+});
+document.getElementById('btnTrash').addEventListener('click',openTrash);
+document.getElementById('trashOverlay').addEventListener('click',e=>{ if(e.target===document.getElementById('trashOverlay')) closeTrash(); });
+
+function updateTrashBadge(){
+  const badge=document.getElementById('trashCountBadge');
+  if(deletedFiles.length>0){ badge.textContent=deletedFiles.length; badge.style.display='flex'; }
+  else { badge.style.display='none'; }
+}
+
+/* ═══ 관리자 UI ═══ */
+function updateAdminUI(){
+  document.getElementById('adminBadge').classList.toggle('show',isAdmin);
+  document.getElementById('btnTrash').classList.toggle('admin-show',isAdmin);
+  render();
+}
+function confirmAdmin(){
+  const id=document.getElementById('adminId').value.trim();
+  const pw=document.getElementById('adminPw').value;
+  if(id===ADMIN_ID&&pw===ADMIN_PW){
+    isAdmin=true; sessionStorage.setItem('forms_admin','true');
+    updateAdminUI(); closeAdminModal();
+  } else { document.getElementById('adminErr').style.display='block'; }
+}
+window.confirmAdmin=confirmAdmin;
+function closeAdminModal(){
+  document.getElementById('adminModal').classList.remove('active');
+  document.getElementById('adminId').value=''; document.getElementById('adminPw').value='';
+  document.getElementById('adminErr').style.display='none';
+}
+document.getElementById('adminLogout').addEventListener('click',()=>{ isAdmin=false; sessionStorage.removeItem('forms_admin'); updateAdminUI(); });
+document.getElementById('adminModal').addEventListener('click',e=>{ if(e.target===document.getElementById('adminModal')) closeAdminModal(); });
+document.getElementById('logoWrap').addEventListener('click',()=>{
+  if(isAdmin) return;
+  logoClicks++;
+  if(logoTimer) clearTimeout(logoTimer);
+  if(logoClicks>=5){ logoClicks=0; document.getElementById('adminModal').classList.add('active'); setTimeout(()=>document.getElementById('adminId').focus(),160); }
+  else { logoTimer=setTimeout(()=>{ logoClicks=0; },2000); }
+});
+
+/* ═══ 검색 / 이벤트 ═══ */
 document.getElementById('btnUpload').addEventListener('click',openFileModal);
-document.addEventListener('keydown',function(e){
-  if(e.key==='Escape'){ closeFileModal(); closeAdminModal(); closeTagPopup(); closeDeleteModal(); closeTrash(); }
+document.getElementById('searchInput').addEventListener('input',function(){ searchQ=this.value; document.getElementById('searchClear').classList.toggle('show',!!searchQ.trim()); render(); });
+document.getElementById('searchClear').addEventListener('click',()=>{ document.getElementById('searchInput').value=''; searchQ=''; document.getElementById('searchClear').classList.remove('show'); render(); document.getElementById('searchInput').focus(); });
+
+
+
+/* 드롭존 */
+const dz=document.getElementById('dropzone');
+document.getElementById('fileInput').addEventListener('change',function(){
+  const f=this.files[0];
+  if(f){
+    const sel=document.getElementById('fileSelected');
+    sel.textContent='✓ '+f.name; sel.style.display='block';
+    if(!document.getElementById('fName').value) document.getElementById('fName').value=f.name;
+    // 링크 입력란 비우기 (파일 선택 시 링크 불필요)
+    document.getElementById('fLink').value='';
+  }
+});
+dz.addEventListener('dragover', e=>{ e.preventDefault(); dz.classList.add('over'); });
+dz.addEventListener('dragleave', ()=> dz.classList.remove('over'));
+dz.addEventListener('drop', e=>{
+  e.preventDefault(); dz.classList.remove('over');
+  const fi=document.getElementById('fileInput');
+  if(e.dataTransfer.files.length){
+    const dt=new DataTransfer(); dt.items.add(e.dataTransfer.files[0]);
+    fi.files=dt.files; fi.dispatchEvent(new Event('change'));
+  }
 });
 
-/* ─── 초기화 ─── */
-/* 부서 드롭다운 채우기 */
-var deptSel = document.getElementById('fDept');
-DEPTS.forEach(function(d){
-  var o=document.createElement('option'); o.value=d; o.textContent=d; deptSel.appendChild(o);
+/* 부서 드롭다운 */
+const deptSel=document.getElementById('fDept');
+DEPTS.forEach(d=>{ const o=document.createElement('option'); o.value=d; o.textContent=d; deptSel.appendChild(o); });
+
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeFileModal(); closeAdminModal(); closeTagPopup(); closeDeleteModal(); closeTrash(); } });
+
+/* ═══ 실시간 구독 ═══ */
+onSnapshot(query(colRef,orderBy('ts','desc')), snap=>{
+  files=snap.docs.map(d=>({id:d.id,...d.data()}));
+  buildSidebar(); render();
+});
+onSnapshot(query(trashCol,orderBy('deletedAt','desc')), snap=>{
+  deletedFiles=snap.docs.map(d=>({id:d.id,...d.data()}));
+  updateTrashBadge();
+  if(document.getElementById('trashOverlay').classList.contains('active')) renderTrash();
 });
 
-files        = loadLs();
-deletedFiles = loadTrashLs();
-purgeOldTrash();
-updateTrashBadge();
 updateAdminUI();
-buildSidebar();
-render();
 </script>
 </body>
 </html>
