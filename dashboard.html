@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>공지 대시보드 · 도개중고등학교</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy:      #253E8A;
+      --navy-dark: #182B6A;
+      --bg:        #F0F2F8;
+      --surface:   #FFFFFF;
+      --text:      #1A1E2E;
+      --muted:     #6B7280;
+      --border:    #D8DFF0;
+      --radius:    14px;
+      --tr:        0.26s cubic-bezier(.4,0,.2,1);
+
+      /* 긴급도 컬러 팔레트 */
+      --c-normal:  #1E7C5A;
+      --c-warning: #C07A10;
+      --c-urgent:  #C53030;
+      --c-overdue: #718096;
+
+      --bg-normal:  #E6F5EE;
+      --bg-warning: #FDF3E3;
+      --bg-urgent:  #FFF0F0;
+      --bg-overdue: #F2F2F2;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background: var(--bg); color: var(--text); min-height: 100vh;
+    }
+
+    /* ─── HEADER ─── */
+    header {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(240,242,248,.92); backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 40px; height: 64px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    .back-btn {
+      display: flex; align-items: center; gap: 6px;
+      padding: 7px 13px; background: var(--surface);
+      border: 1px solid var(--border); border-radius: 8px;
+      font-family: 'Noto Sans KR', sans-serif; font-size: 12.5px;
+      font-weight: 500; color: var(--navy); text-decoration: none; transition: var(--tr);
+    }
+    .back-btn:hover { background: var(--navy); color: #fff; border-color: var(--navy); }
+    .page-title { font-family: 'Noto Serif KR', serif; font-size: 17px; font-weight: 700; color: var(--navy); }
+    .header-logo { width: 32px; height: 32px; border-radius: 50%; overflow: hidden; border: 1.5px solid var(--border); }
+    .header-logo img { width: 100%; height: 100%; object-fit: cover; }
+
+    /* ─── TOOLBAR ─── */
+    .toolbar {
+      max-width: 1300px; margin: 0 auto;
+      padding: 28px 40px 16px;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+    }
+    .toolbar-left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .board-label { font-size: 11px; font-weight: 700; letter-spacing: 2px; color: var(--navy); text-transform: uppercase; opacity: .5; }
+    .filter-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+    .filter-tab {
+      padding: 5px 13px; border-radius: 100px; font-size: 12px; font-weight: 500;
+      border: 1.5px solid var(--border); background: var(--surface); color: var(--muted);
+      cursor: pointer; transition: var(--tr);
+    }
+    .filter-tab.active, .filter-tab:hover { background: var(--navy); color: #fff; border-color: var(--navy); }
+    .btn-add {
+      display: flex; align-items: center; gap: 8px; padding: 10px 20px;
+      background: var(--navy); color: #fff; border: none; border-radius: 10px;
+      font-family: 'Noto Sans KR', sans-serif; font-size: 13.5px; font-weight: 700;
+      cursor: pointer; transition: var(--tr); white-space: nowrap;
+    }
+    .btn-add:hover { background: var(--navy-dark); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(25,43,106,.25); }
+
+    /* ─── BOARD ─── */
+    .board { max-width: 1300px; margin: 0 auto; padding: 0 40px 80px; columns: 4 280px; column-gap: 20px; }
+
+    /* ─── POSTIT ─── */
+    .postit {
+      break-inside: avoid; background: var(--surface);
+      border: 2px solid var(--border); border-radius: var(--radius);
+      padding: 20px 18px 16px; margin-bottom: 20px;
+      position: relative; overflow: hidden;
+      transition: var(--tr); cursor: pointer;
+      animation: cardDrop .38s ease both;
+    }
+    @keyframes cardDrop {
+      from { opacity: 0; transform: translateY(-10px) scale(.97); }
+      to   { opacity: 1; transform: none; }
+    }
+    .postit:hover { transform: translateY(-3px); box-shadow: 0 10px 32px rgba(25,43,106,.13); }
+
+    /* 왼쪽 컬러 바 */
+    .postit::before {
+      content: '';
+      position: absolute; left: 0; top: 0; bottom: 0; width: 5px;
+      background: var(--p-color);
+      border-radius: var(--radius) 0 0 var(--radius);
+    }
+
+    /* ── normal: 녹색 ── */
+    .postit.normal { --p-color: var(--c-normal); border-color: #B2DEC8; }
+
+    /* ── warning: 황색 ── */
+    .postit.warning { --p-color: var(--c-warning); border-color: #F0C878; }
+
+    /* ── urgent: 적색 + 펄스 ── */
+    .postit.urgent {
+      --p-color: var(--c-urgent);
+      border-color: #F5A0A0;
+      animation: cardDrop .38s ease both, urgentPulse 2.2s 1s ease-in-out infinite;
+    }
+    @keyframes urgentPulse {
+      0%,100% { box-shadow: 0 0 0 0 rgba(197,48,48,.4); }
+      50%      { box-shadow: 0 0 0 10px rgba(197,48,48,0); }
+    }
+
+    /* ── overdue: 회색 ── */
+    .postit.overdue { --p-color: var(--c-overdue); border-color: #C8CFDA; opacity: .6; }
+
+    /* ─── 긴급 배너 (상단 띠) ─── */
+    .urgency-banner {
+      position: absolute; top: 0; right: 0; left: 5px;
+      height: 4px;
+      background: var(--p-color);
+      opacity: .18;
+    }
+
+    /* ─── D-DAY 뱃지 ─── */
+    .dday-badge {
+      position: absolute; top: 11px; right: 11px;
+      font-size: 11px; font-weight: 800;
+      padding: 2px 9px; border-radius: 100px;
+      letter-spacing: .4px;
+    }
+    .normal  .dday-badge { background: var(--bg-normal);  color: var(--c-normal); }
+    .warning .dday-badge { background: var(--bg-warning); color: var(--c-warning); }
+    .urgent  .dday-badge { background: var(--bg-urgent);  color: var(--c-urgent); }
+    .overdue .dday-badge { background: var(--bg-overdue); color: var(--c-overdue); }
+
+    .postit-header { display: flex; align-items: center; margin-bottom: 10px; padding-left: 8px; padding-top: 4px; }
+    .postit-author { font-size: 12.5px; font-weight: 700; color: var(--navy); }
+
+    .postit-body {
+      padding-left: 8px; font-size: 13.5px; line-height: 1.8;
+      color: var(--text); font-weight: 300; margin-bottom: 14px;
+      word-break: keep-all; white-space: pre-wrap;
+    }
+
+    .postit-footer {
+      padding-left: 8px; display: flex; align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid var(--border); padding-top: 10px;
+    }
+    .deadline-label {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 11.5px; font-weight: 600;
+      color: var(--p-color);
+    }
+    .deadline-label svg { width: 12px; height: 12px; }
+    .posted-at { font-size: 10.5px; color: #bbb; }
+
+    /* ─── 카드 호버 커서 ─── */
+    .postit { cursor: pointer; }
+
+    /* ─── 카드 상세 팝업 모달 ─── */
+    .popup-overlay {
+      position: fixed; inset: 0;
+      background: rgba(15,28,72,.48); backdrop-filter: blur(8px);
+      z-index: 600;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: var(--tr);
+    }
+    .popup-overlay.active { opacity: 1; pointer-events: all; }
+
+    .popup {
+      background: var(--surface); border-radius: 20px;
+      padding: 36px 32px; width: 100%; max-width: 440px;
+      box-shadow: 0 28px 72px rgba(15,28,72,.25);
+      transform: translateY(16px) scale(.97); transition: var(--tr);
+    }
+    .popup-overlay.active .popup { transform: none; }
+
+    /* 긴급도 색 띠 */
+    .popup-stripe {
+      height: 5px; border-radius: 4px;
+      margin-bottom: 22px;
+      background: var(--ps-color, var(--c-normal));
+    }
+
+    .popup-meta {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .popup-author {
+      font-size: 13px; font-weight: 700; color: var(--navy);
+    }
+    .popup-dday {
+      font-size: 11.5px; font-weight: 800;
+      padding: 3px 10px; border-radius: 100px;
+      background: var(--ps-bg, var(--bg-normal));
+      color: var(--ps-color, var(--c-normal));
+    }
+    .popup-date {
+      font-size: 12px; color: var(--muted); margin-bottom: 18px;
+      display: flex; align-items: center; gap: 5px;
+    }
+    .popup-date svg { width: 12px; height: 12px; }
+
+    .popup-content {
+      font-size: 14px; line-height: 1.85; color: var(--text);
+      font-weight: 300; white-space: pre-wrap; word-break: keep-all;
+      background: var(--bg); border-radius: 10px;
+      padding: 16px; margin-bottom: 22px;
+      border-left: 3px solid var(--ps-color, var(--c-normal));
+    }
+
+    /* 링크 확인 영역 */
+    .popup-link-box {
+      background: #EBF1FD; border: 1.5px solid #C5D5F5;
+      border-radius: 12px; padding: 16px 18px;
+      margin-bottom: 20px;
+    }
+    .popup-link-question {
+      font-size: 13.5px; font-weight: 600; color: var(--navy);
+      margin-bottom: 5px;
+    }
+    .popup-link-url {
+      font-size: 11.5px; color: var(--muted);
+      word-break: break-all; margin-bottom: 12px;
+      display: -webkit-box; -webkit-line-clamp: 1;
+      -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .popup-link-url.expanded { -webkit-line-clamp: unset; }
+
+    .popup-btns { display: flex; gap: 8px; }
+    .popup-btn-go {
+      flex: 1; padding: 10px; border: none; border-radius: 9px;
+      background: var(--navy); color: #fff;
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 13px; font-weight: 700; cursor: pointer; transition: var(--tr);
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .popup-btn-go:hover { background: var(--navy-dark); }
+    .popup-btn-go svg { width: 14px; height: 14px; }
+    .popup-btn-cancel {
+      padding: 10px 16px; border: 1.5px solid var(--border);
+      border-radius: 9px; background: var(--surface); color: var(--muted);
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 13px; cursor: pointer; transition: var(--tr);
+    }
+    .popup-btn-cancel:hover { background: var(--bg); }
+
+    /* 링크 없을 때 */
+    .popup-no-link {
+      font-size: 12.5px; color: var(--muted);
+      text-align: center; padding: 10px 0 4px;
+    }
+
+    /* 수정·삭제 버튼 (팝업 하단) */
+    .popup-actions {
+      display: flex; gap: 8px; padding-top: 16px;
+      border-top: 1px solid var(--border); margin-top: 4px;
+    }
+    .popup-act-btn {
+      display: flex; align-items: center; gap: 5px;
+      padding: 8px 14px; border-radius: 8px; border: none;
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 12.5px; font-weight: 600; cursor: pointer; transition: var(--tr);
+    }
+    .popup-act-btn svg { width: 13px; height: 13px; }
+    .popup-act-edit { background: #EBF1FD; color: var(--navy); margin-right: auto; }
+    .popup-act-edit:hover { background: var(--navy); color: #fff; }
+    .popup-act-del  { background: #FFF0F0; color: #C53030; }
+    .popup-act-del:hover  { background: #C53030; color: #fff; }
+    .popup-act-close { background: var(--bg); color: var(--muted); }
+    .popup-act-close:hover { background: var(--border); }
+
+    /* ─── EMPTY ─── */
+    .empty-state { display: none; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 80px 20px; text-align: center; }
+    .empty-state.show { display: flex; }
+    .empty-icon { width: 64px; height: 64px; background: var(--surface); border: 1.5px solid var(--border); border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+    .empty-icon svg { width: 28px; height: 28px; color: #ccc; }
+    .empty-state h3 { font-family: 'Noto Serif KR', serif; font-size: 17px; color: var(--navy); }
+    .empty-state p  { font-size: 13.5px; color: var(--muted); }
+
+    /* ─── MODAL ─── */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(15,28,72,.48); backdrop-filter: blur(8px);
+      z-index: 500; display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: var(--tr);
+    }
+    .modal-overlay.active { opacity: 1; pointer-events: all; }
+    .modal {
+      background: var(--surface); border-radius: 20px; padding: 40px 36px;
+      width: 100%; max-width: 480px;
+      box-shadow: 0 28px 72px rgba(15,28,72,.25);
+      transform: translateY(20px) scale(.97); transition: var(--tr);
+    }
+    .modal-overlay.active .modal { transform: none; }
+    .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
+    .modal-title { font-family: 'Noto Serif KR', serif; font-size: 20px; font-weight: 700; color: var(--navy-dark); }
+    .modal-close { width: 32px; height: 32px; border-radius: 8px; border: none; background: var(--bg); cursor: pointer; font-size: 20px; color: var(--muted); display: flex; align-items: center; justify-content: center; transition: var(--tr); }
+    .modal-close:hover { background: #fee; color: #E53E3E; }
+
+    .form-group { margin-bottom: 18px; }
+    .form-label { display: block; font-size: 12px; font-weight: 700; color: var(--navy); letter-spacing: .5px; margin-bottom: 7px; }
+    .form-label span { color: #E53E3E; margin-left: 2px; }
+    .form-label small { font-weight: 400; color: var(--muted); font-size: 11px; margin-left: 5px; letter-spacing: 0; }
+    .form-input {
+      width: 100%; padding: 11px 14px; background: var(--bg);
+      border: 1.5px solid var(--border); border-radius: 10px;
+      font-family: 'Noto Sans KR', sans-serif; font-size: 14px; color: var(--text);
+      outline: none; transition: var(--tr);
+    }
+    .form-input:focus { border-color: var(--navy); background: #fff; }
+    textarea.form-input { resize: vertical; min-height: 110px; line-height: 1.7; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    /* 링크 입력 안내 */
+    .link-hint {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 11.5px; color: var(--muted); margin-top: 5px;
+    }
+    .link-hint svg { width: 12px; height: 12px; flex-shrink: 0; }
+
+    .modal-footer { display: flex; gap: 10px; margin-top: 28px; }
+    .btn-submit { flex: 1; padding: 13px; background: var(--navy); color: #fff; border: none; border-radius: 10px; font-family: 'Noto Sans KR', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; transition: var(--tr); }
+    .btn-submit:hover { background: var(--navy-dark); }
+    .btn-cancel-modal { padding: 13px 20px; background: var(--bg); color: var(--muted); border: 1.5px solid var(--border); border-radius: 10px; font-family: 'Noto Sans KR', sans-serif; font-size: 14px; cursor: pointer; transition: var(--tr); }
+    .btn-cancel-modal:hover { background: var(--border); }
+
+    /* ─── 초과 토글 버튼 ─── */
+    .btn-toggle-overdue {
+      display: flex; align-items: center; gap: 6px;
+      padding: 5px 13px; border-radius: 100px;
+      font-size: 12px; font-weight: 500;
+      border: 1.5px dashed var(--border);
+      background: var(--surface); color: var(--muted);
+      cursor: pointer; transition: var(--tr);
+      white-space: nowrap;
+    }
+    .btn-toggle-overdue:hover { border-color: #718096; color: #4A5568; }
+    .btn-toggle-overdue.showing {
+      background: #F0F0F0; color: #4A5568;
+      border-color: #A0AEC0; border-style: solid;
+    }
+    .btn-toggle-overdue svg { flex-shrink: 0; }
+
+    /* ─── 안내 배너 ─── */
+    .info-banner {
+      max-width: 1300px; margin: 0 auto 0;
+      padding: 0 40px 14px;
+      display: flex; align-items: center; gap: 8px;
+      font-size: 11.5px; color: var(--muted);
+    }
+    .info-banner svg { width: 13px; height: 13px; flex-shrink: 0; color: #A0AEC0; }
+
+    /* ─── STATUS ─── */
+    .status-bar { position: fixed; bottom: 24px; right: 24px; display: flex; align-items: center; gap: 7px; background: var(--surface); border: 1px solid var(--border); border-radius: 100px; padding: 7px 16px; font-size: 12px; color: var(--muted); box-shadow: 0 4px 16px rgba(0,0,0,.08); z-index: 200; }
+    .status-dot { width: 7px; height: 7px; border-radius: 50%; background: #C9A84C; animation: blink 2.5s ease-in-out infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+    @media (max-width: 640px) {
+      header { padding: 0 16px; }
+      .toolbar { padding: 20px 16px 12px; }
+      .board { padding: 0 16px 60px; columns: 1; }
+      .modal { margin: 12px; padding: 28px 20px; max-width: none; }
+      .form-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <a class="back-btn" href="index.html">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      허브로
+    </a>
+    <span class="page-title">공지 대시보드</span>
+  </div>
+  <div class="header-logo"><img src="logo.png" alt="도개중고등학교"/></div>
+</header>
+
+<div class="toolbar">
+  <div class="toolbar-left">
+    <span class="board-label">게시판</span>
+    <div class="filter-tabs">
+      <button class="filter-tab active" data-filter="all">전체</button>
+      <button class="filter-tab" data-filter="urgent">🔴 긴급 (D-3)</button>
+      <button class="filter-tab" data-filter="warning">🟡 주의 (D-7)</button>
+      <button class="filter-tab" data-filter="normal">🟢 여유</button>
+      <button class="filter-tab" data-filter="overdue">⚫ 기한 초과</button>
+    </div>
+    <button class="btn-toggle-overdue" id="btnToggleOverdue" title="기한 초과 카드 표시/숨김">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+      초과 카드 숨김
+    </button>
+  </div>
+  <button class="btn-add" id="btnAdd">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    추가하기
+  </button>
+</div>
+
+<div class="info-banner">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+  기한 초과 후 <strong style="color:#4A5568;margin:0 2px">30일</strong>이 지난 카드는 자동으로 삭제됩니다. 중요한 내용은 미리 보관해 두세요.
+</div>
+
+<main class="board" id="board">
+  <div class="empty-state show" id="emptyState">
+    <div class="empty-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2"/></svg>
+    </div>
+    <h3>아직 게시된 내용이 없어요</h3>
+    <p>'추가하기' 버튼을 눌러 첫 번째 공지를 작성해보세요</p>
+  </div>
+</main>
+
+<div class="status-bar">
+  <div class="status-dot"></div>
+  <span id="statusText">로컬 저장 모드</span>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modalTitle">새 공지 작성</span>
+      <button class="modal-close" id="btnClose">×</button>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="fAuthor">작성자 <span>*</span></label>
+        <input class="form-input" id="fAuthor" type="text" placeholder="예: 홍길동 선생님" maxlength="20"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="fDeadline">기한 <span>*</span></label>
+        <input class="form-input" id="fDeadline" type="date"/>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="fContent">내용 <span>*</span></label>
+      <textarea class="form-input" id="fContent" placeholder="공지 내용을 입력하세요..." maxlength="400"></textarea>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="fLink">링크 <small>(선택)</small></label>
+      <input class="form-input" id="fLink" type="url" placeholder="https://..."/>
+      <div class="link-hint">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        카드를 클릭하면 링크 이동 버튼이 나타나요
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-cancel-modal" id="btnCancelModal">취소</button>
+      <button class="btn-submit" id="btnSubmit">게시하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 카드 상세 팝업 -->
+<div class="popup-overlay" id="popupOverlay">
+  <div class="popup" id="popupBox">
+    <div class="popup-stripe" id="popupStripe"></div>
+    <div class="popup-meta">
+      <span class="popup-author" id="popupAuthor"></span>
+      <span class="popup-dday"   id="popupDday"></span>
+    </div>
+    <div class="popup-date" id="popupDate">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <span id="popupDateText"></span>
+    </div>
+    <div class="popup-content" id="popupContent"></div>
+
+    <!-- 링크 있을 때 -->
+    <div class="popup-link-box" id="popupLinkBox">
+      <div class="popup-link-question">링크 주소로 이동하시겠습니까?</div>
+      <div class="popup-link-url" id="popupLinkUrl"></div>
+      <div class="popup-btns">
+        <button class="popup-btn-go" id="popupBtnGo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          이동하기
+        </button>
+        <button class="popup-btn-cancel" id="popupBtnCancel">취소</button>
+      </div>
+    </div>
+
+    <!-- 링크 없을 때 -->
+    <div class="popup-no-link" id="popupNoLink">첨부된 링크가 없습니다</div>
+
+    <div class="popup-actions">
+      <button class="popup-act-btn popup-act-edit" id="popupBtnEdit">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>
+        수정
+      </button>
+      <button class="popup-act-btn popup-act-del" id="popupBtnDel">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+        삭제
+      </button>
+      <button class="popup-act-btn popup-act-close" id="popupBtnClose">닫기</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var posts        = [];
+var editingId    = null;
+var curFilter    = 'all';
+var popupId      = null;
+var showOverdue  = false;   // 기한 초과 카드 표시 여부
+
+/* ── 유틸 ── */
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function today(){ return new Date().toISOString().split('T')[0]; }
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+function nowStr(){ return new Date().toLocaleDateString('ko-KR',{month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'}); }
+
+function diffDays(ds){
+  if(!ds) return 9999;
+  var d=new Date(ds+'T00:00:00'), t=new Date(); t.setHours(0,0,0,0);
+  return Math.ceil((d-t)/86400000);
+}
+function urgency(ds){
+  var d=diffDays(ds);
+  if(d<0)  return 'overdue';
+  if(d<=3) return 'urgent';
+  if(d<=7) return 'warning';
+  return 'normal';
+}
+function ddayText(ds){
+  var d=diffDays(ds);
+  if(d<0)   return '기한 초과';
+  if(d===0) return 'D-DAY';
+  if(d===1) return 'D-1';
+  return 'D-'+d;
+}
+function fmtDate(ds){
+  if(!ds) return '';
+  var p=ds.split('-'); return p[0]+'. '+p[1]+'. '+p[2]+'.';
+}
+
+/* ── 30일 초과 자동 삭제 ── */
+function purgeOldOverdue(){
+  var before = posts.length;
+  posts = posts.filter(function(p){
+    if(urgency(p.deadline) !== 'overdue') return true;
+    // 기한 초과된 날 수 (양수)
+    var overdueDays = -diffDays(p.deadline);
+    return overdueDays < 30;
+  });
+  if(posts.length < before){ saveLs(); }
+}
+
+/* ── 렌더 ── */
+function render(){
+  var board = document.getElementById('board');
+  var empty = document.getElementById('emptyState');
+  board.querySelectorAll('.postit').forEach(function(el){el.remove();});
+
+  // 정상 카드 / 초과 카드 분리
+  var normal = posts.filter(function(p){ return urgency(p.deadline) !== 'overdue'; });
+  var overdue = posts.filter(function(p){ return urgency(p.deadline) === 'overdue'; });
+
+  // 필터 적용
+  var list;
+  if(curFilter === 'overdue'){
+    list = overdue;
+  } else {
+    list = normal.filter(function(p){
+      if(curFilter === 'all')     return true;
+      if(curFilter === 'urgent')  return urgency(p.deadline) === 'urgent';
+      if(curFilter === 'warning') return urgency(p.deadline) === 'warning';
+      if(curFilter === 'normal')  return urgency(p.deadline) === 'normal';
+      return true;
+    });
+    // showOverdue 가 켜져 있고 전체 탭이면 초과 카드 맨 뒤에 추가
+    if(showOverdue && curFilter === 'all'){
+      list = list.concat(overdue);
+    }
+  }
+
+  if(list.length === 0){ empty.classList.add('show'); return; }
+  empty.classList.remove('show');
+
+  list.forEach(function(p){
+    var ug = urgency(p.deadline);
+    var dt = ddayText(p.deadline);
+    var hasLink = !!(p.link && p.link.trim());
+    var card = document.createElement('div');
+    card.className = 'postit ' + ug;
+    card.dataset.id = p.id;
+    card.innerHTML =
+      '<div class="urgency-banner"></div>'+
+      '<div class="dday-badge">'+esc(dt)+'</div>'+
+      '<div class="postit-header">'+
+        '<span class="postit-author">'+esc(p.author)+'</span>'+
+      '</div>'+
+      '<div class="postit-body">'+esc(p.content)+'</div>'+
+      '<div class="postit-footer">'+
+        '<span class="deadline-label">'+
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>'+
+          fmtDate(p.deadline)+
+        '</span>'+
+        (hasLink
+          ? '<span style="font-size:11px;color:var(--c-normal);font-weight:600;">🔗 링크 있음</span>'
+          : '<span class="posted-at">'+esc(p.createdAt||'')+'</span>')+
+      '</div>';
+    card.addEventListener('click', function(){ openPopup(p.id); });
+    board.appendChild(card);
+  });
+}
+
+/* ── 토글 버튼 업데이트 ── */
+function updateToggleBtn(){
+  var btn = document.getElementById('btnToggleOverdue');
+  if(showOverdue){
+    btn.classList.add('showing');
+    btn.innerHTML =
+      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> 초과 카드 표시 중';
+  } else {
+    btn.classList.remove('showing');
+    btn.innerHTML =
+      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg> 초과 카드 숨김';
+  }
+}
+
+/* ── 팝업 ── */
+function openPopup(id){
+  var p=posts.find(function(x){return x.id===id;});
+  if(!p) return;
+  popupId=id;
+  var colMap={normal:'var(--c-normal)',warning:'var(--c-warning)',urgent:'var(--c-urgent)',overdue:'var(--c-overdue)'};
+  var bgMap ={normal:'var(--bg-normal)',warning:'var(--bg-warning)',urgent:'var(--bg-urgent)',overdue:'var(--bg-overdue)'};
+  var ug=urgency(p.deadline);
+  document.getElementById('popupStripe').style.background=colMap[ug];
+  document.getElementById('popupAuthor').textContent=p.author;
+  var dd=document.getElementById('popupDday');
+  dd.textContent=ddayText(p.deadline);
+  dd.style.background=bgMap[ug]; dd.style.color=colMap[ug];
+  document.getElementById('popupDateText').textContent=fmtDate(p.deadline);
+  var pc=document.getElementById('popupContent');
+  pc.textContent=p.content;
+  pc.style.borderLeftColor=colMap[ug];
+  var hasLink=!!(p.link&&p.link.trim());
+  document.getElementById('popupLinkBox').style.display=hasLink?'block':'none';
+  document.getElementById('popupNoLink').style.display =hasLink?'none':'block';
+  if(hasLink){
+    document.getElementById('popupLinkUrl').textContent=p.link;
+    document.getElementById('popupBtnGo').onclick=function(){ window.open(p.link,'_blank','noopener'); };
+  }
+  document.getElementById('popupOverlay').classList.add('active');
+}
+function closePopup(){
+  document.getElementById('popupOverlay').classList.remove('active');
+  popupId=null;
+}
+
+/* ── 모달 ── */
+function openModal(isEdit){
+  document.getElementById('modalTitle').textContent=isEdit?'공지 수정':'새 공지 작성';
+  document.getElementById('btnSubmit').textContent =isEdit?'수정 완료':'게시하기';
+  document.getElementById('fDeadline').min=today();
+  document.getElementById('modalOverlay').classList.add('active');
+  setTimeout(function(){document.getElementById('fAuthor').focus();},160);
+}
+function closeModal(){
+  document.getElementById('modalOverlay').classList.remove('active');
+  editingId=null;
+  ['fAuthor','fDeadline','fContent','fLink'].forEach(function(id){
+    document.getElementById(id).value='';
+  });
+}
+function openEdit(id){
+  var p=posts.find(function(x){return x.id===id;});
+  if(!p) return;
+  editingId=id;
+  document.getElementById('fAuthor').value  =p.author;
+  document.getElementById('fDeadline').value=p.deadline;
+  document.getElementById('fContent').value =p.content;
+  document.getElementById('fLink').value    =p.link||'';
+  closePopup();
+  openModal(true);
+}
+function deletePost(id){
+  if(!confirm('이 공지를 삭제할까요?')) return;
+  posts=posts.filter(function(p){return p.id!==id;});
+  closePopup(); saveLs(); render();
+}
+
+/* ── 저장 ── */
+function saveLs(){ try{localStorage.setItem('dogae_dashboard',JSON.stringify(posts));}catch(e){} }
+function loadLs(){ try{return JSON.parse(localStorage.getItem('dogae_dashboard'))||[];}catch(e){return[];} }
+
+/* ── 이벤트 ── */
+document.getElementById('btnAdd').addEventListener('click',function(){ editingId=null; openModal(false); });
+document.getElementById('btnClose').addEventListener('click',closeModal);
+document.getElementById('btnCancelModal').addEventListener('click',closeModal);
+document.getElementById('modalOverlay').addEventListener('click',function(e){ if(e.target===this) closeModal(); });
+
+document.getElementById('popupBtnCancel').addEventListener('click', closePopup);
+document.getElementById('popupBtnClose').addEventListener('click', closePopup);
+document.getElementById('popupOverlay').addEventListener('click',function(e){ if(e.target===this) closePopup(); });
+document.getElementById('popupBtnEdit').addEventListener('click',function(){ if(popupId) openEdit(popupId); });
+document.getElementById('popupBtnDel').addEventListener('click',function(){ if(popupId) deletePost(popupId); });
+
+/* 초과 카드 토글 */
+document.getElementById('btnToggleOverdue').addEventListener('click',function(){
+  showOverdue = !showOverdue;
+  // '기한 초과' 탭이 active면 전체 탭으로 복귀
+  if(!showOverdue && curFilter === 'overdue'){
+    curFilter = 'all';
+    document.querySelectorAll('.filter-tab').forEach(function(b){b.classList.remove('active');});
+    document.querySelector('[data-filter="all"]').classList.add('active');
+  }
+  updateToggleBtn();
+  render();
+});
+
+document.querySelectorAll('.filter-tab').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    // 기한 초과 탭은 showOverdue 상태와 무관하게 항상 접근 가능
+    document.querySelectorAll('.filter-tab').forEach(function(b){b.classList.remove('active');});
+    this.classList.add('active');
+    curFilter=this.dataset.filter;
+    render();
+  });
+});
+
+document.getElementById('btnSubmit').addEventListener('click',function(){
+  var author  =document.getElementById('fAuthor').value.trim();
+  var deadline=document.getElementById('fDeadline').value;
+  var content =document.getElementById('fContent').value.trim();
+  var link    =document.getElementById('fLink').value.trim();
+  if(!author||!deadline||!content){ alert('작성자, 기한, 내용을 모두 입력해주세요.'); return; }
+  if(link && !/^https?:\/\//.test(link)) link='https://'+link;
+  if(editingId){
+    var idx=posts.findIndex(function(p){return p.id===editingId;});
+    if(idx>-1){ posts[idx].author=author; posts[idx].deadline=deadline; posts[idx].content=content; posts[idx].link=link; }
+  } else {
+    posts.unshift({id:uid(),author:author,deadline:deadline,content:content,link:link,createdAt:nowStr()});
+  }
+  saveLs(); render(); closeModal();
+});
+
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'){ closeModal(); closePopup(); }
+});
+
+/* ── 초기 로드 ── */
+posts = loadLs();
+purgeOldOverdue();   // 30일 초과 자동 삭제
+updateToggleBtn();
+render();
+</script>
+</body>
+</html>

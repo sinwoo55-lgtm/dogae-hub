@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>업무분장 · 도개중고등학교</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy:      #253E8A;
+      --navy-dark: #182B6A;
+      --navy-pale: #EEF2FB;
+      --accent:    #C9A84C;
+      --bg:        #F4F6FB;
+      --surface:   #FFFFFF;
+      --text:      #1A1E2E;
+      --muted:     #64748B;
+      --border:    #E2E8F4;
+      --tr:        0.22s cubic-bezier(.4,0,.2,1);
+      --radius:    14px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background: var(--bg); color: var(--text);
+      height: 100vh; overflow: hidden;
+      display: flex; flex-direction: column;
+    }
+
+    /* ─── HEADER ─── */
+    header {
+      flex-shrink: 0;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 32px; height: 62px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .header-left { display: flex; align-items: center; gap: 14px; }
+    .back-btn {
+      display: flex; align-items: center; gap: 6px;
+      padding: 6px 13px; background: var(--bg);
+      border: 1px solid var(--border); border-radius: 8px;
+      font-size: 12.5px; font-weight: 500; color: var(--navy);
+      text-decoration: none; transition: var(--tr);
+    }
+    .back-btn:hover { background: var(--navy); color: #fff; border-color: var(--navy); }
+    .header-divider { width: 1px; height: 20px; background: var(--border); }
+    .header-title {
+      font-family: 'Noto Serif KR', serif;
+      font-size: 17px; font-weight: 700; color: var(--navy);
+    }
+    .header-sub { font-size: 12px; color: var(--muted); font-weight: 400; }
+    .dept-total {
+      font-size: 12px; color: var(--muted);
+      background: var(--bg); border: 1px solid var(--border);
+      padding: 4px 12px; border-radius: 100px;
+    }
+
+    /* ─── SEARCH ─── */
+    .search-bar {
+      flex-shrink: 0;
+      padding: 12px 32px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .search-icon { color: var(--muted); flex-shrink: 0; }
+    .search-bar input {
+      flex: 1; border: none; outline: none;
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 13.5px; color: var(--text); background: transparent;
+    }
+    .search-bar input::placeholder { color: #B0BAC8; }
+    .search-count { font-size: 12px; color: var(--muted); white-space: nowrap; }
+    .search-clear {
+      width: 22px; height: 22px; border-radius: 50%;
+      background: var(--border); border: none; cursor: pointer;
+      display: none; align-items: center; justify-content: center;
+      color: var(--muted); font-size: 14px; line-height: 1; transition: var(--tr);
+    }
+    .search-clear.show { display: flex; }
+    .search-clear:hover { background: var(--navy); color: #fff; }
+
+    /* ─── MAIN 2-PANEL ─── */
+    .main-wrap {
+      flex: 1; overflow: hidden;
+      display: grid;
+      grid-template-columns: 1fr 0px;
+      transition: grid-template-columns .3s cubic-bezier(.4,0,.2,1);
+    }
+    .main-wrap.panel-open {
+      grid-template-columns: 1fr 400px;
+    }
+
+    /* ═══ LEFT: 카드 그리드 ═══ */
+    .grid-panel {
+      overflow-y: auto;
+      padding: 28px 32px;
+      background: var(--bg);
+    }
+    .grid-panel::-webkit-scrollbar { width: 5px; }
+    .grid-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    .dept-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+      gap: 14px;
+    }
+
+    /* ─── 부서 카드 ─── */
+    .dept-card {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px 18px 18px;
+      cursor: pointer;
+      transition: var(--tr);
+      position: relative;
+      overflow: hidden;
+      display: flex; flex-direction: column; gap: 12px;
+      animation: cardIn .35s ease both;
+    }
+    .dept-card:nth-child(1)  { animation-delay:.03s }
+    .dept-card:nth-child(2)  { animation-delay:.06s }
+    .dept-card:nth-child(3)  { animation-delay:.09s }
+    .dept-card:nth-child(4)  { animation-delay:.12s }
+    .dept-card:nth-child(5)  { animation-delay:.15s }
+    .dept-card:nth-child(6)  { animation-delay:.18s }
+    .dept-card:nth-child(7)  { animation-delay:.21s }
+    .dept-card:nth-child(8)  { animation-delay:.24s }
+    .dept-card:nth-child(9)  { animation-delay:.27s }
+    .dept-card:nth-child(10) { animation-delay:.30s }
+    .dept-card:nth-child(11) { animation-delay:.33s }
+    .dept-card:nth-child(12) { animation-delay:.36s }
+    .dept-card:nth-child(13) { animation-delay:.39s }
+
+    @keyframes cardIn {
+      from { opacity:0; transform:translateY(10px); }
+      to   { opacity:1; transform:none; }
+    }
+
+    /* 좌측 컬러 바 */
+    .dept-card::before {
+      content: '';
+      position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+      background: var(--c);
+      border-radius: var(--radius) 0 0 var(--radius);
+    }
+
+    .dept-card:hover {
+      border-color: var(--c);
+      box-shadow: 0 6px 24px rgba(0,0,0,.09);
+      transform: translateY(-2px);
+    }
+    .dept-card.active {
+      border-color: var(--c);
+      background: var(--navy-pale);
+      box-shadow: 0 6px 24px rgba(37,62,138,.12);
+    }
+
+    /* 검색 매칭 */
+    .dept-card.search-dim { opacity: .28; pointer-events: none; transform: none !important; box-shadow: none !important; }
+    .dept-card.search-match { border-color: var(--accent) !important; box-shadow: 0 0 0 3px rgba(201,168,76,.18) !important; }
+
+    /* 카드 아이콘 */
+    .card-icon {
+      width: 44px; height: 44px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: var(--tr);
+    }
+    .card-icon svg { width: 22px; height: 22px; }
+    .dept-card:hover .card-icon,
+    .dept-card.active .card-icon {
+      background: var(--c) !important;
+    }
+    .dept-card:hover .card-icon svg,
+    .dept-card.active .card-icon svg { color: #fff !important; }
+
+    .card-body {}
+    .card-name {
+      font-size: 13.5px; font-weight: 700;
+      color: var(--text); margin-bottom: 4px; line-height: 1.3;
+    }
+    .card-head { font-size: 12px; color: var(--muted); }
+    .card-count {
+      position: absolute; top: 10px; right: 10px;
+      font-size: 10px; font-weight: 700;
+      color: var(--c);
+      background: var(--surface);
+      border: 1.5px solid var(--c);
+      border-radius: 100px;
+      padding: 1px 7px;
+      opacity: .7;
+    }
+
+    /* ═══ RIGHT: 상세 패널 ═══ */
+    .detail-panel {
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      overflow: hidden;
+      min-width: 0;
+    }
+    /* 패널 닫기 버튼 */
+    .panel-close-btn {
+      position: absolute; top: 18px; right: 18px;
+      width: 28px; height: 28px; border-radius: 7px;
+      background: var(--bg); border: 1px solid var(--border);
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      color: var(--muted); transition: var(--tr); flex-shrink: 0;
+    }
+    .panel-close-btn:hover { background: var(--navy); color: #fff; border-color: var(--navy); }
+    .panel-head { position: relative; }
+
+    .panel-empty {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 12px; padding: 40px; text-align: center;
+    }
+    .panel-empty-icon {
+      width: 54px; height: 54px; background: var(--bg);
+      border: 1.5px solid var(--border); border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .panel-empty-icon svg { width: 22px; height: 22px; color: #C5CDE0; }
+    .panel-empty h3 { font-family:'Noto Serif KR',serif; font-size: 15px; color: var(--navy); }
+    .panel-empty p  { font-size: 12.5px; color: var(--muted); line-height: 1.7; }
+
+    #panelContent { display: none; flex-direction: column; height: 100%; overflow: hidden; }
+
+    .panel-head {
+      padding: 22px 24px 16px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+      display: flex; align-items: flex-start; gap: 14px;
+    }
+    .panel-head-icon {
+      width: 48px; height: 48px; border-radius: 13px;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .panel-head-icon svg { width: 24px; height: 24px; }
+    .panel-head-text {}
+    .panel-dept-no { font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 4px; }
+    .panel-dept-name { font-family:'Noto Serif KR',serif; font-size: 19px; font-weight: 700; color: var(--navy-dark); margin-bottom: 8px; }
+    .panel-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .head-chip {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 7px; padding: 4px 11px; font-size: 12px;
+    }
+    .head-chip .role { color: var(--muted); }
+    .head-chip .name { font-weight: 700; color: var(--navy); }
+    .count-chip {
+      font-size: 11px; color: var(--muted);
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 100px; padding: 3px 10px;
+    }
+
+    .panel-body { flex: 1; overflow-y: auto; padding: 16px 24px 24px; }
+    .panel-body::-webkit-scrollbar { width: 4px; }
+    .panel-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .member-card {
+      border: 1px solid var(--border); border-radius: 10px;
+      overflow: hidden; margin-bottom: 10px; transition: var(--tr);
+    }
+    .member-card:hover { border-color: var(--pc); box-shadow: 0 3px 14px rgba(0,0,0,.07); }
+    .member-card-head {
+      display: flex; align-items: center; gap: 10px;
+      padding: 11px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .member-avatar {
+      width: 34px; height: 34px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .member-avatar svg { width: 18px; height: 18px; }
+    .member-role { font-size: 10px; font-weight: 700; letter-spacing: .5px; margin-bottom: 2px; }
+    .member-name { font-size: 13px; font-weight: 700; color: var(--navy-dark); }
+    .duty-list { padding: 10px 14px; list-style: none; }
+    .duty-list li {
+      font-size: 12.5px; color: var(--muted); line-height: 1.8; font-weight: 300;
+      padding-left: 12px; position: relative;
+    }
+    .duty-list li::before { content:'–'; position:absolute; left:0; color:#C5CDE0; }
+    mark { background:#FFF3CD; color:var(--text); border-radius:2px; padding:0 1px; }
+    .no-result { text-align:center; color:var(--muted); font-size:13px; padding:36px 0; }
+
+    @media (max-width: 900px) {
+      .main-wrap.panel-open { grid-template-columns: 1fr; grid-template-rows: 1fr 50vh; }
+      .detail-panel { border-left: none; border-top: 1px solid var(--border); }
+    }
+    @media (max-width: 640px) {
+      header, .search-bar { padding: 0 16px; }
+      .grid-panel { padding: 20px 16px; }
+      .dept-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="header-left">
+    <a class="back-btn" href="index.html">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      허브로
+    </a>
+    <div class="header-divider"></div>
+    <div>
+      <div class="header-title" id="headerTitle"></div>
+      <div class="header-sub">도개중고등학교 교무업무분장 조직</div>
+    </div>
+  </div>
+  <span class="dept-total" id="deptTotal"></span>
+</header>
+
+<!-- 검색 -->
+<div class="search-bar">
+  <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+  <input type="text" id="globalSearch" placeholder="교사명 또는 업무 키워드로 검색"/>
+  <span class="search-count" id="searchCount" style="display:none"></span>
+  <button class="search-clear" id="searchClear">×</button>
+</div>
+
+<div class="main-wrap">
+  <div class="grid-panel">
+    <div class="dept-grid" id="deptGrid"></div>
+  </div>
+
+  <div class="detail-panel" id="detailPanel">
+    <div id="panelContent">
+      <div class="panel-head" id="panelHead">
+        <button class="panel-close-btn" id="panelCloseBtn" title="패널 닫기">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+        <div class="panel-head-icon" id="phIcon"></div>
+        <div class="panel-head-text">
+          <div class="panel-dept-name" id="pdName"></div>
+          <div class="panel-meta">
+            <div class="head-chip"><span class="role">부장</span><span class="name" id="pdHead"></span></div>
+            <span class="count-chip" id="pdCount"></span>
+          </div>
+        </div>
+      </div>
+      <div class="panel-body" id="panelBody"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ════════════════════════════════════════════════════════════════
+   ★★★ 매년 이 DATA 블록만 수정하면 됩니다 ★★★
+   새 업무분장 파일을 받으면:
+     1. year 변경
+     2. departments 배열 수정 (부서명·부장·담당자·업무)
+   icon 값은 아래 ICON_MAP 키를 사용하거나 'default' 사용
+════════════════════════════════════════════════════════════════ */
+var ORG_DATA = {
+  year: '2026학년도',
+  departments: [
+    { name:'교무기획부',  head:'반동훈', icon:'clipboard',
+      members:[
+        {role:'부장',    name:'반동훈', duties:['교무기획부 업무 총괄','교사 다면 평가 주관','의식 및 각종 행사 진행','각종 내규 관리 및 예규철 정비','학교운영계획 수립 및 실적 관리','고입 상담 및 입시 총괄']},
+        {role:'교무기획', name:'한병수', duties:['교무기획부 공문서 처리','휴가 계획 추진 업무','입학·졸업·진급 사정회 업무','야간 자율학습 관리','생활기록부 관리 및 반 편성','2학년 수학여행 및 체험활동 계획']},
+        {role:'국제교류', name:'장주영', duties:['교내외 장학금 관련 업무','국제교류 업무','다문화 업무','영어 듣기 평가 진행 및 방송']},
+        {role:'도서관',  name:'한대성', duties:['도서관 관리','독서 관련 행사 진행','독도·통일교육·민주시민교육']},
+        {role:'교무기록', name:'김말숙', duties:['교무 일지 기록 및 전산입력','학급 출결관계 및 결석계 업무','월중 행사 관리']},
+        {role:'학적(고)', name:'김현진', duties:['학생 이동(전출입·휴학·퇴학) 관리','학적사항 관리','졸업 대장 관리(고)']},
+        {role:'학적(중)', name:'최미송', duties:['학생 이동 관리','학적사항 관리','교무실 학생동태 기록','졸업 대장 관리(중)']},
+        {role:'학교홍보', name:'이신우', duties:['보도자료','학교신문 발간','학교 홍보자료 발간','감사일기 쓰기 업무']},
+        {role:'공문수발', name:'오정아', duties:['나이스 수상대장 관리·입력','공문서 수발 업무','교무 보조 및 학적업무 보조','제증명서 발급']}
+      ]},
+    { name:'학생안전부', head:'이진오', icon:'shield',
+      members:[
+        {role:'부장',    name:'이진오', duties:['학생안전부 업무 총괄','학교폭력 책임교사','연간 생활지도 계획수립','학생회 구성 및 운영','학생 통학 및 스쿨버스 총괄']},
+        {role:'기획/안전',name:'이지한', duties:['학생안전부 공문 관리(고)','학생 비상 연락망 운영','청소년계 업무','학생증 발급','등하교 지도']},
+        {role:'청소년활동',name:'김기섭', duties:['학교안전교육 계획 수립 및 운영','인성교육 및 생활예절교육','배움터지킴이 운영','유네스코 및 IB 업무']},
+        {role:'학교폭력', name:'배재성', duties:['교내순찰 및 학생 지도','학교폭력 전담기구 계획','학생선도위원회 운영','선도부 활동지도 관리']},
+        {role:'전문상담', name:'김명희', duties:['학생상담(또래상담)','특수교육','자살 예방/정서행동','Wee 클래스 교육','학업중단 계획 수립']},
+        {role:'보건',    name:'황진희', duties:['비만학생 파악/학생 건강 관리','보건업무 및 성교육','건강기록부 및 예방접종 관리']}
+      ]},
+    { name:'교육연구부', head:'박갑숙', icon:'book',
+      members:[
+        {role:'부장',       name:'박갑숙', duties:['연구부 업무 총괄','선도(시범) 학교업무','교생 실습생 지도','수업장학 및 연수 관련 업무','대학수학능력 시험 지원']},
+        {role:'평가/연수(고)',name:'배미경', duties:['성적자료 검사 및 처리','성적 전산처리 업무','수행평가 및 지필평가 관리','정기고사 답안지 수합 및 관리']},
+        {role:'평가/연수(중)',name:'윤경준', duties:['성적자료 검사 및 처리','성적 전산처리 업무','수행평가 및 지필평가 관리','교원 연수 관리']}
+      ]},
+    { name:'교육과정부', head:'최상현', icon:'layers',
+      members:[
+        {role:'부장',   name:'최상현', duties:['교육과정 계획 및 운영','공동교육과정 계획 및 운영','교과이수 관련업무']},
+        {role:'수업진행',name:'홍가희', duties:['수업 시간표 작성(정기·임시)','창의적 체험활동 전산업무','결·보강 업무 및 시수 확보']}
+      ]},
+    { name:'학력관리부', head:'배준형', icon:'barchart',
+      members:[
+        {role:'부장',   name:'배준형', duties:['학력관리 총괄','SC반 업무 총괄','모의고사 업무 총괄','고입 홍보 총괄']},
+        {role:'학력기획',name:'김민규', duties:['고입 홍보 기획','SC반 상담 및 특별수업','기초학력 업무']},
+        {role:'학력평가',name:'조현호', duties:['모의고사 평가 분석','학력평가 및 모의고사 주관','멘토링 업무']},
+        {role:'창의융합',name:'정경순', duties:['과학 업무 총괄','창의융합교육 및 과학실험 총괄','야영수련활동 계획 총괄']},
+        {role:'창의융합',name:'차명혜', duties:['과학부 업무/과학실 관리','과학경진대회 관련 업무','자유학기제 운영보조']}
+      ]},
+    { name:'진로상담부', head:'한상갑', icon:'compass',
+      members:[
+        {role:'부장',   name:'한상갑', duties:['생활관사무 총괄','적성·인성 검사 업무','진로체험 프로그램 운영','진로심리검사/상담','연간 상담 계획 수립']},
+        {role:'기숙사보조',name:'지준걸', duties:['비즈쿨 및 창업교육','진로·기숙사 업무 보조','교원 훈·포상 관련 업무']},
+        {role:'고3진학', name:'배재형', duties:['고3 업무 총괄','진로진학 및 상담 업무 총괄','대입 홍보 업무','고3 학력관리']},
+        {role:'종합전형', name:'정진호', duties:['고3 진학·진로지도 업무','대학 입시 현황 및 자료 분석']}
+      ]},
+    { name:'정보부',    head:'이용희', icon:'monitor',
+      members:[
+        {role:'부장',   name:'이용희', duties:['정보부 업무 총괄(고)','행정정보 시스템 관리','컴퓨터 교육계획 수립','정보공시 업무 총괄','학내망 방화벽 관리']},
+        {role:'정보자료',name:'지민근', duties:['정보화 기기 관리','정보실(컴퓨터) 관리','저소득층 컴퓨터 지원','급식관련 업무']}
+      ]},
+    { name:'정보환경부', head:'이성민', icon:'settings',
+      members:[
+        {role:'부장',   name:'이성민', duties:['정보부 업무 총괄(중)','교내환경정비','미술부 운영','각종 문화예술행사 주관']},
+        {role:'방송/음악',name:'김동진', duties:['방송실 관리(계기교육 방송)','각종 행사 촬영','학교 홈페이지 운영','교내 합창경연대회 추진']},
+        {role:'학비지원',name:'배한진', duties:['기초수급 대상자 및 학비지원','안전공제 업무','특수교육 관련 업무']},
+        {role:'교과서', name:'차명혜', duties:['교과서 관련 업무']}
+      ]},
+    { name:'교육지원부', head:'양호성', icon:'users',
+      members:[
+        {role:'부장', name:'양호성', duties:['방과후(특기적성) 학교 운영 계획']},
+        {role:'방과후',name:'하보경', duties:['방과후 교육활동 시간표 작성','방과후 활동 운영 관리','유네스코 및 IB교육 업무']}
+      ]},
+    { name:'체육부',    head:'박재희', icon:'activity',
+      members:[
+        {role:'부장',   name:'박재희', duties:['운동부 기숙사 관리','유도부 및 야구부 계획 관리','체육부 기자재 관리','예체능 교육 총괄']},
+        {role:'체육시설',name:'김태준', duties:['체육시설관리','PAPS/기초체력','1인 1운동 생활화 추진','토요 스포츠 클럽관리']}
+      ]},
+    { name:'1학년부',   head:'정경순', icon:'grade1',
+      members:[
+        {role:'부장',    name:'정경순', duties:['1학년 업무 총괄','교내 순찰·교통지도','결석생·지각생 파악 및 지도']},
+        {role:'1-1 담임',name:'조현호', duties:['학력평가 및 모의고사 주관','SC반 지도']},
+        {role:'1-2 담임',name:'홍가희', duties:['시간계','교육과정계']},
+        {role:'1-3 담임',name:'이신우', duties:['보도자료','학교신문','감사일기']},
+        {role:'1-4 담임',name:'윤경준', duties:['평가계(중)']},
+        {role:'1-5 담임',name:'배재성', duties:['학교폭력']}
+      ]},
+    { name:'2학년부',   head:'한병수', icon:'grade2',
+      members:[
+        {role:'부장',    name:'한병수', duties:['2학년 업무 총괄','교무부 공문서 처리','입시 담당']},
+        {role:'2-1 담임',name:'지준걸', duties:['기숙사','훈·포상','발명']},
+        {role:'2-2 담임',name:'장주영', duties:['국제교류','장학금','다문화']},
+        {role:'2-3 담임',name:'배미경', duties:['평가계(고)']},
+        {role:'2-4 담임',name:'김민규', duties:['학력부 공문','SC반 지도','기초학력 업무']}
+      ]},
+    { name:'3학년부',   head:'배재형', icon:'grade3',
+      members:[
+        {role:'부장',    name:'배재형', duties:['3학년 업무 총괄','교내 순찰·교통지도']},
+        {role:'3-1 담임',name:'김현진', duties:['학적(고)']},
+        {role:'3-2 담임',name:'김기섭', duties:['학교안전','배움터 지킴이 운영']},
+        {role:'3-3 담임',name:'정진호', duties:['대학입시 관련 공문']},
+        {role:'3-4 담임',name:'배한진', duties:['학비지원','특수','맞춤형복지','안전공제']},
+        {role:'3-5 담임',name:'박재희', duties:['체육부장']}
+      ]}
+  ]
+};
+/* ════════════════════════════════════════════════════════ */
+
+/* 아이콘 SVG 맵 */
+var ICONS = {
+  clipboard: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>',
+  shield:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
+  book:      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
+  layers:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>',
+  barchart:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>',
+  compass:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>',
+  monitor:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>',
+  settings:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
+  users:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+  activity:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',
+  grade1:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/><text x="10.5" y="9.5" font-size="5" fill="currentColor" stroke="none" font-weight="700">1</text></svg>',
+  grade2:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/><text x="10.5" y="9.5" font-size="5" fill="currentColor" stroke="none" font-weight="700">2</text></svg>',
+  grade3:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/><text x="10.5" y="9.5" font-size="5" fill="currentColor" stroke="none" font-weight="700">3</text></svg>',
+  default:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>'
+};
+
+var PALETTE = ['#253E8A','#1E7C5A','#7A3A7A','#B5500A','#2B8AB5','#C9284D','#3A6B3A','#6B3FA0','#1A6B6B','#8B3A3A','#5A6B00','#2A5A8A','#7A5C00'];
+var depts = ORG_DATA.departments.map(function(d,i){ return Object.assign({},d,{color:PALETTE[i%PALETTE.length],idx:i}); });
+
+var activeIdx   = null;
+var searchQuery = '';
+
+/* ── 헤더 세팅 ── */
+document.getElementById('headerTitle').textContent  = ORG_DATA.year + ' 업무분장';
+document.getElementById('deptTotal').textContent    = '총 ' + depts.length + '개 부서';
+
+/* ── 그리드 구성 ── */
+function buildGrid(){
+  var grid = document.getElementById('deptGrid');
+  grid.innerHTML = '';
+  depts.forEach(function(d){
+    var card = document.createElement('div');
+    card.className = 'dept-card';
+    card.dataset.idx = d.idx;
+    card.style.setProperty('--c', d.color);
+
+    var iconSvg = ICONS[d.icon] || ICONS.default;
+    card.innerHTML =
+      '<div class="card-count">'+d.members.length+'명</div>'+
+      '<div class="card-icon" style="background:'+d.color+'1A;color:'+d.color+'">'+iconSvg+'</div>'+
+      '<div class="card-body">'+
+        '<div class="card-name">'+escHtml(d.name)+'</div>'+
+        '<div class="card-head">'+escHtml(d.head)+' 부장</div>'+
+      '</div>';
+
+    card.addEventListener('click', function(){ selectDept(d.idx); });
+    grid.appendChild(card);
+  });
+}
+
+/* ── 부서 선택 ── */
+function selectDept(idx){
+  activeIdx = idx;
+  var d = depts[idx];
+
+  document.querySelectorAll('.dept-card').forEach(function(c){
+    c.classList.toggle('active', parseInt(c.dataset.idx) === idx);
+  });
+
+  // 패널 열기
+  document.querySelector('.main-wrap').classList.add('panel-open');
+  document.getElementById('panelContent').style.display = 'flex';
+
+  var iconSvg = ICONS[d.icon] || ICONS.default;
+  var phIcon = document.getElementById('phIcon');
+  phIcon.innerHTML = iconSvg;
+  phIcon.style.background = d.color + '18';
+  phIcon.style.color = d.color;
+  phIcon.querySelector('svg').style.color = d.color;
+
+  document.getElementById('pdName').textContent  = d.name;
+  document.getElementById('pdHead').textContent  = d.head + ' 선생님';
+  document.getElementById('pdCount').textContent = '담당자 ' + d.members.length + '명';
+
+  renderMembers(d, searchQuery);
+}
+
+/* ── 패널 닫기 ── */
+function closePanel(){
+  document.querySelector('.main-wrap').classList.remove('panel-open');
+  document.querySelectorAll('.dept-card').forEach(function(c){ c.classList.remove('active'); });
+  activeIdx = null;
+}
+
+/* 역할 아이콘 */
+var ROLE_ICON_HEAD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg>';
+var ROLE_ICON_MEMBER = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>';
+
+/* ── 멤버 렌더 ── */
+function renderMembers(d, q){
+  var body = document.getElementById('panelBody');
+  body.innerHTML = '';
+  var filtered = d.members.filter(function(m){
+    if(!q) return true;
+    var lq = q.toLowerCase();
+    return m.name.includes(q) || m.role.toLowerCase().includes(lq) ||
+           m.duties.some(function(du){ return du.includes(q); });
+  });
+  if(!filtered.length){
+    body.innerHTML='<div class="no-result">검색 결과가 없습니다</div>';
+    return;
+  }
+  filtered.forEach(function(m){
+    var isHead = (m.role === '부장');
+    var avatarIcon  = isHead ? ROLE_ICON_HEAD : ROLE_ICON_MEMBER;
+    var avatarBg    = isHead ? d.color : d.color + '22';
+    var avatarColor = isHead ? '#fff'  : d.color;
+    var card = document.createElement('div');
+    card.className = 'member-card';
+    card.style.setProperty('--pc', d.color);
+    var dutiesHtml = m.duties.map(function(du){
+      return '<li>'+hl(escHtml(du),q)+'</li>';
+    }).join('');
+    card.innerHTML =
+      '<div class="member-card-head" style="background:'+d.color+'0D;border-bottom-color:'+d.color+'22">'+
+        '<div class="member-avatar" style="background:'+avatarBg+';color:'+avatarColor+'">'+avatarIcon+'</div>'+
+        '<div>'+
+          '<div class="member-role" style="color:'+d.color+'">'+hl(escHtml(m.role),q)+'</div>'+
+          '<div class="member-name">'+hl(escHtml(m.name),q)+' 선생님</div>'+
+        '</div>'+
+      '</div>'+
+      '<ul class="duty-list">'+dutiesHtml+'</ul>';
+    body.appendChild(card);
+  });
+}
+
+/* ── 전체 검색 ── */
+function doSearch(q){
+  searchQuery = q;
+  var trimQ = q.trim();
+  document.getElementById('searchClear').classList.toggle('show', !!trimQ);
+  var countEl = document.getElementById('searchCount');
+
+  if(!trimQ){
+    countEl.style.display='none';
+    document.querySelectorAll('.dept-card').forEach(function(c){
+      c.classList.remove('search-match','search-dim');
+    });
+    if(activeIdx!==null) renderMembers(depts[activeIdx],'');
+    return;
+  }
+
+  var matchCount=0;
+  document.querySelectorAll('.dept-card').forEach(function(c){
+    var idx = parseInt(c.dataset.idx);
+    var d   = depts[idx];
+    var lq  = trimQ.toLowerCase();
+    var hit = d.name.includes(trimQ) || d.head.includes(trimQ) ||
+      d.members.some(function(m){
+        return m.name.includes(trimQ) || m.role.toLowerCase().includes(lq) ||
+               m.duties.some(function(du){ return du.includes(trimQ); });
+      });
+    c.classList.toggle('search-match', hit);
+    c.classList.toggle('search-dim',  !hit);
+    if(hit) matchCount++;
+  });
+
+  countEl.style.display='inline';
+  countEl.textContent=matchCount+'개 부서 해당';
+
+  var first = document.querySelector('.dept-card.search-match');
+  if(first) selectDept(parseInt(first.dataset.idx));
+  else if(activeIdx!==null) renderMembers(depts[activeIdx],trimQ);
+}
+
+function hl(text, q){
+  if(!q) return text;
+  var e = q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  return text.replace(new RegExp('('+e+')','gi'),'<mark>$1</mark>');
+}
+function escHtml(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+document.getElementById('globalSearch').addEventListener('input',function(){ doSearch(this.value); });
+document.getElementById('searchClear').addEventListener('click',function(){
+  document.getElementById('globalSearch').value=''; doSearch('');
+  document.getElementById('globalSearch').focus();
+});
+document.getElementById('panelCloseBtn').addEventListener('click', closePanel);
+
+buildGrid();
+</script>
+</body>
+</html>
