@@ -693,7 +693,7 @@
 </div>
 
 <!-- 파일 추가/수정 모달 -->
-<div class="modal-overlay" id="fileModal" onclick="handleFileModalOverlay(event)">
+<div class="modal-overlay" id="fileModal">
   <div class="modal">
     <div class="modal-header">
       <span class="modal-title" id="fileModalTitle">양식 등록</span>
@@ -1126,8 +1126,8 @@ document.getElementById('fileSubmitBtn').addEventListener('click', async ()=>{
   const desc=document.getElementById('fDesc').value.trim();
   const dept=document.getElementById('fDept').value;
   let   link=document.getElementById('fLink').value.trim();
-  const fileObj2=document.getElementById('fileInput').files[0];
   if(!name||!dept){ alert('제목과 부서는 필수입니다.'); return; }
+  const fileObj2=document.getElementById('fileInput').files[0];
   if(!link&&!fileObj2){ alert('파일을 선택하거나 Drive 링크를 입력해주세요.'); return; }
   if(link&&!/^https?:\/\//.test(link)) link='https://'+link;
 
@@ -1135,9 +1135,6 @@ document.getElementById('fileSubmitBtn').addEventListener('click', async ()=>{
   const pending=document.getElementById('hashtagInput').value.replace(/^#+/,'').trim();
   if(pending&&!currentTags.includes(pending)) currentTags.push(pending);
   const tags=currentTags.slice();
-
-  const fileInput=document.getElementById('fileInput');
-  const fileObj=fileInput.files[0];
 
   const btn=document.getElementById('fileSubmitBtn');
   const progress=document.getElementById('uploadProgress');
