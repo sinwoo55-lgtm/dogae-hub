@@ -85,17 +85,13 @@
     .main-wrap {
       flex: 1; overflow: hidden;
       display: grid;
-      grid-template-columns: 1fr 0px;
-      transition: grid-template-columns .3s cubic-bezier(.4,0,.2,1);
-    }
-    .main-wrap.panel-open {
-      grid-template-columns: 1fr 400px;
+      grid-template-columns: 1fr;
     }
 
     /* ═══ LEFT: 카드 그리드 ═══ */
     .grid-panel {
       overflow-y: auto;
-      padding: 28px 32px;
+      padding: 32px 36px;
       background: var(--bg);
     }
     .grid-panel::-webkit-scrollbar { width: 5px; }
@@ -103,8 +99,8 @@
 
     .dept-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
-      gap: 14px;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 18px;
     }
 
     /* ─── 부서 카드 ─── */
@@ -112,12 +108,12 @@
       background: var(--surface);
       border: 1.5px solid var(--border);
       border-radius: var(--radius);
-      padding: 22px 18px 18px;
+      padding: 28px 22px 22px;
       cursor: pointer;
       transition: var(--tr);
       position: relative;
       overflow: hidden;
-      display: flex; flex-direction: column; gap: 12px;
+      display: flex; flex-direction: column; gap: 14px;
       animation: cardIn .35s ease both;
     }
     .dept-card:nth-child(1)  { animation-delay:.03s }
@@ -164,12 +160,12 @@
 
     /* 카드 아이콘 */
     .card-icon {
-      width: 44px; height: 44px; border-radius: 12px;
+      width: 54px; height: 54px; border-radius: 14px;
       display: flex; align-items: center; justify-content: center;
       flex-shrink: 0;
       transition: var(--tr);
     }
-    .card-icon svg { width: 22px; height: 22px; }
+    .card-icon svg { width: 26px; height: 26px; }
     .dept-card:hover .card-icon,
     .dept-card.active .card-icon {
       background: var(--c) !important;
@@ -510,36 +506,34 @@ function buildGrid(){
   });
 }
 
-/* ── 부서 선택 ── */
+/* ── 부서 선택 (팝업) ── */
 function selectDept(idx){
   activeIdx = idx;
   var d = depts[idx];
 
+  // 카드 active 표시
   document.querySelectorAll('.dept-card').forEach(function(c){
     c.classList.toggle('active', parseInt(c.dataset.idx) === idx);
   });
 
-  // 패널 열기
-  document.querySelector('.main-wrap').classList.add('panel-open');
-  document.getElementById('panelContent').style.display = 'flex';
-
+  // 팝업 채우기
   var iconSvg = ICONS[d.icon] || ICONS.default;
-  var phIcon = document.getElementById('phIcon');
-  phIcon.innerHTML = iconSvg;
-  phIcon.style.background = d.color + '18';
-  phIcon.style.color = d.color;
-  phIcon.querySelector('svg').style.color = d.color;
+  var dpIcon = document.getElementById('dpIcon');
+  dpIcon.innerHTML = iconSvg;
+  dpIcon.style.background = d.color + '18';
+  dpIcon.style.color = d.color;
+  dpIcon.querySelector('svg').style.color = d.color;
 
-  document.getElementById('pdName').textContent  = d.name;
-  document.getElementById('pdHead').textContent  = d.head + ' 선생님';
-  document.getElementById('pdCount').textContent = '담당자 ' + d.members.length + '명';
+  document.getElementById('dpName').textContent  = d.name;
+  document.getElementById('dpHead').textContent  = d.head + ' 선생님';
+  document.getElementById('dpCount').textContent = '담당자 ' + d.members.length + '명';
 
   renderMembers(d, searchQuery);
+  document.getElementById('deptPopupOverlay').classList.add('active');
 }
 
-/* ── 패널 닫기 ── */
-function closePanel(){
-  document.querySelector('.main-wrap').classList.remove('panel-open');
+function closeDeptPopup(){
+  document.getElementById('deptPopupOverlay').classList.remove('active');
   document.querySelectorAll('.dept-card').forEach(function(c){ c.classList.remove('active'); });
   activeIdx = null;
 }
@@ -550,7 +544,7 @@ var ROLE_ICON_MEMBER = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColo
 
 /* ── 멤버 렌더 ── */
 function renderMembers(d, q){
-  var body = document.getElementById('panelBody');
+  var body = document.getElementById('dpBody');
   body.innerHTML = '';
   var filtered = d.members.filter(function(m){
     if(!q) return true;
@@ -637,7 +631,10 @@ document.getElementById('searchClear').addEventListener('click',function(){
   document.getElementById('globalSearch').value=''; doSearch('');
   document.getElementById('globalSearch').focus();
 });
-document.getElementById('panelCloseBtn').addEventListener('click', closePanel);
+document.getElementById('deptPopupClose').addEventListener('click', closeDeptPopup);
+document.getElementById('deptPopupOverlay').addEventListener('click', function(e){
+  if(e.target === this) closeDeptPopup();
+});
 
 buildGrid();
 </script>
