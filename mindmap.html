@@ -99,7 +99,7 @@
 
     .dept-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      grid-template-columns: repeat(5, 1fr);
       gap: 18px;
     }
 
@@ -282,6 +282,9 @@
       header, .search-bar { padding: 0 16px; }
       .grid-panel { padding: 20px 16px; }
       .dept-grid { grid-template-columns: repeat(2, 1fr); }
+      @media(max-width:900px) and (min-width:641px){ .dept-grid { grid-template-columns: repeat(3, 1fr); } }
+      @media(min-width:1200px){ .dept-grid { grid-template-columns: repeat(5, 1fr); } }
+      @media(min-width:901px) and (max-width:1199px){ .dept-grid { grid-template-columns: repeat(4, 1fr); } }
     }
 
     /* ─── 부서 상세 팝업 ─── */
@@ -328,6 +331,46 @@
     .dept-popup-body { flex: 1; overflow-y: auto; padding: 18px 28px 24px; }
     .dept-popup-body::-webkit-scrollbar { width: 4px; }
     .dept-popup-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    /* ── 검색 결과 뷰 ── */
+    .search-result-view { display:none; flex-direction:column; gap:0; }
+    .search-result-view.show { display:flex; }
+    .search-result-header {
+      padding:0 0 18px; display:flex; align-items:center; gap:12px;
+    }
+    .search-result-title {
+      font-family:'Noto Serif KR',serif; font-size:18px; font-weight:700; color:var(--navy-dark);
+    }
+    .search-result-count {
+      font-size:12.5px; color:var(--muted); background:var(--bg);
+      border:1px solid var(--border); border-radius:100px; padding:3px 12px;
+    }
+    .search-result-list { display:flex; flex-direction:column; gap:12px; }
+    .search-result-item {
+      background:var(--surface); border:1.5px solid var(--border);
+      border-radius:12px; padding:16px 20px;
+      display:flex; align-items:flex-start; gap:14px;
+      animation:fadeIn .2s ease both;
+    }
+    @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+    .search-result-item:hover { border-color:var(--navy); box-shadow:0 4px 16px rgba(37,62,138,.08); }
+    .sri-icon {
+      width:42px; height:42px; border-radius:11px; flex-shrink:0;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .sri-icon svg { width:22px; height:22px; }
+    .sri-body { flex:1; min-width:0; }
+    .sri-name { font-size:13.5px; font-weight:700; color:var(--text); margin-bottom:3px; }
+    .sri-role { font-size:12px; color:var(--muted); margin-bottom:6px; }
+    .sri-dept { font-size:11px; font-weight:700; padding:2px 9px; border-radius:100px; display:inline-flex; }
+    .sri-duties { margin-top:8px; display:flex; flex-direction:column; gap:4px; }
+    .sri-duty { font-size:12.5px; color:var(--text); font-weight:300; line-height:1.5; padding-left:12px; position:relative; }
+    .sri-duty::before { content:'·'; position:absolute; left:2px; color:var(--muted); }
+    .search-empty { display:flex; flex-direction:column; align-items:center; gap:12px; padding:60px 0; text-align:center; }
+    .search-empty-icon { width:60px; height:60px; background:var(--surface); border:1.5px solid var(--border); border-radius:50%; display:flex; align-items:center; justify-content:center; }
+    .search-empty-icon svg { width:26px; height:26px; color:#C5CDE0; }
+    .search-empty h3 { font-family:'Noto Serif KR',serif; font-size:16px; color:var(--navy); }
+    .search-empty p { font-size:13px; color:var(--muted); }
   </style>
 </head>
 <body>
@@ -358,7 +401,16 @@
 
 <div class="main-wrap">
   <div class="grid-panel">
+    <!-- 부서 카드 그리드 -->
     <div class="dept-grid" id="deptGrid"></div>
+    <!-- 검색 결과 뷰 -->
+    <div class="search-result-view" id="searchResultView">
+      <div class="search-result-header">
+        <span class="search-result-title">검색 결과</span>
+        <span class="search-result-count" id="searchResultCount"></span>
+      </div>
+      <div class="search-result-list" id="searchResultList"></div>
+    </div>
   </div>
 
 </div>
@@ -626,38 +678,85 @@ function doSearch(q){
   searchQuery = q;
   var trimQ = q.trim();
   document.getElementById('searchClear').classList.toggle('show', !!trimQ);
-  var countEl = document.getElementById('searchCount');
+  var grid   = document.getElementById('deptGrid');
+  var rsView = document.getElementById('searchResultView');
+  var rsList = document.getElementById('searchResultList');
+  var rsCount= document.getElementById('searchResultCount');
 
   if(!trimQ){
-    countEl.style.display='none';
-    document.querySelectorAll('.dept-card').forEach(function(c){
-      c.classList.remove('search-match','search-dim');
-    });
-    if(activeIdx!==null) renderMembers(depts[activeIdx],'');
+    // 검색 없음 → 카드 그리드로 복귀
+    grid.style.display='';
+    rsView.classList.remove('show');
+    // 팝업 닫기
+    closeDeptPopup();
     return;
   }
 
-  var matchCount=0;
-  document.querySelectorAll('.dept-card').forEach(function(c){
-    var idx = parseInt(c.dataset.idx);
-    var d   = depts[idx];
-    var lq  = trimQ.toLowerCase();
-    var hit = d.name.includes(trimQ) || d.head.includes(trimQ) ||
-      d.members.some(function(m){
-        return m.name.includes(trimQ) || m.role.toLowerCase().includes(lq) ||
-               m.duties.some(function(du){ return du.includes(trimQ); });
-      });
-    c.classList.toggle('search-match', hit);
-    c.classList.toggle('search-dim',  !hit);
-    if(hit) matchCount++;
+  // 검색 있음 → 그리드 숨기고 결과 뷰 표시
+  grid.style.display='none';
+  rsView.classList.add('show');
+  closeDeptPopup();
+
+  var lq = trimQ.toLowerCase();
+  var results = []; // {dept, member, matchedDuties}
+
+  depts.forEach(function(d){
+    // 부서명 일치 → 전체 멤버
+    var deptHit = d.name.toLowerCase().includes(lq) || d.head.toLowerCase().includes(lq);
+    d.members.forEach(function(m){
+      var nameHit  = m.name.toLowerCase().includes(lq);
+      var roleHit  = m.role.toLowerCase().includes(lq);
+      var dutyHits = m.duties.filter(function(du){ return du.toLowerCase().includes(lq); });
+      if(deptHit || nameHit || roleHit || dutyHits.length){
+        results.push({dept:d, member:m, dutyHits:dutyHits, nameHit:nameHit, roleHit:roleHit});
+      }
+    });
   });
 
-  countEl.style.display='inline';
-  countEl.textContent=matchCount+'개 부서 해당';
+  rsCount.textContent = results.length ? results.length+'명 해당' : '';
+  rsList.innerHTML='';
 
-  var first = document.querySelector('.dept-card.search-match');
-  if(first) selectDept(parseInt(first.dataset.idx));
-  else if(activeIdx!==null) renderMembers(depts[activeIdx],trimQ);
+  if(!results.length){
+    rsList.innerHTML=
+      '<div class="search-empty">'+
+        '<div class="search-empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>'+
+        '<h3>검색 결과가 없습니다</h3>'+
+        '<p>"'+escHtml(trimQ)+'"에 해당하는 교사·업무가 없어요</p>'+
+      '</div>';
+    return;
+  }
+
+  results.forEach(function(r){
+    var d=r.dept, m=r.member;
+    var item=document.createElement('div');
+    item.className='search-result-item';
+
+    var iconSvg = ICONS[d.icon] || ICONS.default;
+    var dutiesHtml='';
+    var showDuties = r.dutyHits.length ? r.dutyHits : m.duties.slice(0,3);
+    showDuties.forEach(function(du){
+      dutiesHtml+='<div class="sri-duty">'+hlText(du,trimQ)+'</div>';
+    });
+    if(m.duties.length>3 && !r.dutyHits.length){
+      dutiesHtml+='<div class="sri-duty" style="color:var(--muted)">외 '+(m.duties.length-3)+'개 업무</div>';
+    }
+
+    item.innerHTML=
+      '<div class="sri-icon" style="background:'+d.color+'1A;color:'+d.color+'">'+iconSvg+'</div>'+
+      '<div class="sri-body">'+
+        '<div class="sri-name">'+hlText(m.name,trimQ)+' 선생님</div>'+
+        '<div class="sri-role">'+hlText(m.role,trimQ)+'</div>'+
+        '<span class="sri-dept" style="background:'+d.color+'1A;color:'+d.color+'">'+escHtml(d.name)+'</span>'+
+        (dutiesHtml?'<div class="sri-duties">'+dutiesHtml+'</div>':'')+
+      '</div>';
+    rsList.appendChild(item);
+  });
+}
+
+function hlText(text, q){
+  if(!q) return escHtml(text);
+  var e=q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  return escHtml(text).replace(new RegExp('('+e+')','gi'),'<mark>$1</mark>');
 }
 
 function hl(text, q){
