@@ -923,7 +923,7 @@ document.getElementById('btnCustomAdd').addEventListener('click',addCustomTag);
 document.getElementById('customTagInput').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();addCustomTag();}});
 
 /* ── AI 태그 추천 ── */
-document.getElementById('btnAiRecommend').addEventListener('click',async function(){
+document.getElementById('btnAiRecommend').addEventListener('click',function(){
   var name=document.getElementById('fName').value.trim();
   var desc=document.getElementById('fDesc').value.trim();
   if(!name&&!desc){alert('활동명과 설명을 먼저 입력해주세요.');return;}
@@ -932,67 +932,61 @@ document.getElementById('btnAiRecommend').addEventListener('click',async functio
   var loading=document.getElementById('aiLoading');
   btn.disabled=true; loading.classList.add('show');
 
-  // 전체 학과 목록 문자열 생성
   var allMajors=MAJORS.map(function(c){return c.items.join(',');}).join(',');
 
-  try {
-    var res=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:1000,
-        messages:[{
-          role:'user',
-          content:'다음 학교 활동과 관련된 대학 진로·학과를 추천해줘.
-
-'+
-                  '활동명: '+name+'
-설명: '+desc+'
-
-'+
-                  '아래 목록 중에서만 선택해서 관련성 높은 순으로 최대 15개를 콤마로 구분해서 반환해줘. 다른 말은 하지 말고 학과명만.
-
-'+
-                  '목록: '+allMajors
-        }]
-      })
-    });
-    var data=await res.json();
-    var text=(data.content&&data.content[0]&&data.content[0].text)||'';
-    var recommended=text.split(',').map(function(s){return s.trim().replace(/^#+/,'');}).filter(Boolean);
-
-    // 추천 학과 자동 체크
+  function applyRecommended(recommended){
     var added=0;
     recommended.forEach(function(major){
-      // 목록에 있는 학과인지 확인
       var inList=MAJORS.some(function(c){return c.items.includes(major);});
       if(inList&&!currentTags.includes(major)){
         currentTags.push(major);
         added++;
-        // 해당 칩에 애니메이션
         document.querySelectorAll('.major-chip').forEach(function(c){
           if(c.textContent==='#'+major){
             c.classList.add('selected','ai-new');
             setTimeout(function(){c.classList.remove('ai-new');},600);
           }
         });
-      } else if(inList&&currentTags.includes(major)){
-        added++;
-      }
+      } else if(inList){added++;}
     });
-
-    // 아코디언 카운트 갱신
     MAJORS.forEach(function(cat,ci){updateAccordionCount(ci,cat);});
     renderSelectedTags();
-
+    btn.disabled=false; loading.classList.remove('show');
     if(added===0)alert('추천할 수 있는 학과를 찾지 못했습니다. 활동명과 설명을 더 자세히 입력해보세요.');
-
-  } catch(err){
-    alert('AI 추천 오류: '+err.message);
   }
 
-  btn.disabled=false; loading.classList.remove('show');
+  fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      model:'claude-sonnet-4-20250514',
+      max_tokens:1000,
+      messages:[{
+        role:'user',
+        content:'다음 학교 활동과 관련된 대학 진로·학과를 추천해줘.
+
+'+
+                '활동명: '+name+'
+설명: '+desc+'
+
+'+
+                '아래 목록 중에서만 선택해서 관련성 높은 순으로 최대 15개를 콤마로 구분해서 반환해줘. 다른 말은 하지 말고 학과명만.
+
+'+
+                '목록: '+allMajors
+      }]
+    })
+  })
+  .then(function(res){return res.json();})
+  .then(function(data){
+    var text=(data.content&&data.content[0]&&data.content[0].text)||'';
+    var recommended=text.split(',').map(function(s){return s.trim().replace(/^#+/,'');}).filter(Boolean);
+    applyRecommended(recommended);
+  })
+  .catch(function(err){
+    alert('AI 추천 오류: '+err.message);
+    btn.disabled=false; loading.classList.remove('show');
+  });
 });
 
 /* ── 등록/수정 모달 ── */
