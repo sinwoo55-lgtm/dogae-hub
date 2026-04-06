@@ -475,16 +475,16 @@ mark{background:#FFF3CD;border-radius:2px;padding:0 1px;}
         <!-- AI 추천 바 -->
         <div class="major-ai-bar">
           <div class="major-ai-bar-left">
-            계열 선택 후 학과 체크
+            계열 클릭 → 학과 체크
             <span>또는 AI 자동 추천</span>
           </div>
-          <div style="display:flex;align-items:center;gap:10px;">
+          <div class="ai-right-group">
             <div class="ai-loading" id="aiLoading">
               <div class="ai-spinner"></div>분석 중...
             </div>
             <button class="btn-ai-recommend" id="btnAiRecommend" type="button">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
-              AI 추천
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
+              ✨ AI 추천
             </button>
           </div>
         </div>
@@ -956,7 +956,7 @@ document.getElementById('btnAiRecommend').addEventListener('click',function(){
   }
 
   var geminiUrl='https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyBV6dhvaw3vHHYtfLnO94rxBdDoZOLSwg8';
-  var prompt='다음 학교 활동과 관련된 대학 진로·학과를 추천해줘.\n\n활동명: '+name+'\n설명: '+desc+'\n\n아래 목록 중에서만 선택해서 관련성 높은 순으로 최대 15개를 콤마로 구분해서 반환해줘. 다른 말은 절대 하지 말고 학과명만 콤마로 구분해서 반환해줘.\n\n목록: '+allMajors;
+  var prompt='고등학교 활동과 관련된 대학 진로·학과를 추천해줘. 직접적 연관이 없어도 간접적으로 도움이 될 수 있는 학과까지 폭넓게 포함해줘. 정보가 적어도 반드시 최소 10개 이상 추천해야 해.\n\n활동명: '+name+'\n설명: '+desc+'\n\n아래 목록 중에서만 선택해서 관련성 높은 순으로 10~15개를 콤마로 구분해서 반환해줘. 절대로 다른 말은 하지 말고 학과명만 콤마로 구분해서 한 줄로 반환해줘.\n\n목록: '+allMajors;
   fetch(geminiUrl,{
     method:'POST',
     headers:{'Content-Type':'application/json'},
