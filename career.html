@@ -816,38 +816,40 @@ var MAJORS = [
   { cat:'관광·호텔·항공 계열', color:'#C9A84C', items:['관광학','호텔경영학','항공서비스학','외식·조리학','여행경영학','레저관광학'] },
 ];
 
-/* ── 아코디언 빌드 ── */
-function buildAccordion(){
-  var list=document.getElementById('accordionList');
-  list.innerHTML='';
+/* ── 계열 목록 빌드 ── */
+function buildCatList(){
+  var container=document.getElementById('catList');
+  container.innerHTML='';
   MAJORS.forEach(function(cat,ci){
     var selCount=cat.items.filter(function(m){return currentTags.includes(m);}).length;
-    var sec=document.createElement('div');
-    sec.className='accordion-cat';
-    sec.innerHTML=
-      '<div class="accordion-cat-header" data-ci="'+ci+'">'+
-        '<div class="accordion-cat-left">'+
-          '<div class="accordion-cat-dot" style="background:'+cat.color+'"></div>'+
-          '<span class="accordion-cat-name">'+cat.cat+'</span>'+
-          '<span class="accordion-cat-count">'+(selCount?selCount+'선택':cat.items.length+'개')+'</span>'+
-        '</div>'+
-        '<svg class="accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>'+
-      '</div>'+
-      '<div class="accordion-body" data-ci="'+ci+'">'+
-        '<div class="major-chips"></div>'+
-      '</div>';
+    var item=document.createElement('div');
+    item.className='cat-item'+(selCount?' has-selected':'');
+    item.style.setProperty('--cat-c',cat.color);
 
-    var header=sec.querySelector('.accordion-cat-header');
-    var body  =sec.querySelector('.accordion-body');
-    var chips =sec.querySelector('.major-chips');
+    // 헤더
+    var header=document.createElement('div');
+    header.className='cat-header';
+    header.innerHTML=
+      '<div class="cat-dot" style="background:'+cat.color+'"></div>'+
+      '<span class="cat-name">'+cat.cat+'</span>'+
+      '<span class="cat-sel-count">'+selCount+'개 선택됨</span>'+
+      '<span class="cat-total">'+cat.items.length+'개</span>'+
+      '<button class="cat-toggle" type="button" title="펼치기">'+
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>'+
+      '</button>';
 
-    // 학과 칩
+    // 바디 (학과 칩)
+    var body=document.createElement('div');
+    body.className='cat-body';
+    var chips=document.createElement('div');
+    chips.className='major-chips';
+
     cat.items.forEach(function(major){
       var chip=document.createElement('span');
       chip.className='major-chip'+(currentTags.includes(major)?' selected':'');
       chip.style.setProperty('--c',cat.color);
       chip.style.setProperty('--cbg',cat.color+'18');
-      chip.textContent='#'+major;
+      chip.textContent=major;
       chip.addEventListener('click',function(){
         if(currentTags.includes(major)){
           currentTags=currentTags.filter(function(t){return t!==major;});
@@ -856,32 +858,38 @@ function buildAccordion(){
           currentTags.push(major);
           chip.classList.add('selected');
         }
+        updateCatItem(item,cat);
         renderSelectedTags();
-        updateAccordionCount(ci,cat);
       });
       chips.appendChild(chip);
     });
+    body.appendChild(chips);
 
-    // 헤더 토글
+    // 토글 이벤트
+    header.querySelector('.cat-toggle').addEventListener('click',function(e){
+      e.stopPropagation();
+      item.classList.toggle('open');
+    });
     header.addEventListener('click',function(){
-      var isOpen=body.classList.contains('open');
-      // 다른 열린 항목 닫기
-      list.querySelectorAll('.accordion-body.open').forEach(function(b){b.classList.remove('open');});
-      list.querySelectorAll('.accordion-cat-header.open').forEach(function(h){h.classList.remove('open');});
-      if(!isOpen){body.classList.add('open');header.classList.add('open');}
+      item.classList.toggle('open');
     });
 
-    list.appendChild(sec);
+    item.appendChild(header);
+    item.appendChild(body);
+    container.appendChild(item);
   });
 }
 
-function updateAccordionCount(ci,cat){
-  var header=document.querySelector('.accordion-cat-header[data-ci="'+ci+'"]');
-  if(!header)return;
-  var countEl=header.querySelector('.accordion-cat-count');
+function updateCatItem(item,cat){
   var selCount=cat.items.filter(function(m){return currentTags.includes(m);}).length;
-  countEl.textContent=selCount?selCount+'선택':cat.items.length+'개';
+  if(selCount) item.classList.add('has-selected'); else item.classList.remove('has-selected');
+  var countEl=item.querySelector('.cat-sel-count');
+  if(countEl) countEl.textContent=selCount+'개 선택됨';
 }
+
+// 하위 호환 래퍼
+function buildAccordion(){ buildCatList(); }
+function updateAccordionCount(){ /* 미사용 */ }
 
 /* ── 선택된 태그 요약 ── */
 function renderSelectedTags(){
@@ -936,27 +944,54 @@ document.getElementById('btnAiRecommend').addEventListener('click',function(){
 
   function applyRecommended(recommended){
     var added=0;
-    recommended.forEach(function(major){
-      var inList=MAJORS.some(function(c){return c.items.includes(major);});
-      if(inList&&!currentTags.includes(major)){
-        currentTags.push(major);
+    // 목록 전체 학과 평탄화
+    var allItems=[];
+    MAJORS.forEach(function(c){c.items.forEach(function(m){allItems.push(m);});});
+
+    recommended.forEach(function(raw){
+      var rawClean=raw.replace(/\s/g,'').toLowerCase();
+      if(!rawClean) return;
+      // 정확 매칭 우선, 없으면 공백 무시 퍼지 매칭
+      var matched=allItems.find(function(m){return m===raw;}) ||
+                  allItems.find(function(m){return m.replace(/\s/g,'').toLowerCase()===rawClean;}) ||
+                  allItems.find(function(m){return m.replace(/\s/g,'').toLowerCase().includes(rawClean)||rawClean.includes(m.replace(/\s/g,'').toLowerCase());});
+      if(matched&&!currentTags.includes(matched)){
+        currentTags.push(matched);
         added++;
         document.querySelectorAll('.major-chip').forEach(function(c){
-          if(c.textContent==='#'+major){
+          if(c.textContent==='#'+matched){
             c.classList.add('selected','ai-new');
             setTimeout(function(){c.classList.remove('ai-new');},600);
           }
         });
-      } else if(inList){added++;}
+      } else if(matched&&currentTags.includes(matched)){
+        added++;
+      }
     });
     MAJORS.forEach(function(cat,ci){updateAccordionCount(ci,cat);});
     renderSelectedTags();
     btn.disabled=false; loading.classList.remove('show');
-    if(added===0)alert('추천할 수 있는 학과를 찾지 못했습니다. 활동명과 설명을 더 자세히 입력해보세요.');
+    if(added===0){
+      // 매칭 실패 시 첫 번째 추천어 그대로 사용
+      recommended.slice(0,10).forEach(function(raw){
+        var v=raw.trim().replace(/^#+/,'');
+        if(v&&!currentTags.includes(v)){
+          currentTags.push(v);
+          added++;
+        }
+      });
+      MAJORS.forEach(function(cat,ci){updateAccordionCount(ci,cat);});
+      renderSelectedTags();
+      if(added===0)alert('AI가 관련 학과를 찾지 못했습니다. 활동명과 설명을 조금 더 자세히 입력해보세요.');
+    }
   }
 
   var geminiUrl='https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyBV6dhvaw3vHHYtfLnO94rxBdDoZOLSwg8';
-  var prompt='고등학교 활동과 관련된 대학 진로·학과를 추천해줘. 직접적 연관이 없어도 간접적으로 도움이 될 수 있는 학과까지 폭넓게 포함해줘. 정보가 적어도 반드시 최소 10개 이상 추천해야 해.\n\n활동명: '+name+'\n설명: '+desc+'\n\n아래 목록 중에서만 선택해서 관련성 높은 순으로 10~15개를 콤마로 구분해서 반환해줘. 절대로 다른 말은 하지 말고 학과명만 콤마로 구분해서 한 줄로 반환해줘.\n\n목록: '+allMajors;
+  var prompt='너는 고등학교 진로 상담 전문가야. 아래 고등학교 활동과 관련된 대학 진로·학과를 추천해줘.'+
+    '직접적 연관뿐 아니라 간접적으로 도움이 될 학과까지 폭넓게 포함해. 반드시 10개 이상 추천해야 해.\n\n'+
+    '활동명: '+name+'\n설명: '+(desc||'(설명 없음)')+'\n\n'+
+    '다음 목록에서만 골라서 콤마(,)로만 구분해서 반환해. 다른 문장, 번호, 설명은 절대 쓰지 마. 학과명만 나열해.\n\n'+
+    '목록: '+allMajors;
   fetch(geminiUrl,{
     method:'POST',
     headers:{'Content-Type':'application/json'},
@@ -966,7 +1001,11 @@ document.getElementById('btnAiRecommend').addEventListener('click',function(){
   .then(function(data){
     var text='';
     try{ text=data.candidates[0].content.parts[0].text||''; }catch(e){}
-    var recommended=text.split(',').map(function(s){return s.trim().replace(/^#+/,'').replace(/\n/g,'');}).filter(Boolean);
+    // 줄바꿈·별표·숫자·점·괄호 등 노이즈 제거 후 콤마 또는 줄바꿈으로 분리
+    var cleaned=text.replace(/[*\[\]()0-9.·•\-]/g,' ').replace(/\n/g,',');
+    var recommended=cleaned.split(',')
+      .map(function(s){return s.replace(/\s+/g,' ').trim().replace(/^#+/,'');})
+      .filter(function(s){return s.length>=2&&s.length<=20;});
     applyRecommended(recommended);
   })
   .catch(function(err){
