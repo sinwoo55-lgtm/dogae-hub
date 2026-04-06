@@ -963,17 +963,7 @@ document.getElementById('btnAiRecommend').addEventListener('click',function(){
       max_tokens:1000,
       messages:[{
         role:'user',
-        content:'다음 학교 활동과 관련된 대학 진로·학과를 추천해줘.
-
-'+
-                '활동명: '+name+'
-설명: '+desc+'
-
-'+
-                '아래 목록 중에서만 선택해서 관련성 높은 순으로 최대 15개를 콤마로 구분해서 반환해줘. 다른 말은 하지 말고 학과명만.
-
-'+
-                '목록: '+allMajors
+        content:'다음 학교 활동과 관련된 대학 진로·학과를 추천해줘.\n\n활동명: '+name+'\n설명: '+desc+'\n\n아래 목록 중에서만 선택해서 관련성 높은 순으로 최대 15개를 콤마로 구분해서 반환해줘. 다른 말은 하지 말고 학과명만.\n\n목록: '+allMajors
       }]
     })
   })
