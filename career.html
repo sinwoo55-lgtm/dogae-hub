@@ -831,7 +831,7 @@ function buildAccordion(){
           '<span class="accordion-cat-name">'+cat.cat+'</span>'+
           '<span class="accordion-cat-count">'+(selCount?selCount+'선택':cat.items.length+'개')+'</span>'+
         '</div>'+
-        '<svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>'+
+        '<svg class="accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>'+
       '</div>'+
       '<div class="accordion-body" data-ci="'+ci+'">'+
         '<div class="major-chips"></div>'+
@@ -955,22 +955,18 @@ document.getElementById('btnAiRecommend').addEventListener('click',function(){
     if(added===0)alert('추천할 수 있는 학과를 찾지 못했습니다. 활동명과 설명을 더 자세히 입력해보세요.');
   }
 
-  fetch('https://api.anthropic.com/v1/messages',{
+  var geminiUrl='https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyBV6dhvaw3vHHYtfLnO94rxBdDoZOLSwg8';
+  var prompt='다음 학교 활동과 관련된 대학 진로·학과를 추천해줘.\n\n활동명: '+name+'\n설명: '+desc+'\n\n아래 목록 중에서만 선택해서 관련성 높은 순으로 최대 15개를 콤마로 구분해서 반환해줘. 다른 말은 절대 하지 말고 학과명만 콤마로 구분해서 반환해줘.\n\n목록: '+allMajors;
+  fetch(geminiUrl,{
     method:'POST',
     headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({
-      model:'claude-sonnet-4-20250514',
-      max_tokens:1000,
-      messages:[{
-        role:'user',
-        content:'다음 학교 활동과 관련된 대학 진로·학과를 추천해줘.\n\n활동명: '+name+'\n설명: '+desc+'\n\n아래 목록 중에서만 선택해서 관련성 높은 순으로 최대 15개를 콤마로 구분해서 반환해줘. 다른 말은 하지 말고 학과명만.\n\n목록: '+allMajors
-      }]
-    })
+    body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})
   })
   .then(function(res){return res.json();})
   .then(function(data){
-    var text=(data.content&&data.content[0]&&data.content[0].text)||'';
-    var recommended=text.split(',').map(function(s){return s.trim().replace(/^#+/,'');}).filter(Boolean);
+    var text='';
+    try{ text=data.candidates[0].content.parts[0].text||''; }catch(e){}
+    var recommended=text.split(',').map(function(s){return s.trim().replace(/^#+/,'').replace(/\n/g,'');}).filter(Boolean);
     applyRecommended(recommended);
   })
   .catch(function(err){
