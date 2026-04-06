@@ -470,11 +470,39 @@ mark{background:#FFF3CD;border-radius:2px;padding:0 1px;}
       </div>
     </div>
     <div class="form-group">
-      <label class="form-label">진로 태그 <span class="req">*</span><small>스페이스·Enter로 추가</small></label>
-      <div class="hashtag-input-wrap" id="tagInputWrap" onclick="document.getElementById('tagBareInput').focus()">
-        <input class="hashtag-bare-input" id="tagBareInput" placeholder="학과·진로명 입력 (예: 시각디자인  경영학)"/>
+      <label class="form-label">진로 태그 <span class="req">*</span></label>
+      <div class="major-select-wrap">
+        <!-- AI 추천 바 -->
+        <div class="major-ai-bar">
+          <div class="major-ai-bar-left">
+            계열 선택 후 학과 체크
+            <span>또는 AI 자동 추천</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div class="ai-loading" id="aiLoading">
+              <div class="ai-spinner"></div>분석 중...
+            </div>
+            <button class="btn-ai-recommend" id="btnAiRecommend" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
+              AI 추천
+            </button>
+          </div>
+        </div>
+        <!-- 아코디언 목록 -->
+        <div class="accordion-list" id="accordionList"></div>
       </div>
-      <div class="tag-hint"># 기호는 자동으로 붙습니다</div>
+
+      <!-- 선택된 태그 요약 -->
+      <div class="selected-tags-wrap" id="selectedTagsWrap">
+        <span class="selected-tags-empty">선택된 학과가 없습니다</span>
+      </div>
+
+      <!-- 목록에 없는 진로 직접 추가 -->
+      <div class="custom-tag-row">
+        <input class="custom-tag-input" id="customTagInput" type="text" placeholder="목록에 없는 진로·학과 직접 추가"/>
+        <button class="btn-custom-add" id="btnCustomAdd" type="button">추가</button>
+      </div>
+      <div class="tag-hint">목록 외 진로도 직접 입력해 추가할 수 있어요</div>
     </div>
     <div class="modal-footer">
       <button class="btn-cancel-m" id="actModalCancel">취소</button>
@@ -768,27 +796,204 @@ function closeTagPopup(){document.getElementById('tagPopupOverlay').classList.re
 document.getElementById('tagPopupClose').addEventListener('click',closeTagPopup);
 document.getElementById('tagPopupOverlay').addEventListener('click',function(e){if(e.target===this)closeTagPopup();});
 
-/* ── 태그 입력 ── */
-function renderTagChips(){
-  var wrap=document.getElementById('tagInputWrap');
-  wrap.querySelectorAll('.hashtag-chip').forEach(function(c){c.remove();});
-  currentTags.forEach(function(tag,idx){
-    var chip=document.createElement('span');chip.className='hashtag-chip';
-    chip.innerHTML='#'+esc(tag)+'<button class="hashtag-chip-x" data-idx="'+idx+'">×</button>';
-    chip.querySelector('.hashtag-chip-x').addEventListener('click',function(){currentTags.splice(parseInt(this.dataset.idx),1);renderTagChips();});
-    wrap.insertBefore(chip,document.getElementById('tagBareInput'));
+/* ── 학과 분류 데이터 ── */
+var MAJORS = [
+  { cat:'인문·어문 계열', color:'#6B3FA0', items:['국어국문학','영어영문학','독어독문학','불어불문학','중어중문학','일어일문학','스페인어학','러시아어학','아랍어학','언어학','문예창작학','고전문학','비교문학'] },
+  { cat:'사회·심리·복지 계열', color:'#253E8A', items:['사회학','심리학','사회복지학','상담심리학','산업심리학','소비자심리학','아동심리학','복지행정학','사회적경제학'] },
+  { cat:'정치·법·행정 계열', color:'#1A6B6B', items:['정치학','외교학','법학','행정학','경찰행정학','군사학','국제관계학','도시행정학','공공행정학','도시계획학'] },
+  { cat:'경영·경제·무역 계열', color:'#B5500A', items:['경영학','경제학','회계학','무역학','금융학','보험·세무학','통계학','산업경영학','국제경영학','글로벌비즈니스학','유통학','소비자학'] },
+  { cat:'신문·미디어·광고 계열', color:'#C9284D', items:['언론정보학','신문방송학','광고홍보학','미디어커뮤니케이션학','출판학','영상학','디지털미디어학','문화콘텐츠학','게임학'] },
+  { cat:'교육 계열', color:'#1E7C5A', items:['교육학','유아교육','초등교육','특수교육','수학교육','과학교육','영어교육','국어교육','사회교육','역사교육','지리교육','윤리교육','체육교육','음악교육','미술교육','가정교육','한문교육','컴퓨터교육'] },
+  { cat:'자연과학 계열', color:'#2B8AB5', items:['수학','통계학','물리학','화학','생물학','지구과학','천문학','해양학','대기과학','지질학','환경학','생화학','분자생물학','미생물학','유전학'] },
+  { cat:'공학·IT 계열', color:'#7A5C00', items:['컴퓨터공학','소프트웨어학','정보통신공학','전자공학','전기공학','반도체공학','기계공학','자동차공학','로봇공학','항공우주공학','화학공학','신소재공학','재료공학','건축공학','건축학','토목공학','산업공학','환경공학','바이오공학','에너지공학','인공지능학','데이터사이언스','정보보안학','임베디드시스템학'] },
+  { cat:'의·치·한의학 계열', color:'#C53030', items:['의학','치의학','한의학','수의학'] },
+  { cat:'간호·보건·약학 계열', color:'#8B3A3A', items:['간호학','약학','한약학','물리치료학','작업치료학','방사선학','임상병리학','치위생학','치기공학','보건관리학','의료경영학','응급구조학','의공학','언어치료학','안경광학'] },
+  { cat:'예술·디자인 계열', color:'#5A3A7A', items:['시각디자인','산업디자인','패션디자인','실내디자인','UX·UI디자인','제품디자인','영상디자인','애니메이션','만화·웹툰','순수미술','동양화','서양화','조소','공예','사진','미술치료'] },
+  { cat:'음악·공연·방송 계열', color:'#253E8A', items:['음악학','작곡','피아노','성악','관현악','실용음악','연극','뮤지컬','무용','영화','방송·연예','스포츠방송'] },
+  { cat:'체육·스포츠 계열', color:'#2A5A8A', items:['체육학','스포츠과학','사회체육','운동재활학','레저스포츠학','태권도학','스포츠지도학','골프학','e스포츠학'] },
+  { cat:'생활과학·식품 계열', color:'#3A6B3A', items:['식품영양학','식품공학','조리학','외식경영학','의류학','섬유공학','아동가족학','주거학','소비자가족학','실버복지학'] },
+  { cat:'농·생명과학 계열', color:'#7A5C00', items:['농학','원예학','축산학','산림학','조경학','생명공학','농업경제학','식물자원학','동물자원학','곤충학','수산학'] },
+  { cat:'관광·호텔·항공 계열', color:'#C9A84C', items:['관광학','호텔경영학','항공서비스학','외식·조리학','여행경영학','레저관광학'] },
+];
+
+/* ── 아코디언 빌드 ── */
+function buildAccordion(){
+  var list=document.getElementById('accordionList');
+  list.innerHTML='';
+  MAJORS.forEach(function(cat,ci){
+    var selCount=cat.items.filter(function(m){return currentTags.includes(m);}).length;
+    var sec=document.createElement('div');
+    sec.className='accordion-cat';
+    sec.innerHTML=
+      '<div class="accordion-cat-header" data-ci="'+ci+'">'+
+        '<div class="accordion-cat-left">'+
+          '<div class="accordion-cat-dot" style="background:'+cat.color+'"></div>'+
+          '<span class="accordion-cat-name">'+cat.cat+'</span>'+
+          '<span class="accordion-cat-count">'+(selCount?selCount+'선택':cat.items.length+'개')+'</span>'+
+        '</div>'+
+        '<svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>'+
+      '</div>'+
+      '<div class="accordion-body" data-ci="'+ci+'">'+
+        '<div class="major-chips"></div>'+
+      '</div>';
+
+    var header=sec.querySelector('.accordion-cat-header');
+    var body  =sec.querySelector('.accordion-body');
+    var chips =sec.querySelector('.major-chips');
+
+    // 학과 칩
+    cat.items.forEach(function(major){
+      var chip=document.createElement('span');
+      chip.className='major-chip'+(currentTags.includes(major)?' selected':'');
+      chip.style.setProperty('--c',cat.color);
+      chip.style.setProperty('--cbg',cat.color+'18');
+      chip.textContent='#'+major;
+      chip.addEventListener('click',function(){
+        if(currentTags.includes(major)){
+          currentTags=currentTags.filter(function(t){return t!==major;});
+          chip.classList.remove('selected');
+        } else {
+          currentTags.push(major);
+          chip.classList.add('selected');
+        }
+        renderSelectedTags();
+        updateAccordionCount(ci,cat);
+      });
+      chips.appendChild(chip);
+    });
+
+    // 헤더 토글
+    header.addEventListener('click',function(){
+      var isOpen=body.classList.contains('open');
+      // 다른 열린 항목 닫기
+      list.querySelectorAll('.accordion-body.open').forEach(function(b){b.classList.remove('open');});
+      list.querySelectorAll('.accordion-cat-header.open').forEach(function(h){h.classList.remove('open');});
+      if(!isOpen){body.classList.add('open');header.classList.add('open');}
+    });
+
+    list.appendChild(sec);
   });
 }
-function addTag(){
-  var val=document.getElementById('tagBareInput').value.replace(/^#+/,'').trim();
-  if(val&&!currentTags.includes(val))currentTags.push(val);
-  document.getElementById('tagBareInput').value='';renderTagChips();
+
+function updateAccordionCount(ci,cat){
+  var header=document.querySelector('.accordion-cat-header[data-ci="'+ci+'"]');
+  if(!header)return;
+  var countEl=header.querySelector('.accordion-cat-count');
+  var selCount=cat.items.filter(function(m){return currentTags.includes(m);}).length;
+  countEl.textContent=selCount?selCount+'선택':cat.items.length+'개';
 }
-document.getElementById('tagBareInput').addEventListener('keydown',function(e){
-  if(e.key==='Enter'||e.key===' '){e.preventDefault();if(this.value.trim())addTag();}
-  if(e.key==='Backspace'&&!this.value&&currentTags.length){currentTags.pop();renderTagChips();}
+
+/* ── 선택된 태그 요약 ── */
+function renderSelectedTags(){
+  var wrap=document.getElementById('selectedTagsWrap');
+  wrap.innerHTML='';
+  if(!currentTags.length){
+    wrap.innerHTML='<span class="selected-tags-empty">선택된 학과가 없습니다</span>';
+    return;
+  }
+  currentTags.forEach(function(tag){
+    var chip=document.createElement('span');chip.className='selected-tag-chip';
+    chip.innerHTML='#'+esc(tag)+'<button class="selected-tag-chip-x">×</button>';
+    chip.querySelector('.selected-tag-chip-x').addEventListener('click',function(){
+      currentTags=currentTags.filter(function(t){return t!==tag;});
+      // 아코디언 칩도 해제
+      document.querySelectorAll('.major-chip').forEach(function(c){
+        if(c.textContent==='#'+tag)c.classList.remove('selected');
+      });
+      renderSelectedTags();
+      // 카운트 갱신
+      MAJORS.forEach(function(cat,ci){if(cat.items.includes(tag))updateAccordionCount(ci,cat);});
+    });
+    wrap.appendChild(chip);
+  });
+}
+
+/* ── 직접 추가 ── */
+function addCustomTag(){
+  var val=document.getElementById('customTagInput').value.replace(/^#+/,'').trim();
+  if(!val)return;
+  if(!currentTags.includes(val)){
+    currentTags.push(val);
+    renderSelectedTags();
+    buildAccordion(); // 카운트 갱신
+  }
+  document.getElementById('customTagInput').value='';
+}
+document.getElementById('btnCustomAdd').addEventListener('click',addCustomTag);
+document.getElementById('customTagInput').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();addCustomTag();}});
+
+/* ── AI 태그 추천 ── */
+document.getElementById('btnAiRecommend').addEventListener('click',async function(){
+  var name=document.getElementById('fName').value.trim();
+  var desc=document.getElementById('fDesc').value.trim();
+  if(!name&&!desc){alert('활동명과 설명을 먼저 입력해주세요.');return;}
+
+  var btn=document.getElementById('btnAiRecommend');
+  var loading=document.getElementById('aiLoading');
+  btn.disabled=true; loading.classList.add('show');
+
+  // 전체 학과 목록 문자열 생성
+  var allMajors=MAJORS.map(function(c){return c.items.join(',');}).join(',');
+
+  try {
+    var res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        messages:[{
+          role:'user',
+          content:'다음 학교 활동과 관련된 대학 진로·학과를 추천해줘.
+
+'+
+                  '활동명: '+name+'
+설명: '+desc+'
+
+'+
+                  '아래 목록 중에서만 선택해서 관련성 높은 순으로 최대 15개를 콤마로 구분해서 반환해줘. 다른 말은 하지 말고 학과명만.
+
+'+
+                  '목록: '+allMajors
+        }]
+      })
+    });
+    var data=await res.json();
+    var text=(data.content&&data.content[0]&&data.content[0].text)||'';
+    var recommended=text.split(',').map(function(s){return s.trim().replace(/^#+/,'');}).filter(Boolean);
+
+    // 추천 학과 자동 체크
+    var added=0;
+    recommended.forEach(function(major){
+      // 목록에 있는 학과인지 확인
+      var inList=MAJORS.some(function(c){return c.items.includes(major);});
+      if(inList&&!currentTags.includes(major)){
+        currentTags.push(major);
+        added++;
+        // 해당 칩에 애니메이션
+        document.querySelectorAll('.major-chip').forEach(function(c){
+          if(c.textContent==='#'+major){
+            c.classList.add('selected','ai-new');
+            setTimeout(function(){c.classList.remove('ai-new');},600);
+          }
+        });
+      } else if(inList&&currentTags.includes(major)){
+        added++;
+      }
+    });
+
+    // 아코디언 카운트 갱신
+    MAJORS.forEach(function(cat,ci){updateAccordionCount(ci,cat);});
+    renderSelectedTags();
+
+    if(added===0)alert('추천할 수 있는 학과를 찾지 못했습니다. 활동명과 설명을 더 자세히 입력해보세요.');
+
+  } catch(err){
+    alert('AI 추천 오류: '+err.message);
+  }
+
+  btn.disabled=false; loading.classList.remove('show');
 });
-document.getElementById('tagBareInput').addEventListener('blur',function(){if(this.value.trim())addTag();});
 
 /* ── 등록/수정 모달 ── */
 function openAddAct(){
@@ -796,7 +1001,11 @@ function openAddAct(){
   document.getElementById('actModalTitle').textContent='활동 등록';
   document.getElementById('actSubmitBtn').textContent='등록하기';
   ['fName','fGrade','fStream','fSem','fCount','fTime','fDesc'].forEach(function(id){document.getElementById(id).value='';});
-  renderTagChips();
+  document.getElementById('customTagInput').value='';
+  document.getElementById('aiLoading').classList.remove('show');
+  document.getElementById('btnAiRecommend').disabled=false;
+  buildAccordion();
+  renderSelectedTags();
   document.getElementById('actModal').classList.add('active');
   setTimeout(function(){document.getElementById('fName').focus();},160);
 }
@@ -812,7 +1021,11 @@ function openEditAct(id){
   document.getElementById('fCount').value=a.count||'';
   document.getElementById('fTime').value=a.time||'';
   document.getElementById('fDesc').value=a.desc||'';
-  renderTagChips();
+  document.getElementById('customTagInput').value='';
+  document.getElementById('aiLoading').classList.remove('show');
+  document.getElementById('btnAiRecommend').disabled=false;
+  buildAccordion();
+  renderSelectedTags();
   document.getElementById('actModal').classList.add('active');
   setTimeout(function(){document.getElementById('fName').focus();},160);
 }
@@ -830,8 +1043,6 @@ document.getElementById('actSubmitBtn').addEventListener('click',function(){
   var count=document.getElementById('fCount').value.trim();
   var time=document.getElementById('fTime').value.trim();
   var desc=document.getElementById('fDesc').value.trim();
-  var pendingTag=document.getElementById('tagBareInput').value.replace(/^#+/,'').trim();
-  if(pendingTag&&!currentTags.includes(pendingTag))currentTags.push(pendingTag);
   var tags=currentTags.slice();
   if(!name||!grade||!stream||!sem){alert('활동명, 학년, 계열, 시기는 필수입니다.');return;}
   if(!tags.length){alert('진로 태그를 하나 이상 입력해주세요.');return;}
