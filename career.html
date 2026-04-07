@@ -138,7 +138,6 @@ header{
 @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .act-card:hover{border-color:var(--navy);box-shadow:0 6px 24px rgba(37,62,138,.10);transform:translateY(-2px);}
 
-/* 카드 상단 뱃지 바 */
 .card-badges{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:2px;}
 .badge{font-size:10.5px;font-weight:700;padding:2px 9px;border-radius:100px;white-space:nowrap;}
 .badge-grade{background:#E8F0FE;color:#1A56DB;}
@@ -155,7 +154,6 @@ header{
 .act-info-row span{display:flex;align-items:center;gap:4px;}
 .act-info-row svg{width:12px;height:12px;}
 
-/* 해시태그 */
 .act-tags{display:flex;gap:5px;flex-wrap:nowrap;overflow:hidden;align-items:center;}
 .act-tag{font-size:11px;color:var(--navy);font-weight:600;white-space:nowrap;flex-shrink:0;cursor:pointer;transition:var(--tr);}
 .act-tag:hover{color:var(--accent);}
@@ -305,55 +303,54 @@ select.form-input{cursor:pointer;}
 
 mark{background:#FFF3CD;border-radius:2px;padding:0 1px;}
 
-/* ── [추가] 계열 목록 (학과 선택 아코디언) ── */
-.major-select-wrap{border:1.5px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:8px;background:var(--surface);}
-.major-ai-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:var(--navy-pale);border-bottom:1px solid var(--border);flex-wrap:wrap;gap:6px;}
-.major-ai-bar-left{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;}
-.major-ai-bar-left span{color:var(--navy);font-weight:600;}
+/* ── 학과 선택 UI (누락되었던 CSS) ── */
+.major-select-wrap{border:1.5px solid var(--border);border-radius:11px;overflow:hidden;margin-bottom:10px;background:var(--surface);}
+.major-ai-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;background:var(--bg);border-bottom:1px solid var(--border);flex-wrap:wrap;}
+.major-ai-bar-left{font-size:12px;color:var(--muted);font-weight:500;}
+.major-ai-bar-left span{display:inline;color:var(--navy);font-weight:600;margin-left:4px;}
 .ai-right-group{display:flex;align-items:center;gap:8px;}
-.ai-loading{display:none;align-items:center;gap:6px;font-size:12px;color:var(--navy);}
+.ai-loading{display:none;align-items:center;gap:6px;font-size:12px;color:var(--navy);font-weight:600;}
 .ai-loading.show{display:flex;}
 .ai-spinner{width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--navy);border-radius:50%;animation:spin .6s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg)}}
-.btn-ai-recommend{display:flex;align-items:center;gap:5px;padding:5px 13px;background:var(--navy);color:#fff;border:none;border-radius:7px;font-family:'Noto Sans KR',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:var(--tr);}
+.btn-ai-recommend{display:flex;align-items:center;gap:5px;padding:6px 14px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-family:'Noto Sans KR',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:var(--tr);}
 .btn-ai-recommend:hover{background:var(--navy-dark);}
 .btn-ai-recommend:disabled{opacity:.5;cursor:not-allowed;}
 .accordion-list{max-height:260px;overflow-y:auto;}
 .accordion-list::-webkit-scrollbar{width:4px;}
 .accordion-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+
 .cat-item{border-bottom:1px solid var(--border);}
 .cat-item:last-child{border-bottom:none;}
-.cat-header{display:flex;align-items:center;gap:8px;padding:10px 14px;cursor:pointer;transition:var(--tr);user-select:none;}
+.cat-header{display:flex;align-items:center;gap:8px;padding:11px 14px;cursor:pointer;transition:var(--tr);}
 .cat-header:hover{background:var(--bg);}
 .cat-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
-.cat-name{font-size:12.5px;font-weight:700;color:var(--text);flex:1;}
-.cat-sel-count{font-size:11px;font-weight:600;color:var(--navy);display:none;}
+.cat-name{font-size:13px;font-weight:700;color:var(--text);flex:1;}
+.cat-sel-count{font-size:11px;color:var(--navy);font-weight:700;display:none;}
 .cat-item.has-selected .cat-sel-count{display:inline;}
 .cat-total{font-size:11px;color:var(--muted);}
-.cat-toggle{width:22px;height:22px;border-radius:5px;border:none;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted);transition:var(--tr);}
-.cat-toggle svg{width:14px;height:14px;transition:transform .2s;}
+.cat-toggle{width:24px;height:24px;border:none;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted);transition:var(--tr);border-radius:6px;flex-shrink:0;}
+.cat-toggle:hover{background:var(--bg);color:var(--navy);}
+.cat-toggle svg{width:14px;height:14px;transition:transform .2s ease;}
 .cat-item.open .cat-toggle svg{transform:rotate(180deg);}
-.cat-body{display:none;padding:6px 14px 12px;}
-.cat-item.open .cat-body{display:block;}
-.major-chips{display:flex;flex-wrap:wrap;gap:6px;}
-.major-chip{font-size:12px;padding:4px 11px;border-radius:100px;border:1.5px solid var(--border);color:var(--text);cursor:pointer;transition:var(--tr);background:var(--surface);}
+.cat-body{max-height:0;overflow:hidden;transition:max-height .25s ease;}
+.cat-item.open .cat-body{max-height:500px;}
+.major-chips{display:flex;flex-wrap:wrap;gap:6px;padding:6px 14px 14px;}
+.major-chip{font-size:12px;padding:4px 12px;border-radius:100px;border:1.5px solid var(--border);color:var(--muted);cursor:pointer;transition:var(--tr);white-space:nowrap;}
 .major-chip:hover{border-color:var(--navy);color:var(--navy);}
-.major-chip.selected{background:var(--cbg,var(--navy-pale));color:var(--c,var(--navy));border-color:var(--c,var(--navy));font-weight:600;}
+.major-chip.selected{background:var(--c,var(--navy));border-color:var(--c,var(--navy));color:#fff;}
 .major-chip.ai-new{animation:aiPulse .5s ease;}
-@keyframes aiPulse{0%{transform:scale(1)}50%{transform:scale(1.08)}100%{transform:scale(1)}}
+@keyframes aiPulse{0%{transform:scale(1)}50%{transform:scale(1.1)}100%{transform:scale(1)}}
 
-/* ── [추가] 선택된 태그 요약 ── */
-.selected-tags-wrap{display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-height:30px;padding:6px 0;}
+.selected-tags-wrap{display:flex;flex-wrap:wrap;gap:6px;min-height:32px;align-items:center;padding:8px 0;}
 .selected-tags-empty{font-size:12px;color:var(--muted);}
 .selected-tag-chip{display:inline-flex;align-items:center;gap:4px;background:var(--navy-pale);color:var(--navy);border:1px solid #C5D2F0;border-radius:100px;padding:3px 10px;font-size:12px;font-weight:600;}
 .selected-tag-chip-x{background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;line-height:1;padding:0 0 0 2px;}
 .selected-tag-chip-x:hover{color:#E53E3E;}
-
-/* ── [추가] 직접 추가 입력 ── */
 .custom-tag-row{display:flex;gap:6px;margin-top:6px;}
-.custom-tag-input{flex:1;padding:7px 12px;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;font-family:'Noto Sans KR',sans-serif;font-size:12.5px;color:var(--text);outline:none;transition:var(--tr);}
+.custom-tag-input{flex:1;padding:8px 12px;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;font-family:'Noto Sans KR',sans-serif;font-size:13px;outline:none;transition:var(--tr);}
 .custom-tag-input:focus{border-color:var(--navy);background:#fff;}
-.btn-custom-add{padding:7px 14px;background:var(--bg);color:var(--navy);border:1.5px solid var(--border);border-radius:8px;font-family:'Noto Sans KR',sans-serif;font-size:12.5px;font-weight:700;cursor:pointer;transition:var(--tr);}
+.btn-custom-add{padding:8px 16px;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;font-family:'Noto Sans KR',sans-serif;font-size:13px;font-weight:700;color:var(--navy);cursor:pointer;transition:var(--tr);white-space:nowrap;}
 .btn-custom-add:hover{background:var(--navy);color:#fff;border-color:var(--navy);}
 
 @media(max-width:640px){
@@ -385,7 +382,6 @@ mark{background:#FFF3CD;border-radius:2px;padding:0 1px;}
 
 <!-- TOOLBAR -->
 <div class="toolbar">
-  <!-- 검색 -->
   <div class="search-outer">
     <div class="search-wrap">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -394,7 +390,6 @@ mark{background:#FFF3CD;border-radius:2px;padding:0 1px;}
     </div>
     <div class="autocomplete-box" id="autocompleteBox"></div>
   </div>
-  <!-- 필터 -->
   <div class="filter-group" id="filterGrade">
     <button class="filter-chip active" data-val="전체">전체</button>
     <button class="filter-chip" data-val="1학년">1학년</button>
@@ -523,7 +518,6 @@ mark{background:#FFF3CD;border-radius:2px;padding:0 1px;}
     <div class="form-group">
       <label class="form-label">진로 태그 <span class="req">*</span></label>
       <div class="major-select-wrap">
-        <!-- AI 추천 바 -->
         <div class="major-ai-bar">
           <div class="major-ai-bar-left">
             계열 클릭 → 학과 체크
@@ -539,16 +533,11 @@ mark{background:#FFF3CD;border-radius:2px;padding:0 1px;}
             </button>
           </div>
         </div>
-        <!-- 아코디언 목록 -->
         <div class="accordion-list" id="accordionList"></div>
       </div>
-
-      <!-- 선택된 태그 요약 -->
       <div class="selected-tags-wrap" id="selectedTagsWrap">
         <span class="selected-tags-empty">선택된 학과가 없습니다</span>
       </div>
-
-      <!-- 목록에 없는 진로 직접 추가 -->
       <div class="custom-tag-row">
         <input class="custom-tag-input" id="customTagInput" type="text" placeholder="목록에 없는 진로·학과 직접 추가"/>
         <button class="btn-custom-add" id="btnCustomAdd" type="button">추가</button>
@@ -656,15 +645,15 @@ var currentTags=[],logoClicks=0,logoTimer=null;
 
 /* ── 유틸 ── */
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-function hl(t,q){if(!q)return esc(t);var e=q.replace(/[.*+?^${}()|[\]\]/g,'\\$&');return esc(t).replace(new RegExp('('+e+')','gi'),'<mark>$1</mark>');}
+function hl(t,q){if(!q)return esc(t);var e=q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');return esc(t).replace(new RegExp('('+e+')','gi'),'<mark>$1</mark>');}
 function nowDate(){var d=new Date();return d.getFullYear()+'.'+(d.getMonth()+1).toString().padStart(2,'0')+'.'+d.getDate().toString().padStart(2,'0');}
 function streamBadgeClass(s){if(s==='인문')return'badge-hum';if(s==='자연')return'badge-sci';return'badge-com';}
 function semBadgeClass(s){if(s==='1학기')return'badge-sem1';if(s==='2학기')return'badge-sem2';return'badge-year';}
 function streamAccent(s){if(s==='인문')return'var(--c-hum)';if(s==='자연')return'var(--c-sci)';return'var(--navy)';}
 
-/* ── [수정] 매칭용 정규화 함수 ── */
+/* ── 매칭용 정규화 함수 (버그 수정: 특수문자 통일) ── */
 function normalizeForMatch(s){
-  return(s||'').replace(/[·‧・\/\s\-\.]/g,'').toLowerCase();
+  return (s||'').replace(/[\s\u00B7\u2027\u30FB\u002D\u002E]/g,'').toLowerCase();
 }
 
 /* ── 모든 태그 수집 (자동완성용) ── */
@@ -863,7 +852,7 @@ var MAJORS = [
   { cat:'관광·호텔·항공 계열', color:'#C9A84C', items:['관광학','호텔경영학','항공서비스학','외식·조리학','여행경영학','레저관광학'] },
 ];
 
-/* ── [수정] 계열 목록 빌드 — catList → accordionList ── */
+/* ── 계열 목록 빌드 (버그 수정: catList → accordionList) ── */
 function buildCatList(){
   var container=document.getElementById('accordionList');
   container.innerHTML='';
@@ -944,7 +933,7 @@ function renderSelectedTags(){
   }
   currentTags.forEach(function(tag){
     var chip=document.createElement('span');chip.className='selected-tag-chip';
-    chip.innerHTML='#'+esc(tag)+'<button class="selected-tag-chip-x">×</button>';
+    chip.innerHTML='#'+esc(tag)+'<button class="selected-tag-chip-x">\u00d7</button>';
     chip.querySelector('.selected-tag-chip-x').addEventListener('click',function(){
       currentTags=currentTags.filter(function(t){return t!==tag;});
       document.querySelectorAll('.major-chip').forEach(function(c){
@@ -971,9 +960,7 @@ function addCustomTag(){
 document.getElementById('btnCustomAdd').addEventListener('click',addCustomTag);
 document.getElementById('customTagInput').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();addCustomTag();}});
 
-/* ══════════════════════════════════════════════════════
-   [수정] AI 태그 추천 — 클리닝·매칭·프롬프트·에러핸들링 전면 개선
-   ══════════════════════════════════════════════════════ */
+/* ── AI 태그 추천 (버그 수정: 정규식 오류 해결 + 매칭 로직 개선) ── */
 document.getElementById('btnAiRecommend').addEventListener('click',function(){
   var name=document.getElementById('fName').value.trim();
   var desc=document.getElementById('fDesc').value.trim();
@@ -985,7 +972,7 @@ document.getElementById('btnAiRecommend').addEventListener('click',function(){
 
   var allMajors=MAJORS.map(function(c){return c.items.join(',');}).join(',');
 
-  /* ── [수정] 학과 목록 평탄화 + 정규화 맵 미리 생성 ── */
+  /* 정규화 매칭 맵 사전 생성 */
   var allItems=[];
   var normMap={};
   MAJORS.forEach(function(c){c.items.forEach(function(m){
@@ -995,22 +982,28 @@ document.getElementById('btnAiRecommend').addEventListener('click',function(){
 
   function applyRecommended(recommended){
     var added=0;
+
     recommended.forEach(function(raw){
       var rawNorm=normalizeForMatch(raw);
-      if(!rawNorm||rawNorm.length<2) return;
+      if(!rawNorm) return;
 
-      /* [수정] 3단계 매칭: 정확 → 정규화 일치 → 부분 포함 */
-      var matched=allItems.find(function(m){return m===raw;}) ||
-                  normMap[rawNorm] ||
-                  allItems.find(function(m){
-                    var mNorm=normalizeForMatch(m);
-                    return mNorm.indexOf(rawNorm)>=0||rawNorm.indexOf(mNorm)>=0;
-                  });
+      /* 1) 정규화 맵에서 정확히 매칭 */
+      var matched=normMap[rawNorm]||null;
+
+      /* 2) 부분 매칭 (포함 관계) */
+      if(!matched){
+        for(var key in normMap){
+          if(key.indexOf(rawNorm)!==-1 || rawNorm.indexOf(key)!==-1){
+            matched=normMap[key];
+            break;
+          }
+        }
+      }
 
       if(matched&&!currentTags.includes(matched)){
         currentTags.push(matched);
         added++;
-        /* [수정] 칩 텍스트에 #이 없으므로 그대로 비교 */
+        /* 버그 수정: 칩 텍스트에 #이 없으므로 직접 비교 */
         document.querySelectorAll('.major-chip').forEach(function(c){
           if(c.textContent===matched){
             c.classList.add('selected','ai-new');
@@ -1021,13 +1014,14 @@ document.getElementById('btnAiRecommend').addEventListener('click',function(){
         added++;
       }
     });
+
     MAJORS.forEach(function(cat,ci){updateAccordionCount(ci,cat);});
     renderSelectedTags();
     buildAccordion();
     btn.disabled=false; loading.classList.remove('show');
 
     if(added===0){
-      /* [수정] 매칭 실패 시 원본 텍스트를 커스텀 태그로 추가 */
+      /* 매칭 실패 시 원본 텍스트를 커스텀 태그로 추가 */
       recommended.slice(0,10).forEach(function(raw){
         var v=raw.trim().replace(/^#+/,'');
         if(v&&v.length>=2&&!currentTags.includes(v)){
@@ -1035,7 +1029,6 @@ document.getElementById('btnAiRecommend').addEventListener('click',function(){
           added++;
         }
       });
-      MAJORS.forEach(function(cat,ci){updateAccordionCount(ci,cat);});
       renderSelectedTags();
       buildAccordion();
       if(added===0)alert('AI가 관련 학과를 찾지 못했습니다. 활동명과 설명을 조금 더 자세히 입력해보세요.');
@@ -1043,15 +1036,12 @@ document.getElementById('btnAiRecommend').addEventListener('click',function(){
   }
 
   var geminiUrl='https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyBV6dhvaw3vHHYtfLnO94rxBdDoZOLSwg8';
-
-  /* ── [수정] 프롬프트 개선: 짧은 입력에도 폭넓게 추천 ── */
-  var prompt='너는 한국 고등학교 진로 상담 전문가야.\n'+
-    '아래 고등학교 활동 정보를 보고, 이 활동과 직접·간접적으로 관련 있는 대학 학과를 추천해줘.\n'+
-    '활동명이나 설명이 짧더라도, 키워드에서 유추할 수 있는 모든 관련 학과를 폭넓게 추천해.\n'+
-    '반드시 15개 이상 추천해야 해. 직접 관련 학과뿐 아니라, 융합·응용 가능한 학과도 포함해.\n\n'+
-    '활동명: '+name+'\n'+
-    '설명: '+(desc||'(없음)')+'\n\n'+
-    '아래 목록에서 골라서, 학과명만 콤마(,)로 구분해 한 줄로 출력해. 다른 설명이나 번호는 절대 쓰지 마.\n'+
+  var prompt='너는 고등학교 진로 상담 전문가야. 아래 고등학교 활동과 관련된 대학 진로 및 학과를 추천해줘.\n'+
+    '직접적 연관뿐 아니라 간접적으로 도움이 될 학과까지 폭넓게 포함해. 반드시 15개 이상 추천해야 해.\n'+
+    '활동명이나 설명이 짧더라도 키워드에서 유추해서 최대한 많이 추천해.\n\n'+
+    '활동명: '+name+'\n설명: '+(desc||'(설명 없음)')+'\n\n'+
+    '다음 목록에서 골라서 콤마(,)로만 구분해서 반환해. 다른 문장이나 번호나 설명은 절대 쓰지 마. 학과명만 나열해.\n'+
+    '목록에 있는 학과명을 그대로 정확히 써야 해. 특수문자(가운뎃점 등)도 목록과 동일하게 써.\n\n'+
     '목록: '+allMajors;
 
   fetch(geminiUrl,{
@@ -1059,41 +1049,34 @@ document.getElementById('btnAiRecommend').addEventListener('click',function(){
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})
   })
-  .then(function(res){
-    if(!res.ok) throw new Error('API 응답 오류 ('+res.status+')');
-    return res.json();
-  })
+  .then(function(res){return res.json();})
   .then(function(data){
     var text='';
-    try{
-      /* [수정] 안전한 응답 파싱 + 에러 메시지 감지 */
-      if(data.error){throw new Error(data.error.message||'API 에러');}
-      if(!data.candidates||!data.candidates.length){throw new Error('AI 응답이 비어있습니다 (안전 필터 차단 가능)');}
-      text=data.candidates[0].content.parts[0].text||'';
-    }catch(e){
-      alert('AI 응답 파싱 오류: '+e.message);
+    try{ text=data.candidates[0].content.parts[0].text||''; }catch(e){
+      /* 안전 필터 차단 등 예외 처리 */
+      var blockReason='';
+      try{ blockReason=data.candidates[0].finishReason||''; }catch(e2){}
+      if(!blockReason) try{ blockReason=data.promptFeedback.blockReason||''; }catch(e3){}
+      if(blockReason){
+        alert('AI 응답이 차단되었습니다 (사유: '+blockReason+'). 활동 설명을 수정해 보세요.');
+      } else {
+        alert('AI 응답을 처리할 수 없습니다. 다시 시도해 주세요.');
+      }
       btn.disabled=false; loading.classList.remove('show');
       return;
     }
 
-    /* ── [수정] 응답 텍스트 클리닝 — ·문자 보존! ── */
+    /* 버그 수정: 안전한 클리닝 (가운뎃점 · 보존) */
     var cleaned=text
-      .replace(/```[\s\S]*?```/g,'')       /* 코드블록 제거 */
-      .replace(/\*\*/g,'')                   /* 볼드(**) 제거 */
-      .replace(/\*/g,'')                      /* 이탤릭(*) 제거 */
-      .replace(/^\s*\d+[.)\-]\s*/gm,'')    /* 번호 목록 접두사 제거 */
-      .replace(/^\s*[-•]\s*/gm,'')           /* 불릿 접두사 제거 */
-      .replace(/[\[\]()""`]/g,'')            /* 괄호·따옴표 제거 */
-      .replace(/\n/g,',');                    /* 줄바꿈 → 콤마 */
-
+      .replace(/\*\*/g,'')
+      .replace(/\n/g,',');
     var recommended=cleaned.split(',')
-      .map(function(s){return s.replace(/\s+/g,' ').trim().replace(/^#+/,'');})
-      .filter(function(s){return s.length>=2&&s.length<=30;});
-
+      .map(function(s){return s.replace(/^\s*[\d]+[.):\s]*/,'').trim().replace(/^#+/,'');})
+      .filter(function(s){return s.length>=2&&s.length<=20;});
     applyRecommended(recommended);
   })
   .catch(function(err){
-    alert('AI 추천 오류: '+err.message);
+    alert('AI 추천 네트워크 오류: '+err.message);
     btn.disabled=false; loading.classList.remove('show');
   });
 });
@@ -1185,7 +1168,7 @@ function renderTrash(){
     var item=document.createElement('div');item.className='trash-item';
     item.innerHTML='<div class="trash-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>'+
       '<div class="trash-item-info"><div class="trash-item-name">'+esc(a.name)+'</div>'+
-      '<div class="trash-item-meta"><span>'+esc(a.grade||'')+'·'+esc(a.stream||'')+'·'+esc(a.sem||'')+'</span><span>삭제일: '+esc(a.deletedDate||'')+'</span>'+
+      '<div class="trash-item-meta"><span>'+esc(a.grade||'')+'\u00B7'+esc(a.stream||'')+'\u00B7'+esc(a.sem||'')+'</span><span>삭제일: '+esc(a.deletedDate||'')+'</span>'+
       '<span style="color:'+(dl<=7?'#C53030':'var(--muted)')+'">'+dl+'일 후 영구 삭제</span></div></div>'+
       '<div class="trash-item-actions"><button class="btn-restore" data-id="'+a.id+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.12"/></svg>복구</button>'+
       '<button class="btn-perm-del" data-id="'+a.id+'" title="영구 삭제"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button></div>';
