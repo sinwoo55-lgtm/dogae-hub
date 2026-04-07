@@ -23,12 +23,18 @@ export default async function handler(req, res) {
     (desc ? '\n설명: ' + desc : '') +
     '\n\n이 활동과 관련 있는 대학 학과를 15개 이상 추천해. 학과명만 콤마로 나열해. 다른 말 하지 마.';
 
+  // 환경변수 확인
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) {
+    return res.status(500).json({ error: 'GROQ_API_KEY 환경변수가 없습니다.' });
+  }
+
   try {
     const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + process.env.GROQ_API_KEY
+        'Authorization': 'Bearer ' + apiKey
       },
       body: JSON.stringify({
         model: 'llama3-8b-8192',
@@ -40,7 +46,7 @@ export default async function handler(req, res) {
     const data = await groqRes.json();
 
     if (!groqRes.ok) {
-      return res.status(groqRes.status).json({ error: data.error?.message || 'Groq 오류' });
+      return res.status(500).json({ error: data.error?.message || 'Groq 오류', status: groqRes.status });
     }
 
     const text = data.choices?.[0]?.message?.content || '';
