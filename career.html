@@ -1047,7 +1047,7 @@ document.getElementById('btnAiRecommend').addEventListener('click',function(){
   fetch(geminiUrl,{
     method:'POST',
     headers:{'Content-Type':'application/json'},
-    headers:{'Content-Type':'application/json','Authorization':'Bearer 여기에_gsk_키_입력'},
+    headers:{'Content-Type':'application/json','Authorization':'Bearer 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'},
 body:JSON.stringify({model:'llama3-8b-8192',messages:[{role:'user',content:prompt}],max_tokens:300}),
   })
   .then(function(res){return res.json();})
