@@ -1036,13 +1036,8 @@ document.getElementById('btnAiRecommend').addEventListener('click',function(){
   }
 
   var geminiUrl='https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyDw3J92_7fhbQBZQ-Y3-cK6CSdUtSsPRrE';
-  var prompt='너는 고등학교 진로 상담 전문가야. 아래 고등학교 활동과 관련된 대학 진로 및 학과를 추천해줘.\n'+
-    '직접적 연관뿐 아니라 간접적으로 도움이 될 학과까지 폭넓게 포함해. 반드시 15개 이상 추천해야 해.\n'+
-    '활동명이나 설명이 짧더라도 키워드에서 유추해서 최대한 많이 추천해.\n\n'+
-    '활동명: '+name+'\n설명: '+(desc||'(설명 없음)')+'\n\n'+
-    '다음 목록에서 골라서 콤마(,)로만 구분해서 반환해. 다른 문장이나 번호나 설명은 절대 쓰지 마. 학과명만 나열해.\n'+
-    '목록에 있는 학과명을 그대로 정확히 써야 해. 특수문자(가운뎃점 등)도 목록과 동일하게 써.\n\n'+
-    '목록: '+allMajors;
+  var prompt='고등학교 활동명: '+name+(desc?'\n설명: '+desc:'')+
+    '\n\n이 활동과 관련된 대학 학과를 15개 이상 추천해. 학과명만 콤마로 나열해. 다른 말 금지.';
 
   fetch(geminiUrl,{
     method:'POST',
