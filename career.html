@@ -1035,24 +1035,17 @@ document.getElementById('btnAiRecommend').addEventListener('click',function(){
     }
   }
 
-  var geminiUrl='https://api.groq.com/openai/v1/chat/completions';
+  var apiUrl='/api/recommend';
   var prompt='고등학교 활동명: '+name+(desc?'\n설명: '+desc:'')+'\n\n이 활동과 관련 있는 대학 학과를 15개 이상 추천해. 학과명만 콤마로 나열해. 다른 말 하지 마.';
 
-fetch(geminiUrl,{
+fetch(apiUrl,{
     method:'POST',
-    headers:{
-      'Content-Type':'application/json',
-      'Authorization':'Bearer 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'
-    },
-    body:JSON.stringify({
-      model:'llama3-8b-8192',
-      messages:[{role:'user',content:prompt}],
-      max_tokens:500
-    })
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({name:name,desc:desc})
   })  .then(function(res){return res.json();})
   .then(function(data){
     var text='';
-    try{ text=data.choices[0].message.content||''; }catch(e){ text=''; }
+    try{ text=data.text||''; }catch(e){ text=''; }
     var cleaned=text.replace(/[\n\r]/g,',').replace(/\d+[.)]/g,'').replace(/[*•\[\]()]/g,' ');
     var recommended=cleaned.split(',').map(function(s){return s.trim().replace(/^#+/,'');}).filter(function(s){return s.length>=2&&s.length<=20;});
     applyRecommended(recommended);
