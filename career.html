@@ -239,142 +239,7 @@ select.form-input{cursor:pointer;}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 .form-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
 
-/* ── 학과 선택 UI (계열 아코디언) ── */
-.major-select-wrap{
-  border:1.5px solid var(--border);border-radius:12px;overflow:hidden;
-  background:var(--bg);margin-bottom:12px;
-}
-.major-ai-bar{
-  display:flex;align-items:center;justify-content:space-between;gap:10px;
-  padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border);
-  flex-wrap:wrap;
-}
-.major-ai-bar-left{
-  font-size:12px;color:var(--muted);font-weight:500;
-}
-.major-ai-bar-left span{
-  display:inline-block;margin-left:4px;font-size:11px;color:#B0BAC8;
-}
-.ai-right-group{display:flex;align-items:center;gap:8px;}
-.ai-loading{
-  display:none;align-items:center;gap:6px;font-size:11.5px;color:var(--navy);font-weight:600;
-}
-.ai-loading.show{display:flex;}
-.ai-spinner{
-  width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--navy);
-  border-radius:50%;animation:spin .7s linear infinite;
-}
-@keyframes spin{to{transform:rotate(360deg)}}
-.btn-ai-recommend{
-  display:flex;align-items:center;gap:5px;padding:6px 14px;
-  background:linear-gradient(135deg,#253E8A,#4A6BD4);color:#fff;
-  border:none;border-radius:8px;font-family:'Noto Sans KR',sans-serif;
-  font-size:12px;font-weight:700;cursor:pointer;transition:var(--tr);
-  white-space:nowrap;
-}
-.btn-ai-recommend:hover{filter:brightness(1.1);transform:translateY(-1px);}
-.btn-ai-recommend:disabled{opacity:.5;cursor:not-allowed;transform:none;}
-.btn-ai-recommend svg{width:13px;height:13px;}
-
-.accordion-list{
-  max-height:260px;overflow-y:auto;padding:6px;
-}
-.accordion-list::-webkit-scrollbar{width:4px;}
-.accordion-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
-
-/* 계열 아이템 */
-.cat-item{
-  border:1.5px solid var(--border);border-radius:10px;margin-bottom:5px;
-  overflow:hidden;background:var(--surface);transition:var(--tr);
-}
-.cat-item.has-selected{border-color:var(--cat-c,var(--navy));border-color:color-mix(in srgb,var(--cat-c,var(--navy)) 40%,transparent);}
-.cat-header{
-  display:flex;align-items:center;gap:8px;padding:10px 12px;
-  cursor:pointer;transition:var(--tr);user-select:none;
-}
-.cat-header:hover{background:var(--bg);}
-.cat-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
-.cat-name{font-size:12.5px;font-weight:700;color:var(--text);flex:1;}
-.cat-sel-count{
-  font-size:10.5px;font-weight:700;color:var(--navy);background:var(--navy-pale);
-  padding:1px 8px;border-radius:100px;display:none;
-}
-.cat-item.has-selected .cat-sel-count{display:inline-block;}
-.cat-total{font-size:10.5px;color:var(--muted);margin-right:2px;}
-.cat-toggle{
-  width:24px;height:24px;border-radius:6px;border:none;background:transparent;
-  cursor:pointer;display:flex;align-items:center;justify-content:center;
-  color:var(--muted);transition:var(--tr);flex-shrink:0;
-}
-.cat-toggle:hover{background:var(--bg);color:var(--navy);}
-.cat-toggle svg{width:14px;height:14px;transition:transform .2s ease;}
-.cat-item.open .cat-toggle svg{transform:rotate(180deg);}
-
-/* 계열 바디 (학과 칩) */
-.cat-body{
-  max-height:0;overflow:hidden;transition:max-height .25s ease;
-}
-.cat-item.open .cat-body{max-height:500px;}
-.major-chips{
-  display:flex;flex-wrap:wrap;gap:6px;padding:4px 12px 12px;
-}
-.major-chip{
-  display:inline-flex;align-items:center;padding:4px 12px;
-  border-radius:100px;font-size:12px;font-weight:500;cursor:pointer;
-  border:1.5px solid var(--border);background:var(--surface);color:var(--text);
-  transition:var(--tr);user-select:none;
-}
-.major-chip:hover{border-color:var(--c,var(--navy));color:var(--c,var(--navy));background:var(--cbg,var(--navy-pale));}
-.major-chip.selected{
-  background:var(--c,var(--navy));color:#fff;border-color:var(--c,var(--navy));
-  font-weight:700;
-}
-.major-chip.ai-new{
-  animation:chipPop .4s ease;
-}
-@keyframes chipPop{
-  0%{transform:scale(1);}
-  50%{transform:scale(1.12);}
-  100%{transform:scale(1);}
-}
-
-/* 선택된 태그 요약 */
-.selected-tags-wrap{
-  display:flex;flex-wrap:wrap;gap:6px;align-items:center;
-  min-height:36px;padding:10px 0 4px;
-}
-.selected-tags-empty{font-size:12px;color:var(--muted);font-style:italic;}
-.selected-tag-chip{
-  display:inline-flex;align-items:center;gap:4px;
-  background:var(--navy-pale);color:var(--navy);border:1px solid #C5D2F0;
-  border-radius:100px;padding:3px 10px;font-size:12px;font-weight:600;
-  animation:fadeUp .2s ease both;
-}
-.selected-tag-chip-x{
-  background:none;border:none;cursor:pointer;color:var(--muted);
-  font-size:14px;line-height:1;padding:0 0 0 2px;transition:var(--tr);
-}
-.selected-tag-chip-x:hover{color:#E53E3E;}
-
-/* 직접 추가 입력 */
-.custom-tag-row{
-  display:flex;gap:6px;margin-top:8px;
-}
-.custom-tag-input{
-  flex:1;padding:8px 12px;background:var(--bg);border:1.5px solid var(--border);
-  border-radius:8px;font-family:'Noto Sans KR',sans-serif;font-size:12.5px;
-  color:var(--text);outline:none;transition:var(--tr);
-}
-.custom-tag-input:focus{border-color:var(--navy);background:#fff;}
-.custom-tag-input::placeholder{color:#B0BAC8;}
-.btn-custom-add{
-  padding:8px 16px;background:var(--navy);color:#fff;border:none;border-radius:8px;
-  font-family:'Noto Sans KR',sans-serif;font-size:12.5px;font-weight:700;
-  cursor:pointer;transition:var(--tr);white-space:nowrap;
-}
-.btn-custom-add:hover{background:var(--navy-dark);}
-
-/* 해시태그 입력 (레거시 호환) */
+/* 해시태그 입력 */
 .hashtag-input-wrap{display:flex;flex-wrap:wrap;gap:6px;align-items:center;background:var(--bg);border:1.5px solid var(--border);border-radius:9px;padding:8px 12px;transition:var(--tr);min-height:44px;cursor:text;}
 .hashtag-input-wrap:focus-within{border-color:var(--navy);background:#fff;}
 .hashtag-chip{display:inline-flex;align-items:center;gap:4px;background:var(--navy-pale);color:var(--navy);border:1px solid #C5D2F0;border-radius:100px;padding:2px 10px;font-size:12px;font-weight:600;}
@@ -439,6 +304,57 @@ select.form-input{cursor:pointer;}
 .admin-err{font-size:12px;color:#E53E3E;margin-bottom:10px;display:none;padding:8px 12px;background:#FFF5F5;border-radius:8px;}
 
 mark{background:#FFF3CD;border-radius:2px;padding:0 1px;}
+
+/* ── [추가] 계열 목록 (학과 선택 아코디언) ── */
+.major-select-wrap{border:1.5px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:8px;background:var(--surface);}
+.major-ai-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:var(--navy-pale);border-bottom:1px solid var(--border);flex-wrap:wrap;gap:6px;}
+.major-ai-bar-left{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;}
+.major-ai-bar-left span{color:var(--navy);font-weight:600;}
+.ai-right-group{display:flex;align-items:center;gap:8px;}
+.ai-loading{display:none;align-items:center;gap:6px;font-size:12px;color:var(--navy);}
+.ai-loading.show{display:flex;}
+.ai-spinner{width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--navy);border-radius:50%;animation:spin .6s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.btn-ai-recommend{display:flex;align-items:center;gap:5px;padding:5px 13px;background:var(--navy);color:#fff;border:none;border-radius:7px;font-family:'Noto Sans KR',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:var(--tr);}
+.btn-ai-recommend:hover{background:var(--navy-dark);}
+.btn-ai-recommend:disabled{opacity:.5;cursor:not-allowed;}
+.accordion-list{max-height:260px;overflow-y:auto;}
+.accordion-list::-webkit-scrollbar{width:4px;}
+.accordion-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.cat-item{border-bottom:1px solid var(--border);}
+.cat-item:last-child{border-bottom:none;}
+.cat-header{display:flex;align-items:center;gap:8px;padding:10px 14px;cursor:pointer;transition:var(--tr);user-select:none;}
+.cat-header:hover{background:var(--bg);}
+.cat-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.cat-name{font-size:12.5px;font-weight:700;color:var(--text);flex:1;}
+.cat-sel-count{font-size:11px;font-weight:600;color:var(--navy);display:none;}
+.cat-item.has-selected .cat-sel-count{display:inline;}
+.cat-total{font-size:11px;color:var(--muted);}
+.cat-toggle{width:22px;height:22px;border-radius:5px;border:none;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted);transition:var(--tr);}
+.cat-toggle svg{width:14px;height:14px;transition:transform .2s;}
+.cat-item.open .cat-toggle svg{transform:rotate(180deg);}
+.cat-body{display:none;padding:6px 14px 12px;}
+.cat-item.open .cat-body{display:block;}
+.major-chips{display:flex;flex-wrap:wrap;gap:6px;}
+.major-chip{font-size:12px;padding:4px 11px;border-radius:100px;border:1.5px solid var(--border);color:var(--text);cursor:pointer;transition:var(--tr);background:var(--surface);}
+.major-chip:hover{border-color:var(--navy);color:var(--navy);}
+.major-chip.selected{background:var(--cbg,var(--navy-pale));color:var(--c,var(--navy));border-color:var(--c,var(--navy));font-weight:600;}
+.major-chip.ai-new{animation:aiPulse .5s ease;}
+@keyframes aiPulse{0%{transform:scale(1)}50%{transform:scale(1.08)}100%{transform:scale(1)}}
+
+/* ── [추가] 선택된 태그 요약 ── */
+.selected-tags-wrap{display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-height:30px;padding:6px 0;}
+.selected-tags-empty{font-size:12px;color:var(--muted);}
+.selected-tag-chip{display:inline-flex;align-items:center;gap:4px;background:var(--navy-pale);color:var(--navy);border:1px solid #C5D2F0;border-radius:100px;padding:3px 10px;font-size:12px;font-weight:600;}
+.selected-tag-chip-x{background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;line-height:1;padding:0 0 0 2px;}
+.selected-tag-chip-x:hover{color:#E53E3E;}
+
+/* ── [추가] 직접 추가 입력 ── */
+.custom-tag-row{display:flex;gap:6px;margin-top:6px;}
+.custom-tag-input{flex:1;padding:7px 12px;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;font-family:'Noto Sans KR',sans-serif;font-size:12.5px;color:var(--text);outline:none;transition:var(--tr);}
+.custom-tag-input:focus{border-color:var(--navy);background:#fff;}
+.btn-custom-add{padding:7px 14px;background:var(--bg);color:var(--navy);border:1.5px solid var(--border);border-radius:8px;font-family:'Noto Sans KR',sans-serif;font-size:12.5px;font-weight:700;cursor:pointer;transition:var(--tr);}
+.btn-custom-add:hover{background:var(--navy);color:#fff;border-color:var(--navy);}
 
 @media(max-width:640px){
   header,.toolbar{padding:0 16px;}
@@ -740,11 +656,16 @@ var currentTags=[],logoClicks=0,logoTimer=null;
 
 /* ── 유틸 ── */
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-function hl(t,q){if(!q)return esc(t);var e=q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');return esc(t).replace(new RegExp('('+e+')','gi'),'<mark>$1</mark>');}
+function hl(t,q){if(!q)return esc(t);var e=q.replace(/[.*+?^${}()|[\]\]/g,'\\$&');return esc(t).replace(new RegExp('('+e+')','gi'),'<mark>$1</mark>');}
 function nowDate(){var d=new Date();return d.getFullYear()+'.'+(d.getMonth()+1).toString().padStart(2,'0')+'.'+d.getDate().toString().padStart(2,'0');}
 function streamBadgeClass(s){if(s==='인문')return'badge-hum';if(s==='자연')return'badge-sci';return'badge-com';}
 function semBadgeClass(s){if(s==='1학기')return'badge-sem1';if(s==='2학기')return'badge-sem2';return'badge-year';}
 function streamAccent(s){if(s==='인문')return'var(--c-hum)';if(s==='자연')return'var(--c-sci)';return'var(--navy)';}
+
+/* ── [수정] 매칭용 정규화 함수 ── */
+function normalizeForMatch(s){
+  return(s||'').replace(/[·‧・\/\s\-\.]/g,'').toLowerCase();
+}
 
 /* ── 모든 태그 수집 (자동완성용) ── */
 function allTags(){
@@ -834,10 +755,7 @@ function render(){
       '<div class="act-tags">'+tagsHtml+moreBtnHtml+'</div>'+
       '<div class="card-footer"><span class="card-date">'+esc(a.date||'')+'</span></div>';
 
-    // 카드 클릭 → 팝업
     card.addEventListener('click',function(){openPopup(a.id);});
-
-    // 태그 클릭 → 검색
     card.querySelectorAll('.act-tag').forEach(function(el){
       el.addEventListener('click',function(e){
         e.stopPropagation();
@@ -847,13 +765,9 @@ function render(){
         render();
       });
     });
-
-    // 더보기 버튼
     card.querySelectorAll('.htag-more').forEach(function(btn){
       btn.addEventListener('click',function(e){e.stopPropagation();openTagPopup(a.id);});
     });
-
-    // 메뉴
     card.querySelector('.card-menu-btn').addEventListener('click',function(e){
       e.stopPropagation();
       var id=this.dataset.id;
@@ -869,11 +783,9 @@ function render(){
         else if(item.dataset.action==='del')openDelModal(item.dataset.id);
       });
     });
-
     grid.appendChild(card);
   });
 
-  // 태그 트리밍
   requestAnimationFrame(function(){
     grid.querySelectorAll('.act-tags').forEach(function(wrap){
       var tags=Array.from(wrap.querySelectorAll('.act-tag'));
@@ -951,15 +863,9 @@ var MAJORS = [
   { cat:'관광·호텔·항공 계열', color:'#C9A84C', items:['관광학','호텔경영학','항공서비스학','외식·조리학','여행경영학','레저관광학'] },
 ];
 
-/* ══════════════════════════════════════════════
-   [BUG FIX] 'catList' → 'accordionList'
-   HTML의 id는 "accordionList"인데 JS에서 "catList"를 참조해
-   null 에러가 발생하여 모달이 열리지 않던 버그 수정
-   ══════════════════════════════════════════════ */
-
-/* ── 계열 목록 빌드 ── */
+/* ── [수정] 계열 목록 빌드 — catList → accordionList ── */
 function buildCatList(){
-  var container=document.getElementById('accordionList');  /* ← 수정: catList → accordionList */
+  var container=document.getElementById('accordionList');
   container.innerHTML='';
   MAJORS.forEach(function(cat,ci){
     var selCount=cat.items.filter(function(m){return currentTags.includes(m);}).length;
@@ -967,7 +873,6 @@ function buildCatList(){
     item.className='cat-item'+(selCount?' has-selected':'');
     item.style.setProperty('--cat-c',cat.color);
 
-    // 헤더
     var header=document.createElement('div');
     header.className='cat-header';
     header.innerHTML=
@@ -979,7 +884,6 @@ function buildCatList(){
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>'+
       '</button>';
 
-    // 바디 (학과 칩)
     var body=document.createElement('div');
     body.className='cat-body';
     var chips=document.createElement('div');
@@ -1006,7 +910,6 @@ function buildCatList(){
     });
     body.appendChild(chips);
 
-    // 토글 이벤트
     header.querySelector('.cat-toggle').addEventListener('click',function(e){
       e.stopPropagation();
       item.classList.toggle('open');
@@ -1028,9 +931,8 @@ function updateCatItem(item,cat){
   if(countEl) countEl.textContent=selCount+'개 선택됨';
 }
 
-// 하위 호환 래퍼
 function buildAccordion(){ buildCatList(); }
-function updateAccordionCount(){ /* 미사용 */ }
+function updateAccordionCount(){ }
 
 /* ── 선택된 태그 요약 ── */
 function renderSelectedTags(){
@@ -1045,12 +947,10 @@ function renderSelectedTags(){
     chip.innerHTML='#'+esc(tag)+'<button class="selected-tag-chip-x">×</button>';
     chip.querySelector('.selected-tag-chip-x').addEventListener('click',function(){
       currentTags=currentTags.filter(function(t){return t!==tag;});
-      // 아코디언 칩도 해제
       document.querySelectorAll('.major-chip').forEach(function(c){
-        if(c.textContent==='#'+tag)c.classList.remove('selected');
+        if(c.textContent===tag)c.classList.remove('selected');
       });
       renderSelectedTags();
-      // 카운트 갱신
       MAJORS.forEach(function(cat,ci){if(cat.items.includes(tag))updateAccordionCount(ci,cat);});
     });
     wrap.appendChild(chip);
@@ -1064,14 +964,16 @@ function addCustomTag(){
   if(!currentTags.includes(val)){
     currentTags.push(val);
     renderSelectedTags();
-    buildAccordion(); // 카운트 갱신
+    buildAccordion();
   }
   document.getElementById('customTagInput').value='';
 }
 document.getElementById('btnCustomAdd').addEventListener('click',addCustomTag);
 document.getElementById('customTagInput').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();addCustomTag();}});
 
-/* ── AI 태그 추천 ── */
+/* ══════════════════════════════════════════════════════
+   [수정] AI 태그 추천 — 클리닝·매칭·프롬프트·에러핸들링 전면 개선
+   ══════════════════════════════════════════════════════ */
 document.getElementById('btnAiRecommend').addEventListener('click',function(){
   var name=document.getElementById('fName').value.trim();
   var desc=document.getElementById('fDesc').value.trim();
@@ -1083,22 +985,32 @@ document.getElementById('btnAiRecommend').addEventListener('click',function(){
 
   var allMajors=MAJORS.map(function(c){return c.items.join(',');}).join(',');
 
+  /* ── [수정] 학과 목록 평탄화 + 정규화 맵 미리 생성 ── */
+  var allItems=[];
+  var normMap={};
+  MAJORS.forEach(function(c){c.items.forEach(function(m){
+    allItems.push(m);
+    normMap[normalizeForMatch(m)]=m;
+  });});
+
   function applyRecommended(recommended){
     var added=0;
-    // 목록 전체 학과 평탄화
-    var allItems=[];
-    MAJORS.forEach(function(c){c.items.forEach(function(m){allItems.push(m);});});
-
     recommended.forEach(function(raw){
-      var rawClean=raw.replace(/\s/g,'').toLowerCase();
-      if(!rawClean) return;
-      // 정확 매칭 우선, 없으면 공백 무시 퍼지 매칭
+      var rawNorm=normalizeForMatch(raw);
+      if(!rawNorm||rawNorm.length<2) return;
+
+      /* [수정] 3단계 매칭: 정확 → 정규화 일치 → 부분 포함 */
       var matched=allItems.find(function(m){return m===raw;}) ||
-                  allItems.find(function(m){return m.replace(/\s/g,'').toLowerCase()===rawClean;}) ||
-                  allItems.find(function(m){return m.replace(/\s/g,'').toLowerCase().includes(rawClean)||rawClean.includes(m.replace(/\s/g,'').toLowerCase());});
+                  normMap[rawNorm] ||
+                  allItems.find(function(m){
+                    var mNorm=normalizeForMatch(m);
+                    return mNorm.indexOf(rawNorm)>=0||rawNorm.indexOf(mNorm)>=0;
+                  });
+
       if(matched&&!currentTags.includes(matched)){
         currentTags.push(matched);
         added++;
+        /* [수정] 칩 텍스트에 #이 없으므로 그대로 비교 */
         document.querySelectorAll('.major-chip').forEach(function(c){
           if(c.textContent===matched){
             c.classList.add('selected','ai-new');
@@ -1111,42 +1023,73 @@ document.getElementById('btnAiRecommend').addEventListener('click',function(){
     });
     MAJORS.forEach(function(cat,ci){updateAccordionCount(ci,cat);});
     renderSelectedTags();
+    buildAccordion();
     btn.disabled=false; loading.classList.remove('show');
+
     if(added===0){
-      // 매칭 실패 시 첫 번째 추천어 그대로 사용
+      /* [수정] 매칭 실패 시 원본 텍스트를 커스텀 태그로 추가 */
       recommended.slice(0,10).forEach(function(raw){
         var v=raw.trim().replace(/^#+/,'');
-        if(v&&!currentTags.includes(v)){
+        if(v&&v.length>=2&&!currentTags.includes(v)){
           currentTags.push(v);
           added++;
         }
       });
       MAJORS.forEach(function(cat,ci){updateAccordionCount(ci,cat);});
       renderSelectedTags();
+      buildAccordion();
       if(added===0)alert('AI가 관련 학과를 찾지 못했습니다. 활동명과 설명을 조금 더 자세히 입력해보세요.');
     }
   }
 
   var geminiUrl='https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyBV6dhvaw3vHHYtfLnO94rxBdDoZOLSwg8';
-  var prompt='너는 고등학교 진로 상담 전문가야. 아래 고등학교 활동과 관련된 대학 진로·학과를 추천해줘.'+
-    '직접적 연관뿐 아니라 간접적으로 도움이 될 학과까지 폭넓게 포함해. 반드시 10개 이상 추천해야 해.\n\n'+
-    '활동명: '+name+'\n설명: '+(desc||'(설명 없음)')+'\n\n'+
-    '다음 목록에서만 골라서 콤마(,)로만 구분해서 반환해. 다른 문장, 번호, 설명은 절대 쓰지 마. 학과명만 나열해.\n\n'+
+
+  /* ── [수정] 프롬프트 개선: 짧은 입력에도 폭넓게 추천 ── */
+  var prompt='너는 한국 고등학교 진로 상담 전문가야.\n'+
+    '아래 고등학교 활동 정보를 보고, 이 활동과 직접·간접적으로 관련 있는 대학 학과를 추천해줘.\n'+
+    '활동명이나 설명이 짧더라도, 키워드에서 유추할 수 있는 모든 관련 학과를 폭넓게 추천해.\n'+
+    '반드시 15개 이상 추천해야 해. 직접 관련 학과뿐 아니라, 융합·응용 가능한 학과도 포함해.\n\n'+
+    '활동명: '+name+'\n'+
+    '설명: '+(desc||'(없음)')+'\n\n'+
+    '아래 목록에서 골라서, 학과명만 콤마(,)로 구분해 한 줄로 출력해. 다른 설명이나 번호는 절대 쓰지 마.\n'+
     '목록: '+allMajors;
+
   fetch(geminiUrl,{
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})
   })
-  .then(function(res){return res.json();})
+  .then(function(res){
+    if(!res.ok) throw new Error('API 응답 오류 ('+res.status+')');
+    return res.json();
+  })
   .then(function(data){
     var text='';
-    try{ text=data.candidates[0].content.parts[0].text||''; }catch(e){}
-    // 줄바꿈·별표·숫자·점·괄호 등 노이즈 제거 후 콤마 또는 줄바꿈으로 분리
-    var cleaned=text.replace(/[*\[\]()0-9.·•\-]/g,' ').replace(/\n/g,',');
+    try{
+      /* [수정] 안전한 응답 파싱 + 에러 메시지 감지 */
+      if(data.error){throw new Error(data.error.message||'API 에러');}
+      if(!data.candidates||!data.candidates.length){throw new Error('AI 응답이 비어있습니다 (안전 필터 차단 가능)');}
+      text=data.candidates[0].content.parts[0].text||'';
+    }catch(e){
+      alert('AI 응답 파싱 오류: '+e.message);
+      btn.disabled=false; loading.classList.remove('show');
+      return;
+    }
+
+    /* ── [수정] 응답 텍스트 클리닝 — ·문자 보존! ── */
+    var cleaned=text
+      .replace(/```[\s\S]*?```/g,'')       /* 코드블록 제거 */
+      .replace(/\*\*/g,'')                   /* 볼드(**) 제거 */
+      .replace(/\*/g,'')                      /* 이탤릭(*) 제거 */
+      .replace(/^\s*\d+[.)\-]\s*/gm,'')    /* 번호 목록 접두사 제거 */
+      .replace(/^\s*[-•]\s*/gm,'')           /* 불릿 접두사 제거 */
+      .replace(/[\[\]()""`]/g,'')            /* 괄호·따옴표 제거 */
+      .replace(/\n/g,',');                    /* 줄바꿈 → 콤마 */
+
     var recommended=cleaned.split(',')
       .map(function(s){return s.replace(/\s+/g,' ').trim().replace(/^#+/,'');})
-      .filter(function(s){return s.length>=2&&s.length<=20;});
+      .filter(function(s){return s.length>=2&&s.length<=30;});
+
     applyRecommended(recommended);
   })
   .catch(function(err){
