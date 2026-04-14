@@ -818,7 +818,7 @@ function openPopup(id){
 function closePopup(){document.getElementById('popupOverlay').classList.remove('active');popupId=null;}
 document.getElementById('popupOverlay').addEventListener('click',function(e){if(e.target===this)closePopup();});
 document.getElementById('popupClose').addEventListener('click',closePopup);
-document.getElementById('popupEdit').addEventListener('click',function(){if(popupId){closePopup();openEditAct(popupId);}});
+document.getElementById('popupEdit').addEventListener('click',function(){if(popupId){var id=popupId;closePopup();openEditAct(id);}});
 document.getElementById('popupDel').addEventListener('click',function(){if(popupId){var id=popupId;closePopup();openDelModal(id);}});
 
 /* ── 태그 전체보기 팝업 ── */
