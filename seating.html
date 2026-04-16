@@ -178,10 +178,10 @@ input:checked+.tsl::before{transform:translateX(17px);}
 /* 자리 셀 */
 .seat{
   border-radius:8px;border:2px solid var(--theme-border);background:var(--theme-seat);
-  display:flex;align-items:center;justify-content:center;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
   font-weight:600;cursor:grab;transition:box-shadow .15s,transform .12s;
   position:relative;user-select:none;flex-shrink:0;overflow:hidden;
-  color:var(--theme-text);
+  color:var(--theme-text);padding-top:4px;
 }
 .seat:hover{box-shadow:0 4px 14px rgba(37,62,138,.15);transform:translateY(-2px);z-index:5;}
 .seat.dragging{opacity:.4;transform:scale(.95);}
@@ -190,7 +190,11 @@ input:checked+.tsl::before{transform:translateX(17px);}
 .seat.female{background:var(--theme-female-bg);border-color:var(--theme-female);color:var(--theme-female);}
 .seat.ec{background:var(--theme-empty);border-style:dashed;color:#9CA3AF;font-size:11px;cursor:default;}
 .seat.pinned::after{content:'📌';position:absolute;top:2px;right:3px;font-size:8px;}
-.seat-num{position:absolute;bottom:2px;left:4px;font-size:9px;color:rgba(0,0,0,.3);}
+.seat-num{
+  display:block;font-size:13px;font-weight:800;
+  color:var(--theme-num,#94A3B8);line-height:1;
+  margin-bottom:2px;opacity:.8;text-align:center;
+}
 
 /* 분단 구분 공백 - 명확한 빈 공간 */
 .col-gap-space{flex-shrink:0;display:flex;align-items:center;justify-content:center;}
@@ -494,7 +498,7 @@ input:checked+.tsl::before{transform:translateX(17px);}
   .seat-row{transform:scaleY(-1);}
   .seat{transform:scaleY(-1);}
   /* 학생 번호 인쇄에서도 표시 */
-  .seat-num{display:block!important;position:absolute;top:3px;left:5px;font-size:8px;color:var(--theme-num,#94A3B8);font-weight:600;}
+  .seat-num{display:block!important;font-size:12px;font-weight:800;color:var(--theme-num,#94A3B8);opacity:.85;}
   .print-board-bottom{
     display:block!important;text-align:center;
     font-size:11px;font-weight:700;letter-spacing:2px;
@@ -957,8 +961,11 @@ function goToSettings(){
   /* Firebase에 학생 명단 저장 */
   db.collection('seating_classes').doc(curClass).set({students:students},{merge:true})
     .then(function(){showToast('📝 학생 명단 저장됨');});
-  buildPreview();
   goScreen('s3');
+  /* 화면 전환 후 DOM 렌더링 완료 시점에 프리뷰 빌드 */
+  requestAnimationFrame(function(){
+    setTimeout(function(){buildPreview();},80);
+  });
 }
 
 /* ──────────── S3 인터랙티브 프리뷰 ──────────── */
@@ -1188,9 +1195,11 @@ function generateLayout(){
   if(!best){alert('제약 조건이 너무 많아 배치가 불가능해요.\n조건을 줄여보세요.');return;}
   layout=best;
   document.getElementById('s4badge').textContent=curClass+' 학급 배치표';
-  renderSeatGrid(cfg);
-  applyTheme(curTheme);
   goScreen('s4');
+  applyTheme(curTheme);
+  requestAnimationFrame(function(){
+    setTimeout(function(){renderSeatGrid(cfg);},80);
+  });
 }
 
 function runSim(active,valid,rows,cols,cfg){
@@ -1317,7 +1326,9 @@ function renderSeatGrid(cfg){
         if(stu&&stu.gender==='M') seat.classList.add('male');
         else if(stu&&stu.gender==='F') seat.classList.add('female');
         if(fx[c+'-'+r]===name) seat.classList.add('pinned');
-        seat.innerHTML='<span class="seat-num">'+(stu?stu.num:'')+'</span>'+esc(name);
+        var fnSize=name.length>=4?'13px':name.length===3?'15px':'17px';
+        seat.innerHTML='<span class="seat-num">'+(stu?stu.num:'')+'</span>'
+          +'<span class="seat-name-inner" style="font-size:'+fnSize+';font-weight:900;line-height:1.15;word-break:keep-all;text-align:center;padding:0 3px;">'+esc(name)+'</span>';
         seat.draggable=true;
         seat.addEventListener('dragstart',function(){dragSrc=this;this.classList.add('dragging');});
         seat.addEventListener('dragover',function(e){e.preventDefault();if(this!==dragSrc)this.classList.add('drag-over');});
@@ -1404,49 +1415,171 @@ function doSaveImage(){
   var btn=document.getElementById('btnSaveImg');
   btn.textContent='저장 중...';btn.disabled=true;
 
-  var target=document.querySelector('.layout-area');
-  var boardBottom=document.querySelector('.print-board-bottom');
-  var commentEl=document.getElementById('printCommentText');
+  var rows=parseInt(document.getElementById('sRows').value)||5;
+  var cols=parseInt(document.getElementById('sCols').value)||6;
+  var cgArr=Array.from(colGaps).sort(function(a,b){return a-b;});
+  var rgArr=Array.from(rowGaps).sort(function(a,b){return a-b;});
+  var cmt=document.getElementById('printCommentText').textContent||'';
 
-  // 저장 전 임시 스타일
-  boardBottom.style.display='block';
-  target.style.background=getComputedStyle(document.body).getPropertyValue('--theme-bg-color')||'#fff';
+  /* 테마 변수 가져오기 */
+  var cs=getComputedStyle(document.documentElement);
+  function tv(n){return cs.getPropertyValue(n).trim()||'';}
+  var bgColor   = tv('--theme-bg-color') || '#F2F4FB';
+  var seatBg    = tv('--theme-seat')     || '#ffffff';
+  var border    = tv('--theme-border')   || '#E0E5F0';
+  var maleBg    = tv('--theme-male-bg')  || '#EFF6FF';
+  var maleC     = tv('--theme-male')     || '#3B82F6';
+  var femaleBg  = tv('--theme-female-bg')|| '#FDF2F8';
+  var femaleC   = tv('--theme-female')   || '#EC4899';
+  var emptyBg   = tv('--theme-empty')    || '#F3F4F6';
+  var gapC      = tv('--theme-gap')      || '#6B3FA0';
+  var textC     = tv('--theme-text')     || '#1A1E2E';
+  var numC      = tv('--theme-num')      || '#94A3B8';
+  var cardTop   = tv('--theme-card-top') || '#E0E5F0';
+  var boardBg   = tv('--theme-board-bg') || '#253E8A';
+  var boardText = tv('--theme-board-text')|| '#ffffff';
+  var commentC  = tv('--theme-comment-color')|| '#1A1E2E';
+  var themeFont = tv('--theme-font')     || 'Noto Sans KR';
 
-  // 그리드를 scaleY(-1)로 뒤집어 교사 시점
-  var inner=document.querySelector('.seat-grid-inner');
-  var rows=document.querySelectorAll('.seat-row');
-  var seats=document.querySelectorAll('.seat');
-  inner.style.transform='scaleY(-1)';
-  rows.forEach(function(r){r.style.transform='scaleY(-1)';});
-  seats.forEach(function(s){s.style.transform='scaleY(-1)';});
+  /* 교사 시점: 행 역순, 열 역순으로 새 배열 생성 */
+  var flipped=[];
+  for(var r=rows-1;r>=0;r--){
+    var row=[];
+    for(var c=cols-1;c>=0;c--) row.push(layout[r][c]);
+    flipped.push(row);
+  }
+  /* 열 갭도 역순 계산 */
+  var flippedColGaps=cgArr.map(function(cg){return cols-cg;}).sort(function(a,b){return a-b;});
+  var flippedRowGaps=rgArr.map(function(rg){return rows-rg;}).sort(function(a,b){return a-b;});
 
-  html2canvas(target,{
-    scale:2,
-    useCORS:true,
-    backgroundColor:null,
-    logging:false
+  /* 셀 크기 계산 */
+  var CELL_W=100, CELL_H=72, GAP=10, COL_GAP=28, ROW_GAP=22, MARGIN=40;
+  var totalW = MARGIN*2 + cols*CELL_W + (cols-1)*GAP + flippedColGaps.length*COL_GAP;
+  var canvasW = Math.max(700, totalW);
+
+  /* 오프스크린 컨테이너 */
+  var wrap=document.createElement('div');
+  wrap.style.cssText='position:fixed;top:-9999px;left:-9999px;width:'+canvasW+'px;'
+    +'background:'+bgColor+';padding:'+MARGIN+'px;font-family:'+themeFont+',Noto Sans KR,sans-serif;';
+
+  /* 칠판 (학생 시점 기준 위 = 교사 시점 기준 아래) → 이미지 상단에 표시 */
+  var bb=document.createElement('div');
+  bb.style.cssText='background:'+boardBg+';color:'+boardText+';text-align:center;'
+    +'padding:12px;border-radius:10px;font-size:18px;font-weight:900;letter-spacing:3px;'
+    +'margin-bottom:18px;';
+  bb.textContent='▲ 칠판 (교단)';
+  wrap.appendChild(bb);
+
+  /* 그리드 */
+  var grid=document.createElement('div');
+  grid.style.cssText='display:inline-flex;flex-direction:column;gap:0;';
+
+  for(var ri=0;ri<rows;ri++){
+    /* 행 구분선 */
+    if(flippedRowGaps.indexOf(ri)!==-1){
+      var rg=document.createElement('div');
+      rg.style.cssText='height:'+ROW_GAP+'px;width:100%;display:flex;align-items:center;margin-bottom:0;';
+      rg.innerHTML='<div style="height:2px;width:100%;background:repeating-linear-gradient(90deg,'+gapC+' 0,'+gapC+' 5px,transparent 5px,transparent 10px);opacity:.6;"></div>';
+      grid.appendChild(rg);
+    }
+    var rowEl=document.createElement('div');
+    rowEl.style.cssText='display:flex;align-items:center;margin-bottom:'+GAP+'px;';
+
+    for(var ci=0;ci<cols;ci++){
+      /* 열 구분선 */
+      if(flippedColGaps.indexOf(ci)!==-1){
+        var cg=document.createElement('div');
+        cg.style.cssText='width:'+COL_GAP+'px;height:'+CELL_H+'px;display:flex;align-items:center;justify-content:center;flex-shrink:0;';
+        cg.innerHTML='<div style="width:2px;height:80%;background:repeating-linear-gradient(180deg,'+gapC+' 0,'+gapC+' 5px,transparent 5px,transparent 10px);opacity:.6;"></div>';
+        rowEl.appendChild(cg);
+      }
+
+      var name=flipped[ri][ci];
+      var cell=document.createElement('div');
+      cell.style.cssText='width:'+CELL_W+'px;height:'+CELL_H+'px;border-radius:10px;'
+        +'display:flex;flex-direction:column;align-items:center;justify-content:center;'
+        +'position:relative;flex-shrink:0;overflow:hidden;margin-right:'+GAP+'px;'
+        +'box-sizing:border-box;';
+
+      if(name==='EMPTY'||!name){
+        cell.style.cssText+=
+          'background:'+emptyBg+';border:2px dashed '+border+';color:#9CA3AF;font-size:12px;';
+        cell.textContent='빈 자리';
+      } else {
+        var stu=students.find(function(s){return s.name===name;});
+        var isMale=stu&&stu.gender==='M';
+        var isFemale=stu&&stu.gender==='F';
+        var bg2=isMale?maleBg:isFemale?femaleBg:seatBg;
+        var bc2=isMale?maleC:isFemale?femaleC:border;
+        var tc2=isMale?maleC:isFemale?femaleC:textC;
+        var topC=isMale?maleC:isFemale?femaleC:cardTop;
+
+        cell.style.cssText+=
+          'background:'+bg2+';border:2px solid '+bc2+';color:'+tc2+';';
+
+        /* 상단 컬러 띠 */
+        var stripe=document.createElement('div');
+        stripe.style.cssText='position:absolute;top:0;left:0;right:0;height:5px;background:'+topC+';border-radius:9px 9px 0 0;';
+        cell.appendChild(stripe);
+
+        /* 번호 */
+        var numEl=document.createElement('div');
+        numEl.style.cssText='font-size:15px;font-weight:800;color:'+tc2+';opacity:.75;line-height:1;margin-top:6px;';
+        numEl.textContent=stu?stu.num:'';
+        cell.appendChild(numEl);
+
+        /* 이름 */
+        var nameEl=document.createElement('div');
+        var fsize=name.length>=4?'18px':name.length===3?'20px':'22px';
+        nameEl.style.cssText='font-size:'+fsize+';font-weight:900;line-height:1.15;word-break:keep-all;text-align:center;padding:0 4px;';
+        nameEl.textContent=name;
+        cell.appendChild(nameEl);
+      }
+      rowEl.appendChild(cell);
+    }
+    grid.appendChild(rowEl);
+  }
+  wrap.appendChild(grid);
+
+  /* 교사 시점 하단 표시 */
+  var bottom=document.createElement('div');
+  bottom.style.cssText='text-align:center;font-size:12px;font-weight:700;letter-spacing:2px;'
+    +'color:'+boardBg+';margin-top:14px;padding-top:10px;'
+    +'border-top:2px solid '+boardBg+';';
+  bottom.textContent='▼ 칠판 (교사 시점)';
+  wrap.appendChild(bottom);
+
+  /* 코멘트 */
+  if(cmt){
+    var cmtEl=document.createElement('div');
+    cmtEl.style.cssText='text-align:center;padding:10px 0 2px;font-size:14px;'
+      +'font-family:'+themeFont+',Noto Serif KR,serif;color:'+commentC+';font-weight:500;';
+    cmtEl.textContent=cmt;
+    wrap.appendChild(cmtEl);
+  }
+
+  document.body.appendChild(wrap);
+
+  html2canvas(wrap,{
+    scale:2.5, useCORS:true, backgroundColor:bgColor, logging:false,
+    width:wrap.scrollWidth, height:wrap.scrollHeight
   }).then(function(canvas){
-    // 원상복귀
-    inner.style.transform='';
-    rows.forEach(function(r){r.style.transform='';});
-    seats.forEach(function(s){s.style.transform='';});
-    boardBottom.style.display='none';
-
+    document.body.removeChild(wrap);
     var link=document.createElement('a');
-    link.download='자리배치표_'+curClass+'_'+new Date().toLocaleDateString('ko-KR').replace(/\. /g,'-').replace('.','')+'png';
+    var d=new Date();
+    link.download='자리배치표_'+curClass+'_'+d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()+'.png';
     link.href=canvas.toDataURL('image/png');
     link.click();
     btn.textContent='📷 이미지 저장';btn.disabled=false;
     showToast('📷 이미지 저장 완료!');
   }).catch(function(err){
-    inner.style.transform='';
-    rows.forEach(function(r){r.style.transform='';});
-    seats.forEach(function(s){s.style.transform='';});
-    boardBottom.style.display='none';
+    if(document.body.contains(wrap)) document.body.removeChild(wrap);
     btn.textContent='📷 이미지 저장';btn.disabled=false;
     alert('이미지 저장 실패: '+err.message);
   });
 }
+
+
 
 /* ──────────── 저장 / 히스토리 ──────────── */
 function openSaveModal(){
