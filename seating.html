@@ -72,7 +72,7 @@ header{flex-shrink:0;background:var(--surface);border-bottom:1px solid var(--bor
 .count-spin{display:flex;align-items:center;gap:5px;}
 .count-btn{width:26px;height:26px;border-radius:7px;border:1.5px solid var(--border);background:var(--surface);cursor:pointer;font-size:15px;color:var(--navy);display:flex;align-items:center;justify-content:center;transition:var(--tr);flex-shrink:0;}
 .count-btn:hover{background:var(--navy);color:#fff;border-color:var(--navy);}
-.count-val{width:42px;padding:3px 6px;background:var(--surface);border:1.5px solid var(--border);border-radius:7px;font-family:inherit;font-size:16px;font-weight:700;color:var(--navy);text-align:center;outline:none;transition:var(--tr);}
+.count-val{width:48px;padding:3px 5px;background:var(--surface);border:1.5px solid var(--border);border-radius:7px;font-family:inherit;font-size:13px;font-weight:700;color:var(--navy);text-align:center;outline:none;transition:var(--tr);}
 .count-val:focus{border-color:var(--navy);}
 .s2-body{flex:1;overflow-y:auto;padding:16px 24px 32px;}
 
@@ -244,6 +244,167 @@ input:checked+.tsl::before{transform:translateX(17px);}
 /* 인쇄 comment */
 .print-comment{display:none;text-align:center;padding:16px 0 8px;font-size:14px;color:var(--theme-comment-color);font-family:var(--theme-font);}
 
+/* ══════ 테마 전면 재설계 ══════ */
+
+/* 봄 테마 - 벚꽃, 동글동글 폰트 */
+.theme-spring{
+  --theme-bg:linear-gradient(135deg,#FFF0F5 0%,#FFF5FB 50%,#FFF0F0 100%);
+  --theme-bg-color:#FFF0F5;
+  --theme-surface:#fff;--theme-seat:#fff;
+  --theme-border:#FBCFE8;
+  --theme-male-bg:#FFE4F0;--theme-male:#E91E8C;
+  --theme-female-bg:#FCE4FF;--theme-female:#C026D3;
+  --theme-empty:#FDF4FF;--theme-gap:#F472B6;
+  --theme-text:#831843;--theme-num:#EC4899;
+  --theme-card-top:#F9A8D4;
+  --theme-font:'Noto Sans KR';
+  --theme-board-bg:#FF6FA8;--theme-board-text:#fff;
+  --theme-comment-color:#9D174D;
+}
+/* 여름 테마 - 시원한 바다 */
+.theme-summer{
+  --theme-bg:linear-gradient(135deg,#E0F7FA 0%,#E8F5E9 60%,#E3F2FD 100%);
+  --theme-bg-color:#E0F7FA;
+  --theme-surface:#fff;--theme-seat:#F0FDFD;
+  --theme-border:#67E8F9;
+  --theme-male-bg:#DBEAFE;--theme-male:#0284C7;
+  --theme-female-bg:#D1FAE5;--theme-female:#059669;
+  --theme-empty:#F0FDF4;--theme-gap:#06B6D4;
+  --theme-text:#164E63;--theme-num:#0891B2;
+  --theme-card-top:#67E8F9;
+  --theme-font:'Noto Sans KR';
+  --theme-board-bg:#0284C7;--theme-board-text:#fff;
+  --theme-comment-color:#0C4A6E;
+}
+/* 가을 테마 - 낙엽, 따뜻한 색 */
+.theme-autumn{
+  --theme-bg:linear-gradient(135deg,#FFF7ED 0%,#FFFBEB 60%,#FEF3C7 100%);
+  --theme-bg-color:#FFF7ED;
+  --theme-surface:#fff;--theme-seat:#FFFBF0;
+  --theme-border:#FCD34D;
+  --theme-male-bg:#FEF3C7;--theme-male:#B45309;
+  --theme-female-bg:#FDE8D8;--theme-female:#C2410C;
+  --theme-empty:#F5F0E8;--theme-gap:#D97706;
+  --theme-text:#78350F;--theme-num:#B45309;
+  --theme-card-top:#FCD34D;
+  --theme-font:'Noto Serif KR';
+  --theme-board-bg:#B45309;--theme-board-text:#fff;
+  --theme-comment-color:#92400E;
+}
+/* 겨울 테마 - 눈, 차가운 블루 */
+.theme-winter{
+  --theme-bg:linear-gradient(135deg,#EFF6FF 0%,#F8FAFF 50%,#EDE9FE 100%);
+  --theme-bg-color:#EFF6FF;
+  --theme-surface:#fff;--theme-seat:#F8FAFF;
+  --theme-border:#BFDBFE;
+  --theme-male-bg:#DBEAFE;--theme-male:#1D4ED8;
+  --theme-female-bg:#EDE9FE;--theme-female:#6D28D9;
+  --theme-empty:#F1F5F9;--theme-gap:#3B82F6;
+  --theme-text:#1E3A8A;--theme-num:#2563EB;
+  --theme-card-top:#BFDBFE;
+  --theme-font:'Noto Sans KR';
+  --theme-board-bg:#1D4ED8;--theme-board-text:#fff;
+  --theme-comment-color:#1E3A8A;
+}
+/* 교실 테마 - 칠판, 나무 */
+.theme-classroom{
+  --theme-bg:#F5F0E8;
+  --theme-bg-color:#F5F0E8;
+  --theme-surface:#FFFEF5;--theme-seat:#FFFEF5;
+  --theme-border:#C5A87A;
+  --theme-male-bg:#E8F5E4;--theme-male:#2D6A4F;
+  --theme-female-bg:#FDE8E8;--theme-female:#9B2335;
+  --theme-empty:#EDE8DF;--theme-gap:#8B6914;
+  --theme-text:#3D2B1F;--theme-num:#6B4C2A;
+  --theme-card-top:#C5A87A;
+  --theme-font:'Noto Serif KR';
+  --theme-board-bg:#2D4A1E;--theme-board-text:#E8F5E4;
+  --theme-comment-color:#3D2B1F;
+}
+/* 심플 테마 */
+.theme-simple{
+  --theme-bg:#F8F9FA;
+  --theme-bg-color:#F8F9FA;
+  --theme-surface:#fff;--theme-seat:#fff;
+  --theme-border:#DEE2E6;
+  --theme-male-bg:#E3F2FD;--theme-male:#1565C0;
+  --theme-female-bg:#FCE4EC;--theme-female:#AD1457;
+  --theme-empty:#F1F3F5;--theme-gap:#868E96;
+  --theme-text:#212529;--theme-num:#868E96;
+  --theme-card-top:#DEE2E6;
+  --theme-font:'Noto Sans KR';
+  --theme-board-bg:#343A40;--theme-board-text:#fff;
+  --theme-comment-color:#212529;
+}
+/* 모던 다크 테마 */
+.theme-modern{
+  --theme-bg:#0F172A;
+  --theme-bg-color:#0F172A;
+  --theme-surface:#1E293B;--theme-seat:#1E293B;
+  --theme-border:#334155;
+  --theme-male-bg:#1E3A5F;--theme-male:#60A5FA;
+  --theme-female-bg:#3B1F3F;--theme-female:#F0ABFC;
+  --theme-empty:#0F172A;--theme-gap:#475569;
+  --theme-text:#E2E8F0;--theme-num:#94A3B8;
+  --theme-card-top:#3B82F6;
+  --theme-font:'Noto Sans KR';
+  --theme-board-bg:#0F172A;--theme-board-text:#60A5FA;
+  --theme-comment-color:#CBD5E1;
+}
+/* 아기자기 테마 */
+.theme-cute{
+  --theme-bg:linear-gradient(135deg,#FFF9FB 0%,#F5F3FF 100%);
+  --theme-bg-color:#FFF9FB;
+  --theme-surface:#fff;--theme-seat:#fff;
+  --theme-border:#DDD6FE;
+  --theme-male-bg:#EDE9FE;--theme-male:#7C3AED;
+  --theme-female-bg:#FCE7F3;--theme-female:#DB2777;
+  --theme-empty:#F5F3FF;--theme-gap:#A78BFA;
+  --theme-text:#4C1D95;--theme-num:#7C3AED;
+  --theme-card-top:#C4B5FD;
+  --theme-font:'Noto Sans KR';
+  --theme-board-bg:#7C3AED;--theme-board-text:#fff;
+  --theme-comment-color:#5B21B6;
+}
+/* 유치원 테마 - 알록달록 */
+.theme-kinder{
+  --theme-bg:linear-gradient(135deg,#FFFDE7 0%,#FFF9F0 50%,#F3FFF3 100%);
+  --theme-bg-color:#FFFDE7;
+  --theme-surface:#fff;--theme-seat:#fff;
+  --theme-border:#FDE68A;
+  --theme-male-bg:#D1FAE5;--theme-male:#047857;
+  --theme-female-bg:#FCE7F3;--theme-female:#BE185D;
+  --theme-empty:#FFFDE7;--theme-gap:#F59E0B;
+  --theme-text:#78350F;--theme-num:#B45309;
+  --theme-card-top:#FDE68A;
+  --theme-font:'Noto Sans KR';
+  --theme-board-bg:#F59E0B;--theme-board-text:#fff;
+  --theme-comment-color:#92400E;
+}
+
+/* 테마 배경 적용 */
+[class*="theme-"] .layout-area{background:var(--theme-bg) !important;}
+[class*="theme-"] .seat{background:var(--theme-seat) !important;border-color:var(--theme-border) !important;color:var(--theme-text) !important;}
+[class*="theme-"] .seat.male{background:var(--theme-male-bg) !important;border-color:var(--theme-male) !important;color:var(--theme-male) !important;}
+[class*="theme-"] .seat.female{background:var(--theme-female-bg) !important;border-color:var(--theme-female) !important;color:var(--theme-female) !important;}
+[class*="theme-"] .seat.ec{background:var(--theme-empty) !important;border-color:var(--theme-border) !important;color:#9CA3AF !important;}
+[class*="theme-"] .seat-num{color:var(--theme-num) !important;}
+[class*="theme-"] .board-tag-area{background:var(--theme-board-bg,var(--navy)) !important;color:var(--theme-board-text,#fff) !important;border:none !important;}
+
+/* 카드 상단 컬러 띠 */
+[class*="theme-"] .seat::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:4px;
+  background:var(--theme-card-top);border-radius:7px 7px 0 0;
+}
+[class*="theme-"] .seat.male::before{background:var(--theme-male);}
+[class*="theme-"] .seat.female::before{background:var(--theme-female);}
+[class*="theme-"] .seat.ec::before{background:var(--theme-border);}
+
+/* S4 전체 배경 */
+[class*="theme-"] #s4{background:var(--theme-bg-color);}
+
+.print-comment{display:none;text-align:center;padding:16px 0 8px;font-size:14px;color:var(--theme-comment-color);font-family:var(--theme-font);}
+
 /* 테마들 */
 .theme-spring{
   --theme-bg:#FFF5F7;--theme-surface:#fff;--theme-seat:#FFF0F5;
@@ -315,20 +476,39 @@ input:checked+.tsl::before{transform:translateX(17px);}
 
 /* ══ 인쇄 ══ */
 @media print{
-  @page{size:A4 landscape;margin:10mm;}
+  @page{size:A4 landscape;margin:8mm 12mm;}
   *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
-  header,.s4-top,.hist-panel,#s1,#s2,#s3{display:none!important;}
-  #s4{display:flex!important;height:100%;}
-  .s4-body{overflow:visible;}
-  .layout-area{padding:0;overflow:visible;}
-  .seat-grid-outer{overflow:visible;}
-  .board-tag-area{display:none!important;}
-  /* 교사 시점: 칠판이 하단 */
-  .seat-grid-inner{transform:rotate(180deg);}
-  .seat{transform:rotate(180deg);}
-  .seat .seat-num{display:none;}
-  .print-board-bottom{display:block!important;text-align:center;font-size:10px;font-weight:700;letter-spacing:3px;color:var(--theme-gap);margin-top:8px;padding:6px;border-top:2px solid var(--theme-gap);}
-  .print-comment{display:block!important;}
+  header,.s4-top,.hist-panel,#s1,#s2,#s3,.board-tag-area{display:none!important;}
+  #s4{display:flex!important;height:100%;background:var(--theme-bg-color,#fff) !important;}
+  .s4-body{overflow:visible;display:block;}
+  .layout-area{
+    padding:8px;overflow:visible;
+    display:flex!important;flex-direction:column!important;
+    align-items:center!important;justify-content:center!important;
+    min-height:95vh;background:var(--theme-bg-color,#fff) !important;
+  }
+  .seat-grid-outer{overflow:visible;display:flex;justify-content:center;}
+  .seat-grid-inner{display:inline-flex;flex-direction:column;align-items:center;}
+  /* 교사 시점: 칠판이 하단 - 행 순서 반전 */
+  .seat-grid-inner{transform:scaleY(-1);}
+  .seat-row{transform:scaleY(-1);}
+  .seat{transform:scaleY(-1);}
+  /* 학생 번호 인쇄에서도 표시 */
+  .seat-num{display:block!important;position:absolute;top:3px;left:5px;font-size:8px;color:var(--theme-num,#94A3B8);font-weight:600;}
+  .print-board-bottom{
+    display:block!important;text-align:center;
+    font-size:11px;font-weight:700;letter-spacing:2px;
+    color:var(--theme-board-bg,#253E8A);margin-top:12px;
+    padding:8px 24px;border-top:2px solid var(--theme-board-bg,#253E8A);
+  }
+  .print-comment{
+    display:block!important;text-align:center;
+    padding:10px 0 4px;font-size:13px;
+    font-family:var(--theme-font,'Noto Serif KR'),serif;
+    color:var(--theme-comment-color,#1A1E2E);
+    font-weight:500;letter-spacing:.3px;
+  }
+  .seat::before{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
 }
 .print-board-bottom{display:none;}
 
@@ -472,7 +652,7 @@ input:checked+.tsl::before{transform:translateX(17px);}
       <label class="print-opt">
         <input type="checkbox" id="printCommentCheck"/> 코멘트 추가
       </label>
-      <button class="btn btn-secondary btn-sm" onclick="doPrint()">🖨️ 인쇄</button>
+      <button class="btn btn-secondary btn-sm" id="btnSaveImg" onclick="saveAsImage()">📷 이미지 저장</button>
       <button class="btn btn-secondary btn-sm" onclick="toggleHistory()">⏱ 히스토리</button>
     </div>
   </div>
@@ -593,6 +773,7 @@ input:checked+.tsl::before{transform:translateX(17px);}
 
 <div class="toast" id="toast"></div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
@@ -785,13 +966,14 @@ function calcCellSize(){
   var cols=parseInt(document.getElementById('sCols').value)||6;
   var rows=parseInt(document.getElementById('sRows').value)||5;
   var right=document.getElementById('s3right');
-  if(!right) return{w:54,h:38,cg:14,rg:10};
-  var aw=right.clientWidth-56, ah=right.clientHeight-80;
-  var totalCols=cols+colGaps.size;
-  var totalRows=rows+rowGaps.size;
-  var w=Math.max(34,Math.min(72,Math.floor((aw-totalCols*5)/totalCols)));
-  var h=Math.max(24,Math.min(52,Math.floor((ah-totalRows*4)/totalRows)));
-  return{w,h,cg:Math.max(10,Math.round(w*0.25)),rg:Math.max(8,Math.round(h*0.22))};
+  if(!right) return{w:60,h:42,cg:16,rg:12};
+  var aw=Math.max(200,right.clientWidth-64);
+  var ah=Math.max(160,right.clientHeight-100);
+  var cgCount=colGaps.size, rgCount=rowGaps.size;
+  var cgW=16, rgH=12;
+  var w=Math.max(44,Math.min(110,Math.floor((aw-cgCount*cgW-cols*6)/cols)));
+  var h=Math.max(32,Math.min(72,Math.floor((ah-rgCount*rgH-rows*6)/rows)));
+  return{w,h,cg:cgW,rg:rgH};
 }
 function buildPreview(){
   var rows=parseInt(document.getElementById('sRows').value)||5;
@@ -1087,13 +1269,14 @@ function calcSeatSize(){
   var cols=parseInt(document.getElementById('sCols').value)||6;
   var rows=parseInt(document.getElementById('sRows').value)||5;
   var la=document.querySelector('.layout-area');
-  if(!la) return{w:76,h:50,cg:28,rg:20};
-  var aw=la.clientWidth-48, ah=la.clientHeight-80;
-  var totalC=cols+colGaps.size, totalR=rows+rowGaps.size;
-  var gapW=colGaps.size*28, gapH=rowGaps.size*20;
-  var w=Math.max(56,Math.min(100,Math.floor((aw-gapW-totalC*8)/totalC)));
-  var h=Math.max(40,Math.min(68,Math.floor((ah-gapH-totalR*8)/totalR)));
-  return{w,h,cg:28,rg:20};
+  if(!la) return{w:82,h:56,cg:32,rg:22};
+  var aw=Math.max(300,la.clientWidth-48);
+  var ah=Math.max(200,la.clientHeight-100);
+  var cgCount=colGaps.size,rgCount=rowGaps.size;
+  var cg=32,rg=22;
+  var w=Math.max(62,Math.min(130,Math.floor((aw-cgCount*cg-cols*10)/cols)));
+  var h=Math.max(44,Math.min(84,Math.floor((ah-rgCount*rg-rows*10)/rows)));
+  return{w,h,cg,rg};
 }
 function renderSeatGrid(cfg){
   var rows=cfg?cfg.rows:(parseInt(document.getElementById('sRows').value)||5);
@@ -1204,7 +1387,65 @@ function confirmComment(){
   el.textContent=txt;
   el.style.display='block';
   closeCommentModal();
-  window.print();
+  doSaveImage();
+}
+
+function saveAsImage(){
+  var withCmt=document.getElementById('printCommentCheck').checked;
+  if(withCmt){
+    openCommentModal();
+  } else {
+    document.getElementById('printCommentText').style.display='none';
+    doSaveImage();
+  }
+}
+
+function doSaveImage(){
+  var btn=document.getElementById('btnSaveImg');
+  btn.textContent='저장 중...';btn.disabled=true;
+
+  var target=document.querySelector('.layout-area');
+  var boardBottom=document.querySelector('.print-board-bottom');
+  var commentEl=document.getElementById('printCommentText');
+
+  // 저장 전 임시 스타일
+  boardBottom.style.display='block';
+  target.style.background=getComputedStyle(document.body).getPropertyValue('--theme-bg-color')||'#fff';
+
+  // 그리드를 scaleY(-1)로 뒤집어 교사 시점
+  var inner=document.querySelector('.seat-grid-inner');
+  var rows=document.querySelectorAll('.seat-row');
+  var seats=document.querySelectorAll('.seat');
+  inner.style.transform='scaleY(-1)';
+  rows.forEach(function(r){r.style.transform='scaleY(-1)';});
+  seats.forEach(function(s){s.style.transform='scaleY(-1)';});
+
+  html2canvas(target,{
+    scale:2,
+    useCORS:true,
+    backgroundColor:null,
+    logging:false
+  }).then(function(canvas){
+    // 원상복귀
+    inner.style.transform='';
+    rows.forEach(function(r){r.style.transform='';});
+    seats.forEach(function(s){s.style.transform='';});
+    boardBottom.style.display='none';
+
+    var link=document.createElement('a');
+    link.download='자리배치표_'+curClass+'_'+new Date().toLocaleDateString('ko-KR').replace(/\. /g,'-').replace('.','')+'png';
+    link.href=canvas.toDataURL('image/png');
+    link.click();
+    btn.textContent='📷 이미지 저장';btn.disabled=false;
+    showToast('📷 이미지 저장 완료!');
+  }).catch(function(err){
+    inner.style.transform='';
+    rows.forEach(function(r){r.style.transform='';});
+    seats.forEach(function(s){s.style.transform='';});
+    boardBottom.style.display='none';
+    btn.textContent='📷 이미지 저장';btn.disabled=false;
+    alert('이미지 저장 실패: '+err.message);
+  });
 }
 
 /* ──────────── 저장 / 히스토리 ──────────── */
