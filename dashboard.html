@@ -216,6 +216,30 @@
     .admin-modal-wrap{max-width:360px;}
     .admin-err{font-size:12px;color:#E53E3E;margin-bottom:10px;display:none;padding:8px 12px;background:#FFF5F5;border-radius:8px;}
 
+
+    /* ── 만료됨 탭 검색 ── */
+    .search-wrap {
+      display:flex; align-items:center; gap:8px;
+      background:var(--surface); border:1.5px solid var(--border);
+      border-radius:10px; padding:8px 14px; transition:var(--tr);
+    }
+    .search-wrap:focus-within { border-color:var(--navy); }
+    .search-wrap svg { width:14px; height:14px; color:var(--muted); flex-shrink:0; }
+    .search-wrap input {
+      border:none; outline:none; background:transparent;
+      font-family:'Noto Sans KR',sans-serif; font-size:13px; color:var(--text);
+      min-width:180px;
+    }
+    .search-wrap input::placeholder { color:#B0BAC8; }
+    .search-clear {
+      width:18px; height:18px; border-radius:50%; border:none;
+      background:var(--border); cursor:pointer; color:var(--muted);
+      display:none; align-items:center; justify-content:center;
+      font-size:12px; transition:var(--tr); flex-shrink:0;
+    }
+    .search-clear.show { display:flex; }
+    .search-clear:hover { background:var(--navy); color:#fff; }
+    .filter-tab.overdue-tab.active { background:#718096; border-color:#718096; color:#fff; }
     @media(max-width:640px){
       header{padding:0 16px;}
       .toolbar{padding:20px 16px 12px;}
@@ -250,11 +274,18 @@
 <!-- TOOLBAR -->
 <div class="toolbar">
   <div class="toolbar-left">
+    <!-- 검색창 (만료됨 탭일 때만 표시) -->
+    <div class="search-wrap" id="dashSearchWrap" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="dashSearchInput" placeholder="공지 내용으로 검색" autocomplete="off"/>
+      <button class="search-clear" id="dashSearchClear">×</button>
+    </div>
     <div class="filter-tabs">
       <button class="filter-tab active" data-filter="all">전체</button>
       <button class="filter-tab" data-filter="urgent">🔴 긴급 (D-3)</button>
       <button class="filter-tab" data-filter="warning">🟡 주의 (D-7)</button>
       <button class="filter-tab" data-filter="normal">🟢 여유</button>
+      <button class="filter-tab" data-filter="overdue" id="tabOverdue">⚫ 만료됨</button>
     </div>
     <div class="sort-wrap">
       <button class="sort-btn active" data-sort="deadline">기한순</button>
@@ -404,7 +435,7 @@ var colRef = db.collection('dashboard_posts');
 
 /* ═══ 상태 ═══ */
 var posts=[], editingId=null, popupId=null;
-var curFilter='all', curSort='deadline';
+var curFilter='all', curSort='deadline', dashSearch='';
 var isAdmin=sessionStorage.getItem('dash_admin')==='true';
 var selectedIds=new Set(), logoClicks=0, logoTimer=null;
 
@@ -429,13 +460,27 @@ function render(){
   var empty=document.getElementById('emptyState');
   board.querySelectorAll('.postit').forEach(function(el){el.remove();});
   var list=posts.filter(function(p){
+    if(curFilter==='overdue'){
+      // 만료됨: overdue만 + 검색 필터
+      if(urgency(p.deadline)!=='overdue') return false;
+      if(!dashSearch.trim()) return true;
+      var q=dashSearch.toLowerCase();
+      return p.content.toLowerCase().includes(q)||p.author.toLowerCase().includes(q);
+    }
+    // 일반 탭: 만료된 카드 제외
+    if(urgency(p.deadline)==='overdue') return false;
     if(curFilter==='all')return true;
     if(curFilter==='urgent')return urgency(p.deadline)==='urgent';
     if(curFilter==='warning')return urgency(p.deadline)==='warning';
     if(curFilter==='normal')return urgency(p.deadline)==='normal';
     return true;
   });
-  list=sortedPosts(list);
+  // 만료됨 탭은 최신 만료 순(기한 늦은 순)으로 정렬
+  if(curFilter==='overdue'){
+    list=list.slice().sort(function(a,b){return new Date(b.deadline)-new Date(a.deadline);});
+  } else {
+    list=sortedPosts(list);
+  }
   if(!list.length){empty.classList.add('show');return;}
   empty.classList.remove('show');
   list.forEach(function(p){
@@ -588,8 +633,34 @@ document.getElementById('logoWrap').addEventListener('click',function(){
 document.querySelectorAll('.filter-tab').forEach(function(btn){
   btn.addEventListener('click',function(){
     document.querySelectorAll('.filter-tab').forEach(function(b){b.classList.remove('active');});
-    this.classList.add('active');curFilter=this.dataset.filter;render();
+    this.classList.add('active');
+    curFilter=this.dataset.filter;
+    // 만료됨 탭일 때만 검색창 표시
+    var wrap=document.getElementById('dashSearchWrap');
+    if(curFilter==='overdue'){
+      wrap.style.display='flex';
+    } else {
+      wrap.style.display='none';
+      dashSearch='';
+      document.getElementById('dashSearchInput').value='';
+      document.getElementById('dashSearchClear').classList.remove('show');
+    }
+    render();
   });
+});
+
+// 만료됨 탭 검색
+document.getElementById('dashSearchInput').addEventListener('input',function(){
+  dashSearch=this.value;
+  document.getElementById('dashSearchClear').classList.toggle('show',!!dashSearch.trim());
+  render();
+});
+document.getElementById('dashSearchClear').addEventListener('click',function(){
+  dashSearch='';
+  document.getElementById('dashSearchInput').value='';
+  this.classList.remove('show');
+  document.getElementById('dashSearchInput').focus();
+  render();
 });
 
 // 정렬
