@@ -1652,14 +1652,17 @@ function doSaveImage(isTeacher){
   var gridAvailH = A4_H - TOP - BOT - HDR_H - BOARD_H - CMT_H - DATE_H
                    - (rows-1)*GAP - rgArr.length*ROW_GAP;
 
-  var CELL_W = Math.floor(gridAvailW / cols);
-  var CELL_H = Math.floor(gridAvailH / rows);
-  CELL_W = Math.max(70, Math.min(220, CELL_W));
-  CELL_H = Math.max(50, Math.min(160, CELL_H));
+  /* 최대값 제한 없이 A4 공간 꽉 채움 */
+  var CELL_W = Math.max(60, Math.floor(gridAvailW / cols));
+  var CELL_H = Math.max(44, Math.floor(gridAvailH / rows));
 
   /* 실제 그리드 너비/높이 */
   var gridW = cols*CELL_W + (cols-1)*GAP + cgArr.length*COL_GAP;
   var gridH = rows*CELL_H + (rows-1)*GAP + rgArr.length*ROW_GAP;
+
+  /* 전체 콘텐츠 높이 계산 후 상하 여백 균등 배분 */
+  var totalContent = HDR_H + gridH + 14 + BOARD_H + CMT_H + DATE_H;
+  var vPad = Math.max(TOP, Math.floor((A4_H - totalContent) / 2));
 
   /* 시점 전환 */
   var flipped=[];
@@ -1684,7 +1687,7 @@ function doSaveImage(isTeacher){
   var fontBase=themeFont||'Noto Sans KR';
 
   /* ── 헤더 (학교명/학반/시점) ── */
-  var hdrY=TOP;
+  var hdrY=vPad;
   /* 구분선 */
   ctx.strokeStyle=border; ctx.lineWidth=2;
   ctx.beginPath(); ctx.moveTo(SIDE,hdrY+HDR_H-16); ctx.lineTo(A4_W-SIDE,hdrY+HDR_H-16); ctx.stroke();
@@ -1707,7 +1710,7 @@ function doSaveImage(isTeacher){
 
   /* ── 학생 좌석 그리드 ── */
   var gStartX = (A4_W - gridW) / 2;
-  var gStartY = TOP + HDR_H;
+  var gStartY = vPad + HDR_H;
 
   for(var ri=0;ri<rows;ri++){
     /* 행 구분선 */
@@ -1798,8 +1801,8 @@ function doSaveImage(isTeacher){
     gStartY+=CELL_H+GAP;
   }
 
-  /* ── 교탁 바 ── */
-  var boardY = A4_H - BOT - CMT_H - DATE_H - BOARD_H;
+  /* ── 교탁 바: 그리드 바로 아래 ── */
+  var boardY = vPad + HDR_H + gridH + 14;
   var boardLabel = isTeacher ? '칠 판' : '▲ 칠 판 (교단)';
   ctx.fillStyle=boardBg;
   roundRect(ctx, SIDE, boardY, A4_W-SIDE*2, BOARD_H-10, 14, true, false);
@@ -1809,11 +1812,14 @@ function doSaveImage(isTeacher){
   ctx.fillText(boardLabel, A4_W/2, boardY+(BOARD_H-10)/2);
 
   /* ── 코멘트 ── */
+  var afterBoardY = boardY + BOARD_H;
+
   if(cmt){
     ctx.fillStyle=commentC;
     ctx.font='500 28px "'+fontBase+'",Noto Serif KR,serif';
     ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(cmt, A4_W/2, A4_H-BOT-DATE_H-CMT_H/2);
+    ctx.fillText(cmt, A4_W/2, afterBoardY + CMT_H/2);
+    afterBoardY += CMT_H;
   }
 
   /* ── 날짜 ── */
@@ -1821,7 +1827,7 @@ function doSaveImage(isTeacher){
   ctx.fillStyle='#9CA3AF';
   ctx.font='22px "'+fontBase+'",sans-serif';
   ctx.textAlign='right'; ctx.textBaseline='middle';
-  ctx.fillText(d.getFullYear()+'.'+String(d.getMonth()+1)+'.'+d.getDate()+' 생성', A4_W-SIDE, A4_H-BOT-10);
+  ctx.fillText(d.getFullYear()+'.'+String(d.getMonth()+1)+'.'+d.getDate()+' 생성', A4_W-SIDE, afterBoardY + DATE_H/2);
 
   /* ── 저장 ── */
   var link=document.createElement('a');
