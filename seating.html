@@ -106,8 +106,9 @@ header{flex-shrink:0;background:var(--surface);border-bottom:1px solid var(--bor
 .role-popup-item.clear{color:var(--muted);}
 /* 역할 텍스트 표시 */
 .seat-role-text{
-  font-size:10px;font-weight:700;color:var(--muted);
-  line-height:1;text-align:center;margin-top:2px;letter-spacing:.3px;
+  font-size:9px;font-weight:700;color:var(--muted);
+  line-height:1;text-align:center;margin-top:1px;letter-spacing:0;
+  max-width:100%;overflow:hidden;
 }
 
 /* ══ S3 교실 설정 ══ */
@@ -890,7 +891,7 @@ input:checked+.tsl::before{transform:translateX(17px);}
 <div class="modal-overlay" id="completeModal" style="align-items:center;padding:20px;">
   <div class="modal" style="max-width:860px;width:96%;max-height:92vh;display:flex;flex-direction:column;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-shrink:0;">
-      <div class="modal-title" style="margin-bottom:0;">🔍 미리보기</div>
+      <div style="margin-bottom:0;font-family:'Noto Sans KR',sans-serif;font-size:18px;font-weight:800;color:var(--navy-dark);">🔍 미리보기</div>
       <button class="btn btn-secondary btn-sm" onclick="closeCompleteModal()">✕ 닫기</button>
     </div>
     <!-- 프리뷰 이미지 영역 -->
@@ -1488,7 +1489,13 @@ function generateLayout(){
   goScreen('s4');
   applyTheme(curTheme);
   requestAnimationFrame(function(){
-    setTimeout(function(){renderSeatGrid(cfg);},80);
+    setTimeout(function(){
+      renderSeatGrid(cfg);
+      /* 칠판 바 위치 재조정 */
+      var boardBar=document.getElementById('screenBoardBar');
+      var outer=document.querySelector('.seat-grid-outer');
+      if(boardBar&&outer&&outer.parentNode) outer.parentNode.insertBefore(boardBar,outer.nextSibling);
+    },80);
   });
 }
 
@@ -1618,8 +1625,10 @@ function renderSeatGrid(cfg){
         if(fx[c+'-'+r]===name) seat.classList.add('pinned');
         var fnSize=name.length>=4?'13px':name.length===3?'15px':'17px';
         var roleText=stu&&stu.role==='president'?'(반장)':stu&&stu.role==='vice'?'(부반장)':'';
+        /* 역할 있으면 이름 폰트 살짝 축소 */
+        var actualFnSize=roleText?(name.length>=4?'11px':name.length===3?'13px':'15px'):fnSize;
         seat.innerHTML='<span class="seat-num">'+(stu?stu.num:'')+'</span>'
-          +'<span class="seat-name-inner" style="font-size:'+fnSize+';font-weight:900;line-height:1.15;word-break:keep-all;text-align:center;padding:0 3px;">'+esc(name)+'</span>'
+          +'<span class="seat-name-inner" style="font-size:'+actualFnSize+';font-weight:900;line-height:1.1;word-break:keep-all;text-align:center;padding:0 3px;">'+esc(name)+'</span>'
           +(roleText?'<span class="seat-role-text">'+roleText+'</span>':'');
         seat.draggable=true;
         seat.addEventListener('dragstart',function(){dragSrc=this;this.classList.add('dragging');});
@@ -1646,6 +1655,14 @@ function renderSeatGrid(cfg){
   }
 }
 window.addEventListener('resize',function(){if(document.getElementById('s4').classList.contains('active')) renderSeatGrid();});
+/* 칠판 바를 seatGrid 바로 아래로 이동 */
+(function moveBoardBar(){
+  var boardBar=document.getElementById('screenBoardBar');
+  var outer=document.querySelector('.seat-grid-outer');
+  if(boardBar&&outer&&outer.parentNode){
+    outer.parentNode.insertBefore(boardBar, outer.nextSibling);
+  }
+})();
 
 /* ──────────── 테마 ──────────── */
 var THEMES={
