@@ -648,14 +648,16 @@ input:checked+.tsl::before{transform:translateX(17px);}
       <span class="s4-badge" id="s4badge"></span>
     </div>
     <div class="s4-toolbar">
-      <label class="print-opt" id="genderToggleWrap" title="남/여 색상 구분">
+      <!-- 남/여 구분 체크 -->
+      <label class="print-opt" title="남/여 색상 구분">
         <input type="checkbox" id="genderColorCheck" checked onchange="toggleGenderColor()"/>
         남/여 색 구분
       </label>
+      <!-- 테마 선택 -->
       <select class="theme-select" id="themeSelect">
-        <option value="simple">🎨 테마 선택</option>
+        <option value="simple">🎨 테마</option>
         <option value="simple">심플</option>
-        <option value="modern">모던 (다크)</option>
+        <option value="modern">모던</option>
         <option value="classroom">교실</option>
         <option value="spring">🌸 봄</option>
         <option value="summer">🌊 여름</option>
@@ -664,15 +666,14 @@ input:checked+.tsl::before{transform:translateX(17px);}
         <option value="cute">🌈 아기자기</option>
         <option value="kinder">🎈 유치원</option>
       </select>
+      <!-- 재배치 -->
       <button class="btn btn-secondary btn-sm" onclick="generateLayout()">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.12"/></svg>재배치
       </button>
-      <button class="btn btn-secondary btn-sm" onclick="openSaveModal()">💾 저장</button>
-      <label class="print-opt">
-        <input type="checkbox" id="printCommentCheck"/> 코멘트 추가
-      </label>
-      <button class="btn btn-secondary btn-sm" id="btnSaveImg" onclick="saveAsImage()">📷 이미지 저장</button>
-      <button class="btn btn-secondary btn-sm" onclick="toggleHistory()">⏱ 히스토리</button>
+      <!-- 배치 완료 -->
+      <button class="btn btn-primary btn-sm" onclick="openCompleteModal()" style="padding:7px 16px;">
+        ✅ 배치 완료
+      </button>
     </div>
   </div>
   <div class="s4-body">
@@ -774,6 +775,39 @@ input:checked+.tsl::before{transform:translateX(17px);}
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeCommentModal()">취소</button>
       <button class="btn btn-primary" onclick="confirmComment()">인쇄하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 배치 완료 팝업 -->
+<div class="modal-overlay" id="completeModal">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-title" style="margin-bottom:6px;">✅ 배치 완료</div>
+    <div style="font-size:12.5px;color:var(--muted);margin-bottom:22px;">저장 방식을 선택하세요</div>
+
+    <!-- 서버에 기록하기 -->
+    <button class="btn btn-primary" style="width:100%;justify-content:center;margin-bottom:10px;padding:13px;" onclick="openSaveFromComplete()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+      서버에 기록하기
+    </button>
+
+    <!-- 이미지 저장 (학생 시점) -->
+    <button class="btn btn-secondary" style="width:100%;justify-content:center;margin-bottom:10px;padding:12px;" onclick="saveStudentView()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+      📷 이미지 저장 (학생 시점)
+    </button>
+
+    <!-- 이미지 저장 (교사 시점) -->
+    <button class="btn btn-secondary" style="width:100%;justify-content:center;padding:12px;" onclick="saveTeacherView()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+      📷 이미지 저장 (교사 시점)
+    </button>
+
+    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center;">
+      <label class="print-opt" style="font-size:12.5px;">
+        <input type="checkbox" id="completeCommentCheck"/> 코멘트 추가
+      </label>
+      <button class="btn btn-secondary btn-sm" style="margin-left:auto;" onclick="closeCompleteModal()">닫기</button>
     </div>
   </div>
 </div>
@@ -1395,16 +1429,29 @@ document.getElementById('themeSelect').addEventListener('change',function(){
 
 function toggleGenderColor(){
   var on=document.getElementById('genderColorCheck').checked;
-  // 성별 구분 on/off 스타일
   var style=document.getElementById('genderColorStyle');
   if(!style){style=document.createElement('style');style.id='genderColorStyle';document.head.appendChild(style);}
   if(!on){
-    style.textContent='.seat.male{background:var(--theme-seat)!important;border-color:var(--theme-border)!important;color:var(--theme-text)!important;}.seat.male::before{background:var(--theme-card-top)!important;}.seat.female{background:var(--theme-seat)!important;border-color:var(--theme-border)!important;color:var(--theme-text)!important;}.seat.female::before{background:var(--theme-card-top)!important;}';
+    /* 화면: 모든 seat 동일 스타일 */
+    style.textContent=
+      '.seat.male,.seat.female{'+
+        'background:var(--theme-seat)!important;'+
+        'border-color:var(--theme-border)!important;'+
+        'color:var(--theme-text)!important;}'+
+      '.seat.male::before,.seat.female::before{'+
+        'background:var(--theme-card-top)!important;}';
     showToast('남/여 색 구분 해제');
   } else {
     style.textContent='';
     showToast('남/여 색 구분 적용');
   }
+  /* 이미지 저장에서도 반영 - renderSeatGrid 재호출 */
+  var rows=parseInt(document.getElementById('sRows').value)||5;
+  var cols=parseInt(document.getElementById('sCols').value)||6;
+  var cfg={rows,cols,genderSep:document.getElementById('optGender').checked,
+    colGaps:Array.from(colGaps),rowGaps:Array.from(rowGaps),
+    emptySeats:Array.from(emptySeats),fixedSeats};
+  renderSeatGrid(cfg);
 }
 
 /* ──────────── 인쇄 ──────────── */
@@ -1427,13 +1474,14 @@ function closeCommentModal(){document.getElementById('commentModal').classList.r
 function confirmComment(){
   var txt=document.getElementById('commentInput').value.trim();
   var el=document.getElementById('printCommentText');
-  el.textContent=txt;
-  el.style.display='block';
+  el.textContent=txt;el.style.display='block';
   closeCommentModal();
-  doSaveImage();
+  var isTeacher=(window._saveMode==='teacher');
+  window._saveMode=null;
+  doSaveImage(isTeacher);
 }
 
-function saveAsImage(){
+function saveAsImage_old(){
   var withCmt=document.getElementById('printCommentCheck').checked;
   if(withCmt){
     openCommentModal();
@@ -1443,7 +1491,7 @@ function saveAsImage(){
   }
 }
 
-function doSaveImage(){
+function doSaveImage(isTeacher){
   var btn=document.getElementById('btnSaveImg');
   btn.textContent='저장 중...';btn.disabled=true;
 
@@ -1473,16 +1521,19 @@ function doSaveImage(){
   var commentC  = tv('--theme-comment-color')|| '#1A1E2E';
   var themeFont = tv('--theme-font')     || 'Noto Sans KR';
 
-  /* 교사 시점: 행 역순, 열 역순으로 새 배열 생성 */
+  /* 학생/교사 시점 전환 */
   var flipped=[];
-  for(var r=rows-1;r>=0;r--){
-    var row=[];
-    for(var c=cols-1;c>=0;c--) row.push(layout[r][c]);
-    flipped.push(row);
+  if(isTeacher){
+    for(var r=rows-1;r>=0;r--){var row=[];for(var c=cols-1;c>=0;c--) row.push(layout[r][c]);flipped.push(row);}
+  } else {
+    for(var r=0;r<rows;r++){var row=[];for(var c=0;c<cols;c++) row.push(layout[r][c]);flipped.push(row);}
   }
-  /* 열 갭도 역순 계산 */
-  var flippedColGaps=cgArr.map(function(cg){return cols-cg;}).sort(function(a,b){return a-b;});
-  var flippedRowGaps=rgArr.map(function(rg){return rows-rg;}).sort(function(a,b){return a-b;});
+  var flippedColGaps=isTeacher
+    ?cgArr.map(function(cg){return cols-cg;}).sort(function(a,b){return a-b;})
+    :cgArr;
+  var flippedRowGaps=isTeacher
+    ?rgArr.map(function(rg){return rows-rg;}).sort(function(a,b){return a-b;})
+    :rgArr;
 
   /* 셀 크기 계산 */
   var CELL_W=100, CELL_H=72, GAP=10, COL_GAP=28, ROW_GAP=22, MARGIN=40;
@@ -1535,10 +1586,12 @@ function doSaveImage(){
         var stu=students.find(function(s){return s.name===name;});
         var isMale=stu&&stu.gender==='M';
         var isFemale=stu&&stu.gender==='F';
-        var bg2=isMale?maleBg:isFemale?femaleBg:seatBg;
-        var bc2=isMale?maleC:isFemale?femaleC:border;
-        var tc2=isMale?maleC:isFemale?femaleC:textC;
-        var topC=isMale?maleC:isFemale?femaleC:cardTop;
+        var gCheck=document.getElementById('genderColorCheck');
+        var useGender=gCheck&&gCheck.checked;
+        var bg2=(useGender&&isMale)?maleBg:(useGender&&isFemale)?femaleBg:seatBg;
+        var bc2=(useGender&&isMale)?maleC:(useGender&&isFemale)?femaleC:border;
+        var tc2=(useGender&&isMale)?maleC:(useGender&&isFemale)?femaleC:textC;
+        var topC=(useGender&&isMale)?maleC:(useGender&&isFemale)?femaleC:cardTop;
 
         cell.style.cssText+=
           'background:'+bg2+';border:2px solid '+bc2+';color:'+tc2+';';
@@ -1567,12 +1620,12 @@ function doSaveImage(){
   }
   wrap.appendChild(grid);
 
-  /* 교사 시점 하단 표시 */
+  /* 시점 표시 */
   var bottom=document.createElement('div');
   bottom.style.cssText='text-align:center;font-size:12px;font-weight:700;letter-spacing:2px;'
     +'color:'+boardBg+';margin-top:14px;padding-top:10px;'
     +'border-top:2px solid '+boardBg+';';
-  bottom.textContent='▼ 칠판 (교사 시점)';
+  bottom.textContent=isTeacher?'▼ 칠판 (교사 시점)':'▲ 칠판 (학생 시점)';
   wrap.appendChild(bottom);
 
   /* 코멘트 */
@@ -1593,7 +1646,8 @@ function doSaveImage(){
     document.body.removeChild(wrap);
     var link=document.createElement('a');
     var d=new Date();
-    link.download='자리배치표_'+curClass+'_'+d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()+'.png';
+    var viewLabel=isTeacher?'_교사시점':'_학생시점';
+    link.download='자리배치표_'+curClass+viewLabel+'_'+d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()+'.png';
     link.href=canvas.toDataURL('image/png');
     link.click();
     btn.textContent='📷 이미지 저장';btn.disabled=false;
@@ -1606,6 +1660,50 @@ function doSaveImage(){
 }
 
 
+
+/* ──────────── 배치 완료 팝업 ──────────── */
+function openCompleteModal(){
+  document.getElementById('completeModal').classList.add('active');
+}
+function closeCompleteModal(){
+  document.getElementById('completeModal').classList.remove('active');
+}
+function openSaveFromComplete(){
+  closeCompleteModal();
+  document.getElementById('saveLabel').value='';
+  document.getElementById('saveModal').classList.add('active');
+  setTimeout(function(){document.getElementById('saveLabel').focus();},160);
+}
+
+/* 학생 시점 - 뒤집지 않고 그대로 */
+function saveStudentView(){
+  var withCmt=document.getElementById('completeCommentCheck').checked;
+  if(withCmt){
+    /* 코멘트 입력 후 저장 */
+    document.getElementById('commentInput').value='';
+    document.getElementById('commentModal').classList.add('active');
+    /* 확인 버튼이 교사시점 저장하도록 임시 모드 변경 */
+    window._saveMode='student';
+    setTimeout(function(){document.getElementById('commentInput').focus();},160);
+  } else {
+    document.getElementById('printCommentText').textContent='';
+    doSaveImage(false);
+  }
+}
+
+/* 교사 시점 - 행/열 역순 */
+function saveTeacherView(){
+  var withCmt=document.getElementById('completeCommentCheck').checked;
+  if(withCmt){
+    document.getElementById('commentInput').value='';
+    document.getElementById('commentModal').classList.add('active');
+    window._saveMode='teacher';
+    setTimeout(function(){document.getElementById('commentInput').focus();},160);
+  } else {
+    document.getElementById('printCommentText').textContent='';
+    doSaveImage(true);
+  }
+}
 
 /* ──────────── 저장 / 히스토리 ──────────── */
 function openSaveModal(){
@@ -1653,7 +1751,7 @@ function toggleHistory(){
 document.addEventListener('keydown',function(e){
   if(e.key==='Escape'){closeSaveModal();closeSpecialModal();closeCommentModal();}
 });
-['saveModal','specialModal','commentModal'].forEach(function(id){
+['saveModal','specialModal','commentModal','completeModal'].forEach(function(id){
   document.getElementById(id).addEventListener('click',function(e){
     if(e.target===this){this.classList.remove('active');}
   });
