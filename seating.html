@@ -1639,7 +1639,7 @@ function doSaveImage(isTeacher){
 
   /* ── A4 가로 고해상도 ── */
   var A4_W=2480, A4_H=1754;
-  var SIDE=60, VPAD=44;
+  var SIDE=120, VPAD=88;
   var BOARD_H=86, CMT_H=cmt?50:0, DATE_H=36;
   var GAP=10, COL_GAP=30, ROW_GAP=22;
   var SECT_GAP=14; /* 헤더↔그리드, 그리드↔칠판 간격 */
@@ -1666,9 +1666,9 @@ function doSaveImage(isTeacher){
   HDR_H = Math.max(120, HDR_H);
 
   /* 헤더 폰트 크기 동적 계산 */
-  var fs_school = Math.round(HDR_H * 0.36);  /* 학교명 */
-  var fs_class  = Math.round(HDR_H * 0.22);  /* 학반 */
-  var fs_sub    = Math.round(HDR_H * 0.13);  /* 시점 안내 */
+  var fs_school = Math.round(HDR_H * 0.20);  /* 학교명 - 작게 */
+  var fs_class  = Math.round(HDR_H * 0.28);  /* 학반 - 크게 */
+  var fs_sub    = Math.round(HDR_H * 0.07);  /* 시점 안내 - 작게 */
 
   /* ── 위치 계산 ── */
   var totalH = VPAD + HDR_H + SECT_GAP + gridH + SECT_GAP + BOARD_H + CMT_H + DATE_H + VPAD;
@@ -1702,11 +1702,11 @@ function doSaveImage(isTeacher){
   ctx.fillStyle=boardBg;
   ctx.font='900 '+fs_school+'px "'+F+'",sans-serif';
   ctx.textAlign='center'; ctx.textBaseline='top';
-  ctx.fillText('도개고등학교', hdrCX, hdrY + HDR_H*0.05);
+  ctx.fillText('도개중고등학교', hdrCX, hdrY + HDR_H*0.08);
   /* 학반 */
   ctx.fillStyle=commentC;
   ctx.font='700 '+fs_class+'px "'+F+'",sans-serif';
-  ctx.fillText(curClass+' 학급', hdrCX, hdrY + HDR_H*0.05 + fs_school + 10);
+  ctx.fillText(curClass+' 학급', hdrCX, hdrY + HDR_H*0.08 + fs_school + 14);
   /* 구분선 */
   ctx.strokeStyle=border; ctx.lineWidth=2;
   ctx.beginPath();
@@ -1714,7 +1714,7 @@ function doSaveImage(isTeacher){
   /* 시점 안내 */
   ctx.fillStyle='#9CA3AF';
   ctx.font=fs_sub+'px "'+F+'",sans-serif';
-  ctx.fillText(isTeacher?'교사 시점 (교탁에서 바라본 배치도)':'학생 시점', hdrCX, hdrY+HDR_H - fs_sub - 10);
+  ctx.fillText(isTeacher?'교사 시점 (교탁에서 바라본 배치도)':'학생 시점', hdrCX, hdrY+HDR_H - fs_sub - 14);
 
   /* ── 그리드 ── */
   var cx0=(A4_W-gridW)/2; /* 가로 중앙 정렬 */
