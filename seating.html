@@ -721,6 +721,9 @@ input:checked+.tsl::before{transform:translateX(17px);}
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.12"/></svg>재배치
       </button>
       <!-- 배치 완료 -->
+      <button class="btn btn-secondary btn-sm" onclick="openCommentForPreview()" title="코멘트 입력">
+        💬 코멘트
+      </button>
       <button class="btn btn-primary btn-sm" onclick="openPreviewModal()" style="padding:7px 16px;">
         🔍 미리보기 / 저장
       </button>
@@ -882,18 +885,13 @@ input:checked+.tsl::before{transform:translateX(17px);}
       </button>
     </div>
     <!-- 하단 버튼 -->
-    <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;flex-wrap:wrap;">
-      <label class="print-opt" style="font-size:12.5px;">
-        <input type="checkbox" id="completeCommentCheck"/> 코멘트 추가
-      </label>
-      <div style="flex:1;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;">
-        <button class="btn btn-secondary" onclick="downloadCurrentPreview()" style="padding:9px 16px;">
-          📥 이미지 저장
-        </button>
-        <button class="btn btn-primary" onclick="openSaveFromComplete()" style="padding:9px 16px;">
-          💾 서버에 기록
-        </button>
-      </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;flex-shrink:0;flex-wrap:wrap;">
+      <button class="btn btn-secondary" onclick="downloadCurrentPreview()" style="padding:9px 16px;">
+        📥 이미지 저장
+      </button>
+      <button class="btn btn-primary" onclick="openSaveFromComplete()" style="padding:9px 16px;">
+        💾 서버에 기록
+      </button>
     </div>
   </div>
 </div>
@@ -1693,7 +1691,14 @@ function confirmComment(){
   var el=document.getElementById('printCommentText');
   el.textContent=txt;el.style.display='block';
   closeCommentModal();
-  /* 미리보기 팝업이 열려있으면 프리뷰 갱신 후 다운로드 */
+  if(window._saveMode==='preview_only'){
+    window._saveMode=null;
+    showToast('코멘트 입력 완료 ✓');
+    if(document.getElementById('completeModal').classList.contains('active')){
+      renderPreviewImage(_pvIsTeacher);
+    }
+    return;
+  }
   if(document.getElementById('completeModal').classList.contains('active')){
     downloadCurrentPreview(); return;
   }
@@ -1775,11 +1780,17 @@ function buildImageCanvas(isTeacher,cmt){
   /* ── 위치 계산 ── */
   var totalH = VPAD + HDR_H + SECT_GAP + gridH + SECT_GAP + BOARD_H + CMT_H + DATE_H + VPAD;
   var startY = Math.max(VPAD, Math.floor((A4_H - totalH + VPAD*2) / 2));
-  var hdrY   = startY;
-  var gridStartY = hdrY + HDR_H + SECT_GAP;
-  var boardY     = gridStartY + gridH + SECT_GAP;
-  var cmtY       = boardY + BOARD_H + 10;
-  var dateY      = cmtY + CMT_H + 10;
+  var hdrY = startY;
+  var gridStartY, boardY;
+  if(isTeacher){
+    gridStartY = hdrY + HDR_H + SECT_GAP;
+    boardY     = gridStartY + gridH + SECT_GAP;
+  } else {
+    boardY     = hdrY + HDR_H + SECT_GAP;
+    gridStartY = boardY + BOARD_H + SECT_GAP;
+  }
+  var cmtY  = (isTeacher ? boardY : gridStartY + gridH) + BOARD_H + 10;
+  var dateY = cmtY + CMT_H + 10;
 
   /* 시점 전환 */
   var flipped=[];
@@ -1944,7 +1955,7 @@ function buildImageCanvas(isTeacher,cmt){
   ctx.fillStyle=boardText;
   ctx.font='bold '+Math.round(BOARD_H*0.42)+'px "'+F+'",sans-serif';
   ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.fillText(isTeacher?'칠 판':'▲ 칠 판 (교단)', A4_W/2, boardY+(BOARD_H-8)/2);
+  ctx.fillText(isTeacher?'▼ 칠 판 (교사 시점)':'▲ 칠 판 (교단)', A4_W/2, boardY+(BOARD_H-8)/2);
 
   /* ── 코멘트 ── */
   if(cmt){
@@ -2023,8 +2034,7 @@ function renderPreviewImage(isTeacher){
   var spinner=document.getElementById('previewSpinner');
   var img=document.getElementById('previewImg');
   spinner.style.display='block'; img.style.display='none';
-  var cmt=document.getElementById('completeCommentCheck').checked
-    ? (document.getElementById('printCommentText').textContent||'') : '';
+  var cmt=document.getElementById('printCommentText').textContent||'';
   /* setTimeout으로 DOM 업데이트 후 Canvas 생성 */
   setTimeout(function(){
     var canvas=buildImageCanvas(isTeacher,cmt);
@@ -2033,13 +2043,7 @@ function renderPreviewImage(isTeacher){
   },50);
 }
 function downloadCurrentPreview(){
-  var withCmt=document.getElementById('completeCommentCheck').checked;
-  if(withCmt&&!document.getElementById('printCommentText').textContent){
-    openCommentModal();
-    window._saveMode=_pvIsTeacher?'teacher':'student';
-    return;
-  }
-  var cmt=withCmt?document.getElementById('printCommentText').textContent:'';
+  var cmt=document.getElementById('printCommentText').textContent||'';
   var canvas=buildImageCanvas(_pvIsTeacher,cmt);
   var d=new Date();
   var vl=_pvIsTeacher?'_교사시점':'_학생시점';
