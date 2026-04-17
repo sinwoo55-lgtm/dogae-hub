@@ -132,13 +132,13 @@ input:checked+.tsl::before{transform:translateX(17px);}
 .s3-actions{display:flex;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid var(--border);}
 
 /* 프리뷰 - 창 크기에 맞춤 */
-.preview-wrap{display:flex;flex-direction:column;align-items:center;width:100%;height:100%;}
+.preview-wrap{display:flex;flex-direction:column;align-items:center;width:100%;overflow:auto;}
 .preview-board-tag{
   font-size:13px;font-weight:800;color:#fff;letter-spacing:3px;
   background:var(--navy);border-radius:8px;
   padding:8px 28px;margin-top:12px;display:inline-block;
 }
-.preview-grid-outer{flex:1;overflow:auto;display:flex;align-items:flex-start;justify-content:center;width:100%;}
+.preview-grid-outer{overflow:auto;display:flex;align-items:flex-start;justify-content:center;width:100%;}
 .preview-grid{display:inline-flex;flex-direction:column;}
 .pv-row{display:flex;align-items:center;}
 .pv-cell{
@@ -668,10 +668,9 @@ input:checked+.tsl::before{transform:translateX(17px);}
       </div>
     </div>
     <div class="s3-hint">
-      <b>💡 프리뷰 사용법</b><br>
+      <b>💡 사용법</b><br>
       셀과 셀 사이에 마우스를 올리면 <b>+</b> 버튼이 나타나요.<br>
-      클릭하면 <b>분단 구분 공백</b>이 추가되고, 다시 클릭하면 제거됩니다.<br><br>
-      <b>셀 클릭</b> → 빈 자리 지정 &nbsp;|&nbsp; <b>재클릭</b> → 빈 자리 해제
+      클릭하면 <b>분단 구분 공백</b>이 추가되고, 다시 클릭하면 제거됩니다.
     </div>
     <button class="btn btn-special" onclick="openSpecialModal()">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg>
@@ -690,7 +689,7 @@ input:checked+.tsl::before{transform:translateX(17px);}
       <div class="preview-grid-outer">
         <div class="preview-grid" id="previewGrid"></div>
       </div>
-      <div class="preview-board-tag" style="margin-bottom:0;margin-top:10px;letter-spacing:2px;">▼ 칠판 (교사 시점)</div>
+      <div class="preview-board-tag" style="margin-bottom:0;margin-top:4px;letter-spacing:2px;">▼ 칠판 (교사 시점)</div>
       <div style="margin-top:6px;font-size:11px;color:var(--muted);text-align:center;">
         <b>셀 클릭</b> : 빈 자리 지정/해제 &nbsp;&nbsp;|&nbsp;&nbsp; <b>셀 사이 클릭</b> : 분단 구분선 추가/제거
       </div>
@@ -738,7 +737,7 @@ input:checked+.tsl::before{transform:translateX(17px);}
     </div>
   </div>
   <div class="s4-body">
-    <div class="layout-area" style="display:flex;flex-direction:column;align-items:center;">
+    <div class="layout-area" style="display:flex;flex-direction:column;align-items:center;justify-content:flex-start;">
       <!-- 화면용 타이틀 헤더 -->
       <div id="layoutTitleWrap" style="width:100%;text-align:center;padding:14px 0 8px;flex-shrink:0;border-bottom:1px solid var(--border);margin-bottom:10px;position:relative;">
         <!-- 클릭 편집 안내 -->
@@ -766,7 +765,7 @@ input:checked+.tsl::before{transform:translateX(17px);}
       <div class="drag-guide" id="dragGuide">
         ✋ 학생 카드를 드래그하면 자리를 바꿀 수 있습니다
       </div>
-      <div class="seat-grid-outer" style="flex:1;min-height:0;overflow:auto;display:flex;align-items:flex-start;justify-content:center;">
+      <div class="seat-grid-outer" style="overflow:auto;display:flex;align-items:flex-start;justify-content:center;width:100%;">
         <div class="seat-grid-inner">
           <div id="seatGrid"></div>
         </div>
@@ -993,6 +992,11 @@ function goScreen(id){
 function showToast(msg){
   var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
   setTimeout(function(){t.classList.remove('show');},2400);
+}
+function classToLabel(cls){
+  /* '1-3' → '1학년 3반', 그 외는 그대로+'반' */
+  var m=(cls||'').match(/^(\d+)-(\d+)$/);
+  return m ? m[1]+'학년 '+m[2]+'반' : cls+'반';
 }
 function nowStr(){
   var d=new Date();
@@ -1478,9 +1482,9 @@ function generateLayout(){
   }
   if(!best){alert('제약 조건이 너무 많아 배치가 불가능해요.\n조건을 줄여보세요.');return;}
   layout=best;
-  document.getElementById('s4badge').textContent=curClass+'반 배치표';
+  document.getElementById('s4badge').textContent=classToLabel(curClass)+' 배치표';
   var cnEl=document.getElementById('layoutClassName');
-  if(cnEl) cnEl.textContent=curClass+'반';
+  if(cnEl) cnEl.textContent=classToLabel(curClass);
   goScreen('s4');
   applyTheme(curTheme);
   requestAnimationFrame(function(){
@@ -1846,7 +1850,7 @@ function buildImageCanvas(isTeacher,cmt){
   /* 학반 */
   ctx.fillStyle=commentC;
   ctx.font='700 '+fs_class+'px "'+F+'",sans-serif';
-  var _className=document.getElementById('layoutClassName')?document.getElementById('layoutClassName').textContent.trim():(curClass+'반');
+  var _className=document.getElementById('layoutClassName')?document.getElementById('layoutClassName').textContent.trim():(classToLabel(curClass));
   ctx.fillText(_className, hdrCX, hdrY + HDR_H*0.08 + fs_school + 14);
   /* 구분선 */
   ctx.strokeStyle=border; ctx.lineWidth=2;
@@ -2253,11 +2257,11 @@ function openLoadHistoryModal(){
           layout=Array.isArray(flat[0])?flat:restoreLayout(flat,hr,hc);
           closeLoadHistoryModal();
           /* 배치표 화면으로 이동 */
-          document.getElementById('s4badge').textContent=curClass+'반 배치표';
+          document.getElementById('s4badge').textContent=classToLabel(curClass)+' 배치표';
           var cnEl2=document.getElementById('layoutClassName');
-          if(cnEl2) cnEl2.textContent=curClass+'반';
+          if(cnEl2) cnEl2.textContent=classToLabel(curClass);
   var cnEl=document.getElementById('layoutClassName');
-  if(cnEl) cnEl.textContent=curClass+'반';
+  if(cnEl) cnEl.textContent=classToLabel(curClass);
           var cfg={rows:hr,cols:hc,colGaps:Array.from(colGaps),rowGaps:Array.from(rowGaps),
             emptySeats:Array.from(emptySeats),fixedSeats:fixedSeats};
           goScreen('s4');
