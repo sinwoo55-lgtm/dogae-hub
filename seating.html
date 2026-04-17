@@ -1638,28 +1638,28 @@ function doSaveImage(isTeacher){
   var commentC =tv('--theme-comment-color')||'#1A1E2E';
   var themeFont=tv('--theme-font')||'Noto Sans KR';
 
-  /* ── A4 가로 고해상도 기준 ── */
+  /* ── A4 가로 캔버스 ── */
   var A4_W=2480, A4_H=1754;
-  var PAD=80;   /* 상하좌우 여백 */
-  var GAP=10;   /* 셀 간격 */
-  var COL_GAP=32, ROW_GAP=24; /* 분단 구분 공간 */
+  var SIDE=60, TOP=50, BOT=50;     /* 외곽 여백 */
+  var HDR_H=170;                    /* 헤더(학교명/학반) 영역 높이 */
+  var BOARD_H=90;                   /* 교탁 바 높이 */
+  var CMT_H=cmt?50:0;
+  var DATE_H=36;
+  var GAP=10, COL_GAP=30, ROW_GAP=22;
 
-  /* 칠판/코멘트 높이 예약 */
-  var boardH = (!isTeacher||cmt)?54:0;  /* 학생시점 상단 칠판 */
-  var bottomH = isTeacher?44:0;         /* 교사시점 하단 칠판 */
-  var cmtH = cmt?36:0;
+  /* 그리드 가용 영역 */
+  var gridAvailW = A4_W - SIDE*2 - (cols-1)*GAP - cgArr.length*COL_GAP;
+  var gridAvailH = A4_H - TOP - BOT - HDR_H - BOARD_H - CMT_H - DATE_H
+                   - (rows-1)*GAP - rgArr.length*ROW_GAP;
 
-  /* 가용 영역 */
-  var availW = A4_W - PAD*2;
-  var availH = A4_H - PAD*2 - boardH - bottomH - cmtH - (rows-1)*GAP - rgArr.length*ROW_GAP;
-  var availWC= availW - (cols-1)*GAP - cgArr.length*COL_GAP;
+  var CELL_W = Math.floor(gridAvailW / cols);
+  var CELL_H = Math.floor(gridAvailH / rows);
+  CELL_W = Math.max(70, Math.min(220, CELL_W));
+  CELL_H = Math.max(50, Math.min(160, CELL_H));
 
-  /* A4를 꽉 채우는 셀 크기 계산 */
-  var CELL_W = Math.floor(availWC / cols);
-  var CELL_H = Math.floor(availH  / rows);
-  /* 최소/최대 제한 */
-  CELL_W = Math.max(60, Math.min(200, CELL_W));
-  CELL_H = Math.max(44, Math.min(140, CELL_H));
+  /* 실제 그리드 너비/높이 */
+  var gridW = cols*CELL_W + (cols-1)*GAP + cgArr.length*COL_GAP;
+  var gridH = rows*CELL_H + (rows-1)*GAP + rgArr.length*ROW_GAP;
 
   /* 시점 전환 */
   var flipped=[];
@@ -1668,135 +1668,181 @@ function doSaveImage(isTeacher){
   } else {
     for(var r=0;r<rows;r++){var row2=[];for(var c=0;c<cols;c++) row2.push(layout[r][c]);flipped.push(row2);}
   }
-  var fColGaps=isTeacher?cgArr.map(function(cg){return cols-cg;}).sort(function(a,b){return a-b;}):cgArr;
-  var fRowGaps=isTeacher?rgArr.map(function(rg){return rows-rg;}).sort(function(a,b){return a-b;}):rgArr;
+  var fCG=isTeacher?cgArr.map(function(cg){return cols-cg;}).sort(function(a,b){return a-b;}):cgArr;
+  var fRG=isTeacher?rgArr.map(function(rg){return rows-rg;}).sort(function(a,b){return a-b;}):rgArr;
 
-  /* ── 오프스크린 DOM 구성 ── */
-  var wrap=document.createElement('div');
-  wrap.style.cssText='position:fixed;top:-9999px;left:-9999px;'
-    +'width:'+A4_W+'px;height:'+A4_H+'px;'
-    +'background:'+bgColor+';padding:'+PAD+'px;'
-    +'box-sizing:border-box;'
-    +'font-family:'+themeFont+',Noto Sans KR,sans-serif;'
-    +'display:flex;flex-direction:column;align-items:center;justify-content:center;';
+  /* ── Canvas 직접 드로잉 ── */
+  var canvas=document.createElement('canvas');
+  canvas.width=A4_W; canvas.height=A4_H;
+  var ctx=canvas.getContext('2d');
 
-  /* 학생 시점 상단 칠판 */
-  if(!isTeacher){
-    var bbTop=document.createElement('div');
-    bbTop.style.cssText='background:'+boardBg+';color:'+boardText+';text-align:center;'
-      +'padding:10px;border-radius:10px;font-size:20px;font-weight:900;letter-spacing:3px;'
-      +'margin-bottom:16px;width:100%;box-sizing:border-box;flex-shrink:0;';
-    bbTop.textContent='▲ 칠판 (교단)';
-    wrap.appendChild(bbTop);
-  }
+  /* 배경 */
+  ctx.fillStyle=bgColor;
+  ctx.fillRect(0,0,A4_W,A4_H);
 
-  /* 그리드 컨테이너 */
-  var gridWrap=document.createElement('div');
-  gridWrap.style.cssText='display:flex;flex-direction:column;align-items:flex-start;flex:1;';
+  /* 폰트 로드 확인용 */
+  var fontBase=themeFont||'Noto Sans KR';
+
+  /* ── 헤더 (학교명/학반/시점) ── */
+  var hdrY=TOP;
+  /* 구분선 */
+  ctx.strokeStyle=border; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(SIDE,hdrY+HDR_H-16); ctx.lineTo(A4_W-SIDE,hdrY+HDR_H-16); ctx.stroke();
+
+  /* 학교명 */
+  ctx.fillStyle=boardBg;
+  ctx.font='bold 52px "'+fontBase+'",sans-serif';
+  ctx.textAlign='center';
+  ctx.fillText('도개고등학교', A4_W/2, hdrY+56);
+
+  /* 학반 */
+  ctx.fillStyle=commentC;
+  ctx.font='bold 38px "'+fontBase+'",sans-serif';
+  ctx.fillText(curClass+' 학급', A4_W/2, hdrY+106);
+
+  /* 시점 안내 */
+  ctx.fillStyle='#9CA3AF';
+  ctx.font='22px "'+fontBase+'",sans-serif';
+  ctx.fillText(isTeacher?'교사 시점 (교탁에서 바라본 배치도)':'학생 시점', A4_W/2, hdrY+HDR_H-24);
+
+  /* ── 학생 좌석 그리드 ── */
+  var gStartX = (A4_W - gridW) / 2;
+  var gStartY = TOP + HDR_H;
 
   for(var ri=0;ri<rows;ri++){
-    if(fRowGaps.indexOf(ri)!==-1){
-      var rgEl=document.createElement('div');
-      rgEl.style.cssText='height:'+ROW_GAP+'px;display:flex;align-items:center;'
-        +'width:100%;';
-      rgEl.innerHTML='<div style="height:2px;width:100%;background:repeating-linear-gradient(90deg,'+gapC+' 0,'+gapC+' 5px,transparent 5px,transparent 10px);opacity:.6;"></div>';
-      gridWrap.appendChild(rgEl);
+    /* 행 구분선 */
+    if(fRG.indexOf(ri)!==-1){
+      ctx.save();
+      ctx.setLineDash([8,8]);
+      ctx.strokeStyle=gapC; ctx.lineWidth=2; ctx.globalAlpha=.5;
+      var lgY=gStartY - ROW_GAP/2;
+      ctx.beginPath(); ctx.moveTo(gStartX,lgY); ctx.lineTo(gStartX+gridW,lgY); ctx.stroke();
+      ctx.restore();
+      gStartY+=ROW_GAP;
     }
-    var rowEl=document.createElement('div');
-    rowEl.style.cssText='display:flex;align-items:center;margin-bottom:'+GAP+'px;';
 
+    var cx=gStartX;
     for(var ci=0;ci<cols;ci++){
-      if(fColGaps.indexOf(ci)!==-1){
-        var cgEl=document.createElement('div');
-        cgEl.style.cssText='width:'+COL_GAP+'px;height:'+CELL_H+'px;display:flex;align-items:center;justify-content:center;flex-shrink:0;';
-        cgEl.innerHTML='<div style="width:2px;height:80%;background:repeating-linear-gradient(180deg,'+gapC+' 0,'+gapC+' 5px,transparent 5px,transparent 10px);opacity:.6;"></div>';
-        rowEl.appendChild(cgEl);
+      /* 열 구분선 */
+      if(fCG.indexOf(ci)!==-1){
+        ctx.save();
+        ctx.setLineDash([8,8]);
+        ctx.strokeStyle=gapC; ctx.lineWidth=2; ctx.globalAlpha=.5;
+        var lgX=cx-COL_GAP/2;
+        ctx.beginPath(); ctx.moveTo(lgX,gStartY); ctx.lineTo(lgX,gStartY+CELL_H); ctx.stroke();
+        ctx.restore();
+        cx+=COL_GAP;
       }
 
       var name=flipped[ri][ci];
-      var cell=document.createElement('div');
-      cell.style.cssText='width:'+CELL_W+'px;height:'+CELL_H+'px;border-radius:10px;'
-        +'display:flex;flex-direction:column;align-items:center;justify-content:center;'
-        +'position:relative;flex-shrink:0;overflow:hidden;margin-right:'+GAP+'px;'
-        +'box-sizing:border-box;';
+      var x=cx, y=gStartY, w=CELL_W, h=CELL_H;
+      var R=12; /* border-radius */
 
       if(name==='EMPTY'||!name){
-        cell.style.cssText+='background:'+emptyBg+';border:2px dashed '+border+';color:#9CA3AF;';
-        var emptyTxt=document.createElement('span');
-        emptyTxt.style.cssText='font-size:'+Math.round(CELL_W*0.13)+'px;';
-        emptyTxt.textContent='빈 자리';
-        cell.appendChild(emptyTxt);
+        /* 빈 자리 - 점선 */
+        ctx.save();
+        ctx.setLineDash([8,6]);
+        ctx.strokeStyle=border; ctx.lineWidth=2;
+        roundRect(ctx,x,y,w,h,R,false,true);
+        ctx.restore();
+        ctx.fillStyle='#9CA3AF';
+        ctx.font=(CELL_H*0.17)+'px "'+fontBase+'",sans-serif';
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText('빈자리',x+w/2,y+h/2);
       } else {
         var stu=students.find(function(s){return s.name===name;});
         var isMale=stu&&stu.gender==='M', isFemale=stu&&stu.gender==='F';
-        var gCheck=document.getElementById('genderColorCheck');
-        var useG=gCheck&&gCheck.checked;
+        var gchk=document.getElementById('genderColorCheck');
+        var useG=gchk&&gchk.checked;
         var bg2=(useG&&isMale)?maleBg:(useG&&isFemale)?femaleBg:seatBg;
         var bc2=(useG&&isMale)?maleC:(useG&&isFemale)?femaleC:border;
         var tc2=(useG&&isMale)?maleC:(useG&&isFemale)?femaleC:textC;
         var topC2=(useG&&isMale)?maleC:(useG&&isFemale)?femaleC:cardTop;
-        cell.style.cssText+='background:'+bg2+';border:2px solid '+bc2+';color:'+tc2+';';
 
-        var stripe=document.createElement('div');
-        stripe.style.cssText='position:absolute;top:0;left:0;right:0;height:5px;background:'+topC2+';border-radius:9px 9px 0 0;';
-        cell.appendChild(stripe);
+        /* 카드 배경 */
+        ctx.fillStyle=bg2;
+        roundRect(ctx,x,y,w,h,R,true,false);
+        /* 카드 테두리 */
+        ctx.strokeStyle=bc2; ctx.lineWidth=2.5;
+        roundRect(ctx,x,y,w,h,R,false,true);
+        /* 상단 컬러 띠 */
+        ctx.fillStyle=topC2;
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(x+R,y); ctx.lineTo(x+w-R,y);
+        ctx.quadraticCurveTo(x+w,y,x+w,y+R);
+        ctx.lineTo(x+w,y+6); ctx.lineTo(x,y+6);
+        ctx.lineTo(x,y+R);
+        ctx.quadraticCurveTo(x,y,x+R,y);
+        ctx.closePath(); ctx.fill();
+        ctx.restore();
 
-        var numEl=document.createElement('div');
-        numEl.style.cssText='font-size:'+Math.round(CELL_H*0.2)+'px;font-weight:800;color:'+tc2+';opacity:.75;line-height:1;margin-top:'+Math.round(CELL_H*0.1)+'px;';
-        numEl.textContent=stu?stu.num:'';
-        cell.appendChild(numEl);
+        /* 번호 */
+        var numSz=Math.round(h*0.2);
+        ctx.fillStyle=tc2; ctx.globalAlpha=.75;
+        ctx.font='800 '+numSz+'px "'+fontBase+'",sans-serif';
+        ctx.textAlign='center'; ctx.textBaseline='top';
+        ctx.fillText(stu?String(stu.num):'', x+w/2, y+h*0.12);
+        ctx.globalAlpha=1;
 
+        /* 이름 */
         var nameLen=(name||'').length;
-        var nameFSize=nameLen>=4?Math.round(CELL_H*0.25):nameLen===3?Math.round(CELL_H*0.28):Math.round(CELL_H*0.32);
-        var nameEl=document.createElement('div');
-        nameEl.style.cssText='font-size:'+nameFSize+'px;font-weight:900;line-height:1.1;word-break:keep-all;text-align:center;padding:0 4px;';
-        nameEl.textContent=name;
-        cell.appendChild(nameEl);
+        var nameSz=nameLen>=4?Math.round(h*0.26):nameLen===3?Math.round(h*0.30):Math.round(h*0.34);
+        ctx.fillStyle=tc2;
+        ctx.font='900 '+nameSz+'px "'+fontBase+'",sans-serif';
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText(name, x+w/2, y+h*0.65);
       }
-      rowEl.appendChild(cell);
+      cx+=CELL_W+GAP;
     }
-    gridWrap.appendChild(rowEl);
-  }
-  wrap.appendChild(gridWrap);
-
-  /* 교사 시점 하단 칠판 */
-  if(isTeacher){
-    var btmEl=document.createElement('div');
-    btmEl.style.cssText='text-align:center;font-size:13px;font-weight:700;letter-spacing:2px;'
-      +'color:'+boardBg+';margin-top:12px;padding-top:10px;'
-      +'border-top:2px solid '+boardBg+';width:100%;box-sizing:border-box;flex-shrink:0;';
-    btmEl.textContent='▼ 칠판 (교사 시점)';
-    wrap.appendChild(btmEl);
+    gStartY+=CELL_H+GAP;
   }
 
-  /* 코멘트 */
+  /* ── 교탁 바 ── */
+  var boardY = A4_H - BOT - CMT_H - DATE_H - BOARD_H;
+  var boardLabel = isTeacher ? '칠 판' : '▲ 칠 판 (교단)';
+  ctx.fillStyle=boardBg;
+  roundRect(ctx, SIDE, boardY, A4_W-SIDE*2, BOARD_H-10, 14, true, false);
+  ctx.fillStyle=boardText;
+  ctx.font='bold 36px "'+fontBase+'",sans-serif';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(boardLabel, A4_W/2, boardY+(BOARD_H-10)/2);
+
+  /* ── 코멘트 ── */
   if(cmt){
-    var cmtEl=document.createElement('div');
-    cmtEl.style.cssText='text-align:center;padding:8px 0 2px;font-size:16px;'
-      +'font-family:'+themeFont+',Noto Serif KR,serif;color:'+commentC+';font-weight:500;flex-shrink:0;';
-    cmtEl.textContent=cmt;
-    wrap.appendChild(cmtEl);
+    ctx.fillStyle=commentC;
+    ctx.font='500 28px "'+fontBase+'",Noto Serif KR,serif';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(cmt, A4_W/2, A4_H-BOT-DATE_H-CMT_H/2);
   }
 
-  document.body.appendChild(wrap);
+  /* ── 날짜 ── */
+  var d=new Date();
+  ctx.fillStyle='#9CA3AF';
+  ctx.font='22px "'+fontBase+'",sans-serif';
+  ctx.textAlign='right'; ctx.textBaseline='middle';
+  ctx.fillText(d.getFullYear()+'.'+String(d.getMonth()+1)+'.'+d.getDate()+' 생성', A4_W-SIDE, A4_H-BOT-10);
 
-  /* ── html2canvas: wrap이 정확히 A4 크기이므로 그대로 캡처 ── */
-  html2canvas(wrap,{
-    scale:1, useCORS:true, backgroundColor:bgColor, logging:false,
-    width:A4_W, height:A4_H
-  }).then(function(canvas){
-    document.body.removeChild(wrap);
-    var link=document.createElement('a');
-    var d=new Date();
-    var vl=isTeacher?'_교사시점':'_학생시점';
-    link.download='자리배치표_'+curClass+vl+'_'+d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()+'.png';
-    link.href=canvas.toDataURL('image/png');
-    link.click();
-    showToast('📷 이미지 저장 완료!');
-  }).catch(function(err){
-    if(document.body.contains(wrap)) document.body.removeChild(wrap);
-    alert('이미지 저장 실패: '+err.message);
-  });
+  /* ── 저장 ── */
+  var link=document.createElement('a');
+  var vl=isTeacher?'_교사시점':'_학생시점';
+  link.download='자리배치표_'+curClass+vl+'_'+d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()+'.png';
+  link.href=canvas.toDataURL('image/png');
+  link.click();
+  showToast('📷 이미지 저장 완료!');
+}
+
+/* 라운드 사각형 헬퍼 */
+function roundRect(ctx,x,y,w,h,r,fill,stroke){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y);
+  ctx.closePath();
+  if(fill) ctx.fill();
+  if(stroke) ctx.stroke();
 }
 
 
