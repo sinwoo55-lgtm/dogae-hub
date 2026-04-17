@@ -41,6 +41,8 @@ header{flex-shrink:0;background:var(--surface);border-bottom:1px solid var(--bor
 .btn-secondary{background:var(--bg);color:var(--navy);border:1.5px solid var(--border);}
 .btn-secondary:hover{background:var(--navy-pale);border-color:var(--navy);}
 .btn-sm{padding:5px 11px;font-size:12px;}
+.btn-danger{background:#FFF0F0;color:#C53030;border:1.5px solid #F5C0C0;}
+.btn-danger:hover{background:#C53030;color:#fff;}
 .btn-special{width:100%;background:linear-gradient(135deg,#F0E8FE,#EEF2FB);color:#6B3FA0;border:1.5px solid #D4C5F0;margin-bottom:10px;}
 .btn-special:hover{background:linear-gradient(135deg,#E4D4FD,#E3EBFC);}
 
@@ -1607,7 +1609,6 @@ function saveAsImage_old(){
 }
 
 function doSaveImage(isTeacher){
-  /* 저장 중 표시 - 배치 완료 팝업 닫기 */
   closeCompleteModal();
   showToast('이미지 생성 중...');
 
@@ -1617,84 +1618,99 @@ function doSaveImage(isTeacher){
   var rgArr=Array.from(rowGaps).sort(function(a,b){return a-b;});
   var cmt=document.getElementById('printCommentText').textContent||'';
 
-  /* 테마 변수 가져오기 */
+  /* 테마 변수 */
   var cs=getComputedStyle(document.body);
   function tv(n){return cs.getPropertyValue(n).trim()||'';}
-  var bgColor   = tv('--theme-bg-color') || '#F2F4FB';
-  var seatBg    = tv('--theme-seat')     || '#ffffff';
-  var border    = tv('--theme-border')   || '#E0E5F0';
-  var maleBg    = tv('--theme-male-bg')  || '#EFF6FF';
-  var maleC     = tv('--theme-male')     || '#3B82F6';
-  var femaleBg  = tv('--theme-female-bg')|| '#FDF2F8';
-  var femaleC   = tv('--theme-female')   || '#EC4899';
-  var emptyBg   = tv('--theme-empty')    || '#F3F4F6';
-  var gapC      = tv('--theme-gap')      || '#6B3FA0';
-  var textC     = tv('--theme-text')     || '#1A1E2E';
-  var numC      = tv('--theme-num')      || '#94A3B8';
-  var cardTop   = tv('--theme-card-top') || '#E0E5F0';
-  var boardBg   = tv('--theme-board-bg') || '#253E8A';
-  var boardText = tv('--theme-board-text')|| '#ffffff';
-  var commentC  = tv('--theme-comment-color')|| '#1A1E2E';
-  var themeFont = tv('--theme-font')     || 'Noto Sans KR';
+  var bgColor  =tv('--theme-bg-color')||'#ffffff';
+  var seatBg   =tv('--theme-seat')||'#ffffff';
+  var border   =tv('--theme-border')||'#E0E5F0';
+  var maleBg   =tv('--theme-male-bg')||'#EFF6FF';
+  var maleC    =tv('--theme-male')||'#3B82F6';
+  var femaleBg =tv('--theme-female-bg')||'#FDF2F8';
+  var femaleC  =tv('--theme-female')||'#EC4899';
+  var emptyBg  =tv('--theme-empty')||'#F3F4F6';
+  var gapC     =tv('--theme-gap')||'#6B3FA0';
+  var textC    =tv('--theme-text')||'#1A1E2E';
+  var numC     =tv('--theme-num')||'#94A3B8';
+  var cardTop  =tv('--theme-card-top')||'#E0E5F0';
+  var boardBg  =tv('--theme-board-bg')||'#253E8A';
+  var boardText=tv('--theme-board-text')||'#ffffff';
+  var commentC =tv('--theme-comment-color')||'#1A1E2E';
+  var themeFont=tv('--theme-font')||'Noto Sans KR';
 
-  /* 학생/교사 시점 전환 */
+  /* ── A4 가로 고해상도 기준 ── */
+  var A4_W=2480, A4_H=1754;
+  var PAD=80;   /* 상하좌우 여백 */
+  var GAP=10;   /* 셀 간격 */
+  var COL_GAP=32, ROW_GAP=24; /* 분단 구분 공간 */
+
+  /* 칠판/코멘트 높이 예약 */
+  var boardH = (!isTeacher||cmt)?54:0;  /* 학생시점 상단 칠판 */
+  var bottomH = isTeacher?44:0;         /* 교사시점 하단 칠판 */
+  var cmtH = cmt?36:0;
+
+  /* 가용 영역 */
+  var availW = A4_W - PAD*2;
+  var availH = A4_H - PAD*2 - boardH - bottomH - cmtH - (rows-1)*GAP - rgArr.length*ROW_GAP;
+  var availWC= availW - (cols-1)*GAP - cgArr.length*COL_GAP;
+
+  /* A4를 꽉 채우는 셀 크기 계산 */
+  var CELL_W = Math.floor(availWC / cols);
+  var CELL_H = Math.floor(availH  / rows);
+  /* 최소/최대 제한 */
+  CELL_W = Math.max(60, Math.min(200, CELL_W));
+  CELL_H = Math.max(44, Math.min(140, CELL_H));
+
+  /* 시점 전환 */
   var flipped=[];
   if(isTeacher){
-    for(var r=rows-1;r>=0;r--){var row=[];for(var c=cols-1;c>=0;c--) row.push(layout[r][c]);flipped.push(row);}
+    for(var r=rows-1;r>=0;r--){var row2=[];for(var c=cols-1;c>=0;c--) row2.push(layout[r][c]);flipped.push(row2);}
   } else {
-    for(var r=0;r<rows;r++){var row=[];for(var c=0;c<cols;c++) row.push(layout[r][c]);flipped.push(row);}
+    for(var r=0;r<rows;r++){var row2=[];for(var c=0;c<cols;c++) row2.push(layout[r][c]);flipped.push(row2);}
   }
-  var flippedColGaps=isTeacher
-    ?cgArr.map(function(cg){return cols-cg;}).sort(function(a,b){return a-b;})
-    :cgArr;
-  var flippedRowGaps=isTeacher
-    ?rgArr.map(function(rg){return rows-rg;}).sort(function(a,b){return a-b;})
-    :rgArr;
+  var fColGaps=isTeacher?cgArr.map(function(cg){return cols-cg;}).sort(function(a,b){return a-b;}):cgArr;
+  var fRowGaps=isTeacher?rgArr.map(function(rg){return rows-rg;}).sort(function(a,b){return a-b;}):rgArr;
 
-  /* 셀 크기 계산 */
-  var CELL_W=100, CELL_H=72, GAP=10, COL_GAP=28, ROW_GAP=22, MARGIN=40;
-  var totalW = MARGIN*2 + cols*CELL_W + (cols-1)*GAP + flippedColGaps.length*COL_GAP;
-  var canvasW = Math.max(700, totalW);
-
-  /* 오프스크린 컨테이너 */
+  /* ── 오프스크린 DOM 구성 ── */
   var wrap=document.createElement('div');
-  wrap.style.cssText='position:fixed;top:-9999px;left:-9999px;width:'+canvasW+'px;'
-    +'background:'+bgColor+';padding:'+MARGIN+'px;font-family:'+themeFont+',Noto Sans KR,sans-serif;';
+  wrap.style.cssText='position:fixed;top:-9999px;left:-9999px;'
+    +'width:'+A4_W+'px;height:'+A4_H+'px;'
+    +'background:'+bgColor+';padding:'+PAD+'px;'
+    +'box-sizing:border-box;'
+    +'font-family:'+themeFont+',Noto Sans KR,sans-serif;'
+    +'display:flex;flex-direction:column;align-items:center;justify-content:center;';
 
-  /* 칠판 표시는 하단(교사 시점 표시)에만 → 상단 제거 */
-
-  /* 학생 시점: 칠판 상단 표시 */
+  /* 학생 시점 상단 칠판 */
   if(!isTeacher){
     var bbTop=document.createElement('div');
     bbTop.style.cssText='background:'+boardBg+';color:'+boardText+';text-align:center;'
-      +'padding:12px;border-radius:10px;font-size:18px;font-weight:900;letter-spacing:3px;'
-      +'margin-bottom:18px;';
+      +'padding:10px;border-radius:10px;font-size:20px;font-weight:900;letter-spacing:3px;'
+      +'margin-bottom:16px;width:100%;box-sizing:border-box;flex-shrink:0;';
     bbTop.textContent='▲ 칠판 (교단)';
     wrap.appendChild(bbTop);
   }
 
-  /* 그리드 */
-  var grid=document.createElement('div');
-  grid.style.cssText='display:inline-flex;flex-direction:column;gap:0;';
+  /* 그리드 컨테이너 */
+  var gridWrap=document.createElement('div');
+  gridWrap.style.cssText='display:flex;flex-direction:column;align-items:flex-start;flex:1;';
 
   for(var ri=0;ri<rows;ri++){
-    /* 행 구분선 */
-    if(flippedRowGaps.indexOf(ri)!==-1){
-      var rg=document.createElement('div');
-      rg.style.cssText='height:'+ROW_GAP+'px;width:100%;display:flex;align-items:center;margin-bottom:0;';
-      rg.innerHTML='<div style="height:2px;width:100%;background:repeating-linear-gradient(90deg,'+gapC+' 0,'+gapC+' 5px,transparent 5px,transparent 10px);opacity:.6;"></div>';
-      grid.appendChild(rg);
+    if(fRowGaps.indexOf(ri)!==-1){
+      var rgEl=document.createElement('div');
+      rgEl.style.cssText='height:'+ROW_GAP+'px;display:flex;align-items:center;'
+        +'width:100%;';
+      rgEl.innerHTML='<div style="height:2px;width:100%;background:repeating-linear-gradient(90deg,'+gapC+' 0,'+gapC+' 5px,transparent 5px,transparent 10px);opacity:.6;"></div>';
+      gridWrap.appendChild(rgEl);
     }
     var rowEl=document.createElement('div');
     rowEl.style.cssText='display:flex;align-items:center;margin-bottom:'+GAP+'px;';
 
     for(var ci=0;ci<cols;ci++){
-      /* 열 구분선 */
-      if(flippedColGaps.indexOf(ci)!==-1){
-        var cg=document.createElement('div');
-        cg.style.cssText='width:'+COL_GAP+'px;height:'+CELL_H+'px;display:flex;align-items:center;justify-content:center;flex-shrink:0;';
-        cg.innerHTML='<div style="width:2px;height:80%;background:repeating-linear-gradient(180deg,'+gapC+' 0,'+gapC+' 5px,transparent 5px,transparent 10px);opacity:.6;"></div>';
-        rowEl.appendChild(cg);
+      if(fColGaps.indexOf(ci)!==-1){
+        var cgEl=document.createElement('div');
+        cgEl.style.cssText='width:'+COL_GAP+'px;height:'+CELL_H+'px;display:flex;align-items:center;justify-content:center;flex-shrink:0;';
+        cgEl.innerHTML='<div style="width:2px;height:80%;background:repeating-linear-gradient(180deg,'+gapC+' 0,'+gapC+' 5px,transparent 5px,transparent 10px);opacity:.6;"></div>';
+        rowEl.appendChild(cgEl);
       }
 
       var name=flipped[ri][ci];
@@ -1705,99 +1721,76 @@ function doSaveImage(isTeacher){
         +'box-sizing:border-box;';
 
       if(name==='EMPTY'||!name){
-        cell.style.cssText+=
-          'background:'+emptyBg+';border:2px dashed '+border+';color:#9CA3AF;font-size:12px;';
-        cell.textContent='빈 자리';
+        cell.style.cssText+='background:'+emptyBg+';border:2px dashed '+border+';color:#9CA3AF;';
+        var emptyTxt=document.createElement('span');
+        emptyTxt.style.cssText='font-size:'+Math.round(CELL_W*0.13)+'px;';
+        emptyTxt.textContent='빈 자리';
+        cell.appendChild(emptyTxt);
       } else {
         var stu=students.find(function(s){return s.name===name;});
-        var isMale=stu&&stu.gender==='M';
-        var isFemale=stu&&stu.gender==='F';
+        var isMale=stu&&stu.gender==='M', isFemale=stu&&stu.gender==='F';
         var gCheck=document.getElementById('genderColorCheck');
-        var useGender=gCheck&&gCheck.checked;
-        var bg2=(useGender&&isMale)?maleBg:(useGender&&isFemale)?femaleBg:seatBg;
-        var bc2=(useGender&&isMale)?maleC:(useGender&&isFemale)?femaleC:border;
-        var tc2=(useGender&&isMale)?maleC:(useGender&&isFemale)?femaleC:textC;
-        var topC=(useGender&&isMale)?maleC:(useGender&&isFemale)?femaleC:cardTop;
+        var useG=gCheck&&gCheck.checked;
+        var bg2=(useG&&isMale)?maleBg:(useG&&isFemale)?femaleBg:seatBg;
+        var bc2=(useG&&isMale)?maleC:(useG&&isFemale)?femaleC:border;
+        var tc2=(useG&&isMale)?maleC:(useG&&isFemale)?femaleC:textC;
+        var topC2=(useG&&isMale)?maleC:(useG&&isFemale)?femaleC:cardTop;
+        cell.style.cssText+='background:'+bg2+';border:2px solid '+bc2+';color:'+tc2+';';
 
-        cell.style.cssText+=
-          'background:'+bg2+';border:2px solid '+bc2+';color:'+tc2+';';
-
-        /* 상단 컬러 띠 */
         var stripe=document.createElement('div');
-        stripe.style.cssText='position:absolute;top:0;left:0;right:0;height:5px;background:'+topC+';border-radius:9px 9px 0 0;';
+        stripe.style.cssText='position:absolute;top:0;left:0;right:0;height:5px;background:'+topC2+';border-radius:9px 9px 0 0;';
         cell.appendChild(stripe);
 
-        /* 번호 */
         var numEl=document.createElement('div');
-        numEl.style.cssText='font-size:14px;font-weight:800;color:'+tc2+';opacity:.75;line-height:1;margin-top:8px;';
+        numEl.style.cssText='font-size:'+Math.round(CELL_H*0.2)+'px;font-weight:800;color:'+tc2+';opacity:.75;line-height:1;margin-top:'+Math.round(CELL_H*0.1)+'px;';
         numEl.textContent=stu?stu.num:'';
         cell.appendChild(numEl);
 
-        /* 이름 */
+        var nameLen=(name||'').length;
+        var nameFSize=nameLen>=4?Math.round(CELL_H*0.25):nameLen===3?Math.round(CELL_H*0.28):Math.round(CELL_H*0.32);
         var nameEl=document.createElement('div');
-        var fsize=name.length>=4?'18px':name.length===3?'20px':'22px';
-        nameEl.style.cssText='font-size:'+fsize+';font-weight:900;line-height:1.15;word-break:keep-all;text-align:center;padding:0 4px;';
+        nameEl.style.cssText='font-size:'+nameFSize+'px;font-weight:900;line-height:1.1;word-break:keep-all;text-align:center;padding:0 4px;';
         nameEl.textContent=name;
         cell.appendChild(nameEl);
       }
       rowEl.appendChild(cell);
     }
-    grid.appendChild(rowEl);
+    gridWrap.appendChild(rowEl);
   }
-  wrap.appendChild(grid);
+  wrap.appendChild(gridWrap);
 
-  /* 교사 시점 하단 칠판 표시 */
+  /* 교사 시점 하단 칠판 */
   if(isTeacher){
-    var bottom=document.createElement('div');
-    bottom.style.cssText='text-align:center;font-size:12px;font-weight:700;letter-spacing:2px;'
-      +'color:'+boardBg+';margin-top:14px;padding-top:10px;'
-      +'border-top:2px solid '+boardBg+';';
-    bottom.textContent='▼ 칠판 (교사 시점)';
-    wrap.appendChild(bottom);
+    var btmEl=document.createElement('div');
+    btmEl.style.cssText='text-align:center;font-size:13px;font-weight:700;letter-spacing:2px;'
+      +'color:'+boardBg+';margin-top:12px;padding-top:10px;'
+      +'border-top:2px solid '+boardBg+';width:100%;box-sizing:border-box;flex-shrink:0;';
+    btmEl.textContent='▼ 칠판 (교사 시점)';
+    wrap.appendChild(btmEl);
   }
 
   /* 코멘트 */
   if(cmt){
     var cmtEl=document.createElement('div');
-    cmtEl.style.cssText='text-align:center;padding:10px 0 2px;font-size:14px;'
-      +'font-family:'+themeFont+',Noto Serif KR,serif;color:'+commentC+';font-weight:500;';
+    cmtEl.style.cssText='text-align:center;padding:8px 0 2px;font-size:16px;'
+      +'font-family:'+themeFont+',Noto Serif KR,serif;color:'+commentC+';font-weight:500;flex-shrink:0;';
     cmtEl.textContent=cmt;
     wrap.appendChild(cmtEl);
   }
 
   document.body.appendChild(wrap);
 
-  /* A4 가로 (297×210mm) 비율 캔버스에 내용 채우기 */
-  var A4_W=2480, A4_H=1754; /* 150dpi 고해상도 A4 가로 */
-  var PAD=60; /* 여백 px */
-
-  /* wrap 크기를 A4 비율에 맞게 설정 */
-  wrap.style.width=A4_W+'px';
-  wrap.style.minHeight=A4_H+'px';
-  wrap.style.padding=PAD+'px';
-
+  /* ── html2canvas: wrap이 정확히 A4 크기이므로 그대로 캡처 ── */
   html2canvas(wrap,{
     scale:1, useCORS:true, backgroundColor:bgColor, logging:false,
     width:A4_W, height:A4_H
   }).then(function(canvas){
-    /* 콘텐츠를 A4 캔버스에 최대 크기로 중앙 배치 */
-    var finalCanvas=document.createElement('canvas');
-    finalCanvas.width=A4_W;finalCanvas.height=A4_H;
-    var ctx=finalCanvas.getContext('2d');
-    ctx.fillStyle=bgColor||'#ffffff';
-    ctx.fillRect(0,0,A4_W,A4_H);
-    /* 비율 유지하며 최대 크기로 중앙 배치 */
-    var scaleF=Math.min((A4_W-PAD*2)/canvas.width, (A4_H-PAD*2)/canvas.height);
-    if(scaleF>1) scaleF=1; /* 원본보다 크게 확대하지 않음 */
-    var dw=canvas.width*scaleF, dh=canvas.height*scaleF;
-    var ox=(A4_W-dw)/2, oy=(A4_H-dh)/2;
-    ctx.drawImage(canvas,ox,oy,dw,dh);
     document.body.removeChild(wrap);
     var link=document.createElement('a');
     var d=new Date();
-    var viewLabel=isTeacher?'_교사시점':'_학생시점';
-    link.download='자리배치표_'+curClass+viewLabel+'_'+d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()+'.png';
-    link.href=finalCanvas.toDataURL('image/png');
+    var vl=isTeacher?'_교사시점':'_학생시점';
+    link.download='자리배치표_'+curClass+vl+'_'+d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()+'.png';
+    link.href=canvas.toDataURL('image/png');
     link.click();
     showToast('📷 이미지 저장 완료!');
   }).catch(function(err){
@@ -1805,7 +1798,6 @@ function doSaveImage(isTeacher){
     alert('이미지 저장 실패: '+err.message);
   });
 }
-
 
 
 /* ──────────── 배치 완료 팝업 ──────────── */
@@ -1953,12 +1945,23 @@ function openLoadHistoryModal(){
       var item=document.createElement('div');
       item.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;gap:10px;';
       item.innerHTML=
-        '<div style="min-width:0;">'  +
+        '<div style="min-width:0;flex:1;">'  +
           '<div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:3px;">'+esc(d.data().label||'저장된 배치')+'</div>'+
           '<div style="font-size:11.5px;color:var(--muted);">'+date+'</div>'+
         '</div>'+
-        '<button class="btn btn-primary btn-sm" style="flex-shrink:0;">불러오기</button>';
-      item.querySelector('button').addEventListener('click',function(){
+        '<div style="display:flex;gap:6px;flex-shrink:0;">'+
+          '<button class="btn btn-danger btn-sm load-del-btn">🗑</button>'+
+          '<button class="btn btn-primary btn-sm load-pick-btn">불러오기</button>'+
+        '</div>';
+      /* 삭제 버튼 */
+      item.querySelector('.load-del-btn').addEventListener('click',function(e){
+        e.stopPropagation();
+        if(!confirm('"'+(d.data().label||'이 배치')+'" 기록을 삭제할까요?')) return;
+        db.collection('seating_classes').doc(curClass).collection('history').doc(d.id).delete()
+          .then(function(){item.remove();showToast('삭제됨');})
+          .catch(function(err){alert('삭제 오류: '+err.message);});
+      });
+      item.querySelector('.load-pick-btn').addEventListener('click',function(){
         /* 학급 설정도 함께 불러오기 */
         db.collection('seating_classes').doc(curClass).get().then(function(doc){
           if(doc.exists){
