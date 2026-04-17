@@ -77,19 +77,19 @@ header{flex-shrink:0;background:var(--surface);border-bottom:1px solid var(--bor
 .s2-body{flex:1;overflow-y:auto;padding:16px 24px 32px;}
 
 /* 학생 카드 - 5열 */
-.students-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;}
+.students-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;min-width:0;}
 @media(max-width:1100px){.students-grid{grid-template-columns:repeat(4,1fr);}}
 @media(max-width:860px){.students-grid{grid-template-columns:repeat(3,1fr);}}
 @media(max-width:600px){.students-grid{grid-template-columns:repeat(2,1fr);}}
-.stu-row{background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:14px 14px;display:flex;align-items:center;gap:9px;transition:var(--tr);}
+.stu-row{background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:7px;transition:var(--tr);min-width:0;overflow:hidden;}
 .stu-row:hover{border-color:#C5D2F0;box-shadow:0 2px 8px rgba(37,62,138,.06);}
 .stu-row.absent{opacity:.38;background:#F8F9FA;}
 .stu-num{font-size:12px;font-weight:700;color:var(--muted);min-width:22px;text-align:right;flex-shrink:0;}
-.stu-name{flex:1;border:none;outline:none;background:transparent;font-family:inherit;font-size:14px;color:var(--text);min-width:0;}
+.stu-name{flex:1;border:none;outline:none;background:transparent;font-family:inherit;font-size:13px;color:var(--text);min-width:0;width:0;}
 .stu-name::placeholder{color:#C5CDE0;}
 .stu-name:disabled{color:#B0BAC8;}
-.gender-group{display:flex;gap:4px;flex-shrink:0;}
-.g-btn{padding:5px 9px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;transition:var(--tr);background:var(--bg);color:var(--muted);}
+.gender-group{display:flex;gap:3px;flex-shrink:0;}
+.g-btn{padding:4px 7px;border:1.5px solid var(--border);border-radius:7px;font-size:11.5px;font-weight:700;cursor:pointer;transition:var(--tr);background:var(--bg);color:var(--muted);white-space:nowrap;}
 .g-btn.m.on{background:var(--male-bg);color:var(--male);border-color:var(--male);}
 .g-btn.f.on{background:var(--female-bg);color:var(--female);border-color:var(--female);}
 .g-btn.ab.on{background:#FFF0F0;border-color:#F5C0C0;color:#C53030;}
@@ -569,13 +569,19 @@ input:checked+.tsl::before{transform:translateX(17px);}
 </head>
 <body>
 <header>
-  <div style="display:flex;align-items:center;">
+  <div style="display:flex;align-items:center;gap:10px;">
     <a class="back-btn" href="index.html">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>허브로
     </a>
     <span class="page-title">자리 배치표</span>
   </div>
-  <div class="logo-wrap"><img src="logo.png" alt=""/></div>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <button class="btn btn-secondary btn-sm" id="btnLoadHistory" onclick="openLoadHistoryModal()" style="display:none;">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      이전 배치 불러오기
+    </button>
+    <div class="logo-wrap"><img src="logo.png" alt=""/></div>
+  </div>
 </header>
 
 <!-- S1 학급 선택 -->
@@ -846,6 +852,20 @@ input:checked+.tsl::before{transform:translateX(17px);}
   </div>
 </div>
 
+<!-- 이전 배치 불러오기 모달 -->
+<div class="modal-overlay" id="loadHistoryModal">
+  <div class="modal" style="max-width:460px;">
+    <div class="modal-title">⏱ 이전 배치 불러오기</div>
+    <div style="font-size:12.5px;color:var(--muted);margin-bottom:16px;" id="loadHistSubtitle">저장된 배치 목록</div>
+    <div id="loadHistList" style="max-height:340px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;">
+      <div style="text-align:center;padding:24px;color:var(--muted);font-size:13px;">불러오는 중...</div>
+    </div>
+    <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;">
+      <button class="btn btn-secondary btn-sm" onclick="closeLoadHistoryModal()">닫기</button>
+    </div>
+  </div>
+</div>
+
 <!-- 저장 모달 -->
 <div class="modal-overlay" id="saveModal">
   <div class="modal" style="max-width:360px;">
@@ -950,12 +970,14 @@ function enterClass(){
       buildStudentRows(students);
       goScreen('s2');
       showToast('📂 '+v+' 학급 데이터를 불러왔어요');
+      updateLoadBtn();
     } else {
       students=[];studentCount=30;
       document.getElementById('countVal').value=30;
       buildStudentRows(null,30);
       goScreen('s2');
       showToast('새 학급입니다. 학생 명단을 입력해 주세요.');
+    updateLoadBtn();
     }
   }).catch(function(){
     buildStudentRows(null,30);goScreen('s2');
@@ -1745,32 +1767,31 @@ function doSaveImage(isTeacher){
 
   document.body.appendChild(wrap);
 
-  /* A4 가로 비율로 캔버스 크기 조정 */
-  var A4_W=1684, A4_H=1191; /* 96dpi 기준 A4 가로 (297mm × 210mm) */
-  var contentW=wrap.scrollWidth, contentH=wrap.scrollHeight;
-  /* 여백 포함해서 A4 비율에 맞게 실제 높이 계산 */
-  var targetH=Math.max(A4_H, Math.ceil(contentW * A4_H / A4_W));
-  wrap.style.minHeight=targetH+'px';
-  /* 내용이 A4보다 넓으면 스케일 조정 */
-  var useW=Math.max(contentW, A4_W);
-  var useH=Math.max(targetH, A4_H);
+  /* A4 가로 (297×210mm) 비율 캔버스에 내용 채우기 */
+  var A4_W=2480, A4_H=1754; /* 150dpi 고해상도 A4 가로 */
+  var PAD=60; /* 여백 px */
+
+  /* wrap 크기를 A4 비율에 맞게 설정 */
+  wrap.style.width=A4_W+'px';
+  wrap.style.minHeight=A4_H+'px';
+  wrap.style.padding=PAD+'px';
 
   html2canvas(wrap,{
-    scale:2, useCORS:true, backgroundColor:bgColor, logging:false,
-    width:useW, height:useH,
-    windowWidth:useW, windowHeight:useH
+    scale:1, useCORS:true, backgroundColor:bgColor, logging:false,
+    width:A4_W, height:A4_H
   }).then(function(canvas){
-    /* 결과 캔버스를 A4 가로 비율로 크롭/패딩 */
+    /* 콘텐츠를 A4 캔버스에 최대 크기로 중앙 배치 */
     var finalCanvas=document.createElement('canvas');
-    finalCanvas.width=A4_W*2;finalCanvas.height=A4_H*2;
+    finalCanvas.width=A4_W;finalCanvas.height=A4_H;
     var ctx=finalCanvas.getContext('2d');
     ctx.fillStyle=bgColor||'#ffffff';
-    ctx.fillRect(0,0,finalCanvas.width,finalCanvas.height);
-    /* 비율 맞춰 그리기 */
-    var scale2=Math.min(finalCanvas.width/canvas.width, finalCanvas.height/canvas.height);
-    var ox=(finalCanvas.width-canvas.width*scale2)/2;
-    var oy=20; /* 약간 위쪽 정렬 */
-    ctx.drawImage(canvas, ox, oy, canvas.width*scale2, canvas.height*scale2);
+    ctx.fillRect(0,0,A4_W,A4_H);
+    /* 비율 유지하며 최대 크기로 중앙 배치 */
+    var scaleF=Math.min((A4_W-PAD*2)/canvas.width, (A4_H-PAD*2)/canvas.height);
+    if(scaleF>1) scaleF=1; /* 원본보다 크게 확대하지 않음 */
+    var dw=canvas.width*scaleF, dh=canvas.height*scaleF;
+    var ox=(A4_W-dw)/2, oy=(A4_H-dh)/2;
+    ctx.drawImage(canvas,ox,oy,dw,dh);
     document.body.removeChild(wrap);
     var link=document.createElement('a');
     var d=new Date();
@@ -1907,11 +1928,85 @@ function toggleHistory(){
   if(!p.classList.contains('hidden')) loadHistory();
 }
 
+/* ── 헤더 불러오기 버튼 표시/숨김 ── */
+function updateLoadBtn(){
+  var btn=document.getElementById('btnLoadHistory');
+  if(btn) btn.style.display=curClass?'flex':'none';
+}
+
+/* ── 불러오기 모달 ── */
+function openLoadHistoryModal(){
+  document.getElementById('loadHistSubtitle').textContent=curClass+' 학급 저장 목록';
+  document.getElementById('loadHistList').innerHTML='<div style="text-align:center;padding:24px;color:var(--muted);">불러오는 중...</div>';
+  document.getElementById('loadHistoryModal').classList.add('active');
+
+  db.collection('seating_classes').doc(curClass).collection('history')
+    .orderBy('savedAt','desc').limit(30).get().then(function(snap){
+    var list=document.getElementById('loadHistList');
+    list.innerHTML='';
+    if(snap.empty){
+      list.innerHTML='<div style="text-align:center;padding:24px;color:var(--muted);font-size:13px;">저장된 배치가 없습니다</div>';
+      return;
+    }
+    snap.docs.forEach(function(d){
+      var date=d.data().savedAt?d.data().savedAt.toDate().toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'}):'';
+      var item=document.createElement('div');
+      item.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;gap:10px;';
+      item.innerHTML=
+        '<div style="min-width:0;">'  +
+          '<div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:3px;">'+esc(d.data().label||'저장된 배치')+'</div>'+
+          '<div style="font-size:11.5px;color:var(--muted);">'+date+'</div>'+
+        '</div>'+
+        '<button class="btn btn-primary btn-sm" style="flex-shrink:0;">불러오기</button>';
+      item.querySelector('button').addEventListener('click',function(){
+        /* 학급 설정도 함께 불러오기 */
+        db.collection('seating_classes').doc(curClass).get().then(function(doc){
+          if(doc.exists){
+            var dd=doc.data();
+            if(dd.settings){
+              var st=dd.settings;
+              colGaps=new Set(st.colGaps||[]);
+              rowGaps=new Set(st.rowGaps||[]);
+              emptySeats=new Set(st.emptySeats||[]);
+              fixedSeats=st.fixedSeats||{};
+              if(st.cols) document.getElementById('sCols').value=st.cols;
+              if(st.rows) document.getElementById('sRows').value=st.rows;
+            }
+            if(dd.students) students=dd.students;
+          }
+          /* 배치 복원 */
+          var flat=d.data().layout;
+          var hr=d.data().layoutRows||parseInt(document.getElementById('sRows').value)||5;
+          var hc=d.data().layoutCols||parseInt(document.getElementById('sCols').value)||6;
+          layout=Array.isArray(flat[0])?flat:restoreLayout(flat,hr,hc);
+          closeLoadHistoryModal();
+          /* 배치표 화면으로 이동 */
+          document.getElementById('s4badge').textContent=curClass+' 학급 배치표';
+          var cfg={rows:hr,cols:hc,colGaps:Array.from(colGaps),rowGaps:Array.from(rowGaps),
+            emptySeats:Array.from(emptySeats),fixedSeats:fixedSeats};
+          goScreen('s4');
+          applyTheme(curTheme);
+          requestAnimationFrame(function(){
+            setTimeout(function(){renderSeatGrid(cfg);},80);
+          });
+          showToast('📂 배치 불러오기 완료!');
+        });
+      });
+      list.appendChild(item);
+    });
+  }).catch(function(err){
+    document.getElementById('loadHistList').innerHTML='<div style="color:#C53030;padding:12px;">오류: '+err.message+'</div>';
+  });
+}
+function closeLoadHistoryModal(){
+  document.getElementById('loadHistoryModal').classList.remove('active');
+}
+
 /* ──────────── 키보드 / 모달 닫기 ──────────── */
 document.addEventListener('keydown',function(e){
   if(e.key==='Escape'){closeSaveModal();closeSpecialModal();closeCommentModal();}
 });
-['saveModal','specialModal','commentModal','completeModal'].forEach(function(id){
+['saveModal','specialModal','commentModal','completeModal','loadHistoryModal'].forEach(function(id){
   document.getElementById(id).addEventListener('click',function(e){
     if(e.target===this){this.classList.remove('active');}
   });
