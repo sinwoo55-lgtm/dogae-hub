@@ -717,11 +717,11 @@ input:checked+.tsl::before{transform:translateX(17px);}
         <option value="kinder">🎈 유치원</option>
       </select>
       <!-- 재배치 -->
-      <button class="btn btn-secondary btn-sm" onclick="generateLayout()">
+      <button class="btn btn-secondary btn-sm" onclick="generateLayout()" style="padding:7px 14px;">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.12"/></svg>재배치
       </button>
       <!-- 배치 완료 -->
-      <button class="btn btn-secondary btn-sm" onclick="openCommentForPreview()" title="코멘트 입력">
+      <button class="btn btn-secondary btn-sm" onclick="openCommentForPreview()" title="코멘트 입력" style="padding:7px 14px;">
         💬 코멘트
       </button>
       <button class="btn btn-primary btn-sm" onclick="openPreviewModal()" style="padding:7px 16px;">
@@ -1895,14 +1895,20 @@ function buildImageCanvas(isTeacher,cmt){
         ctx.textAlign='center'; ctx.textBaseline='top';
         ctx.fillText(stu?String(stu.num):'', x+w/2, y+h*0.10);
         ctx.globalAlpha=1;
-        /* 반장/부반장 역할 텍스트 */
+        /* 반장/부반장 역할 텍스트 - 이름 폰트의 70%, 이름 아래 */
         if(stu&&(stu.role==='president'||stu.role==='vice')){
-          var roleTxt=stu.role==='president'?'(반장)':'(부반장)';
-          var roleTxtSz=Math.round(h*0.13);
+          var roleTxt2=stu.role==='president'?'(반장)':'(부반장)';
+          /* nameSz가 아직 정의되지 않았으므로 일반 이름 기준으로 미리 계산 */
+          var _tmpSz=Math.round(h*0.34);
+          var _ctx2Font='900 '+_tmpSz+'px "'+F+'",sans-serif';
+          ctx.font=_ctx2Font;
+          var _mw=w*0.86;
+          while(ctx.measureText(mainName).width>_mw&&_tmpSz>12){_tmpSz--;ctx.font='900 '+_tmpSz+'px "'+F+'",sans-serif';}
+          var roleSz=Math.round(_tmpSz*0.70);
           ctx.fillStyle=tc2; ctx.globalAlpha=.65;
-          ctx.font='700 '+roleTxtSz+'px "'+F+'",sans-serif';
-          ctx.textAlign='center'; ctx.textBaseline='bottom';
-          ctx.fillText(roleTxt, x+w/2, y+h-Math.round(h*0.06));
+          ctx.font='700 '+roleSz+'px "'+F+'",sans-serif';
+          ctx.textAlign='center'; ctx.textBaseline='top';
+          ctx.fillText(roleTxt2, x+w/2, y+h*0.64+(_tmpSz*0.55));
           ctx.globalAlpha=1;
         }
 
@@ -2003,6 +2009,13 @@ function roundRect(ctx,x,y,w,h,r,fill,stroke){
 /* ──────────── 미리보기 / 저장 팝업 ──────────── */
 var _pvIsTeacher=true; /* 현재 미리보기 시점 */
 
+function openCommentForPreview(){
+  document.getElementById('commentInput').value=
+    document.getElementById('printCommentText').textContent||'';
+  window._saveMode='preview_only';
+  document.getElementById('commentModal').classList.add('active');
+  setTimeout(function(){document.getElementById('commentInput').focus();},160);
+}
 function openPreviewModal(){
   document.getElementById('completeModal').classList.add('active');
   _pvIsTeacher=true;
