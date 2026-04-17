@@ -954,13 +954,32 @@ renderRecent();
 function adjustCount(d){
   studentCount=Math.max(1,Math.min(60,studentCount+d));
   document.getElementById('countVal').value=studentCount;
-  buildStudentRows(null,studentCount);
+  rebuildKeepData(studentCount);
 }
 function applyCountInput(){
   var v=parseInt(document.getElementById('countVal').value)||1;
   studentCount=Math.max(1,Math.min(60,v));
   document.getElementById('countVal').value=studentCount;
-  buildStudentRows(null,studentCount);
+  rebuildKeepData(studentCount);
+}
+
+/* 기존 입력 데이터를 보존하면서 인원 수 변경 */
+function rebuildKeepData(newCount){
+  /* 현재 화면에서 입력된 데이터 수집 */
+  var current=collectStudents();
+  /* 새 배열 생성: 기존 데이터 유지, 부족하면 빈 행 추가 */
+  var merged=[];
+  for(var i=0;i<newCount;i++){
+    if(i<current.length){
+      /* 기존 행 유지 (번호만 갱신) */
+      var s=current[i];
+      merged.push({num:i+1,name:s.name,gender:s.gender,absent:s.absent});
+    } else {
+      /* 신규 행 추가 */
+      merged.push({num:i+1,name:'',gender:'',absent:false});
+    }
+  }
+  buildStudentRows(merged);
 }
 
 function buildStudentRows(existing,cnt){
