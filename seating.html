@@ -1787,22 +1787,27 @@ function doSaveImage(isTeacher){
         var maxNameW=w*0.86;
         var nameSz;
         if(subName){
-          /* 괄호 있는 경우 이름+괄호 두 줄 */
-          nameSz=Math.round(h*0.30);
+          /* 번호 아래 가용 영역: h*0.30 ~ h*0.95 */
+          var nameZoneTop = y + h*0.30;
+          var nameZoneH   = h*0.62;
+          /* 이름+서브 합계 높이가 가용 영역 안에 들어오도록 nameSz 계산 */
+          nameSz = Math.min(
+            Math.round(h*0.30),
+            Math.floor((nameZoneH - 6) / 1.72)
+          );
           ctx.font='900 '+nameSz+'px "'+F+'",sans-serif';
-          /* 너비 초과 시 축소 */
-          while(ctx.measureText(mainName).width>maxNameW&&nameSz>12){
+          while(ctx.measureText(mainName).width>maxNameW&&nameSz>10){
             nameSz--; ctx.font='900 '+nameSz+'px "'+F+'",sans-serif';
           }
-          var subSz=Math.round(nameSz*0.7);
-          /* 두 줄 중앙 배치: 이름 + 서브 */
+          var subSz=Math.round(nameSz*0.70);
           var totalLineH=nameSz+subSz+6;
-          var nameY=y+h*0.52-totalLineH/2+nameSz/2;
-          ctx.fillStyle=tc2; ctx.textAlign='center'; ctx.textBaseline='alphabetic';
-          ctx.fillText(mainName, x+w/2, nameY);
+          /* 가용 영역 내 수직 중앙 정렬 */
+          var blockTop = nameZoneTop + (nameZoneH - totalLineH) / 2;
+          ctx.fillStyle=tc2; ctx.textAlign='center'; ctx.textBaseline='top';
+          ctx.fillText(mainName, x+w/2, blockTop);
           ctx.font='700 '+subSz+'px "'+F+'",sans-serif';
           ctx.globalAlpha=.75;
-          ctx.fillText(subName, x+w/2, nameY+nameSz+4);
+          ctx.fillText(subName, x+w/2, blockTop + nameSz + 4);
           ctx.globalAlpha=1;
         } else {
           /* 일반 이름: 글자 수에 따라 폰트 크기 조절하여 셀 너비 채우기 */
