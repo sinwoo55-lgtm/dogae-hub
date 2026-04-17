@@ -104,8 +104,16 @@ header{flex-shrink:0;background:var(--surface);border-bottom:1px solid var(--bor
 .role-popup-item{padding:7px 12px;border-radius:7px;font-size:12.5px;font-weight:700;cursor:pointer;transition:var(--tr);display:flex;align-items:center;gap:6px;}
 .role-popup-item:hover{background:var(--navy-pale);}
 .role-popup-item.clear{color:var(--muted);}
-/* 반장/부반장 금색 테두리 - 항상 최우선 적용 */
-.seat.has-role{border:3px solid #F59E0B !important;box-shadow:0 0 0 1px #F59E0B !important;}
+/* 반장: 금색 메탈릭 테두리 */
+.seat.is-president{
+  border:3px solid #D4AF37 !important;
+  box-shadow:0 0 0 1.5px #FFF0A0,0 0 8px 2px rgba(212,175,55,.45) !important;
+}
+/* 부반장: 은색 메탈릭 테두리 */
+.seat.is-vice{
+  border:3px solid #A8A9AD !important;
+  box-shadow:0 0 0 1.5px #F0F0F0,0 0 8px 2px rgba(168,169,173,.45) !important;
+}
 
 /* ══ S3 교실 설정 ══ */
 #s3{flex-direction:row;overflow:hidden;}
@@ -1079,8 +1087,8 @@ function makeRow(num,s){
     '<div class="gender-group">'+
       '<button class="g-btn m'+(s.gender==='M'?' on':'')+'" onclick="setG(this,\'M\')">남</button>'+
       '<button class="g-btn f'+(s.gender==='F'?' on':'')+'" onclick="setG(this,\'F\')">여</button>'+
-      '<button class="role-btn'+(s.role==='president'?' president':s.role==='vice'?' vice':'')+" onclick=\"openRolePopup(this,event)\""+'>'+
-      (s.role==='president'?'👑 반장':s.role==='vice'?'⭐ 부반장':'역할')+
+      '<button class="role-btn'+(s.role==='president'?' president':s.role==='vice'?' vice':'')+'" onclick="openRolePopup(this,event)">'+
+      (s.role==='president'?'반장':s.role==='vice'?'부반장':'역할')+
     '</button>'+
       '<button class="g-btn ab'+(s.absent?' on':'')+'" onclick="toggleAbsent(this)">결번</button>'+
     '</div>';
@@ -1546,13 +1554,10 @@ function renderSeatGrid(cfg){
         else if(stu&&stu.gender==='F') seat.classList.add('female');
         if(fx[c+'-'+r]===name) seat.classList.add('pinned');
         var fnSize=name.length>=4?'13px':name.length===3?'15px':'17px';
-        /* 금색 테두리: 반장/부반장은 테마/성별 무관하게 항상 적용 */
-        if(stu&&(stu.role==='president'||stu.role==='vice')){
-          seat.classList.add('has-role');
-        }
-        var roleIcon=stu&&stu.role==='president'?' 👑':stu&&stu.role==='vice'?' ⭐':'';
+        if(stu&&stu.role==='president') seat.classList.add('is-president');
+        else if(stu&&stu.role==='vice')      seat.classList.add('is-vice');
         seat.innerHTML='<span class="seat-num">'+(stu?stu.num:'')+'</span>'
-          +'<span class="seat-name-inner" style="font-size:'+fnSize+';font-weight:900;line-height:1.15;word-break:keep-all;text-align:center;padding:0 3px;">'+esc(name)+roleIcon+'</span>';
+          +'<span class="seat-name-inner" style="font-size:'+fnSize+';font-weight:900;line-height:1.15;word-break:keep-all;text-align:center;padding:0 3px;">'+esc(name)+'</span>';
         seat.draggable=true;
         seat.addEventListener('dragstart',function(){dragSrc=this;this.classList.add('dragging');});
         seat.addEventListener('dragover',function(e){e.preventDefault();if(this!==dragSrc)this.classList.add('drag-over');});
@@ -1842,10 +1847,19 @@ function doSaveImage(isTeacher){
         ctx.textAlign='center'; ctx.textBaseline='top';
         ctx.fillText(stu?String(stu.num):'', x+w/2, y+h*0.10);
         ctx.globalAlpha=1;
-        /* 반장/부반장: 금색 테두리 (항상 최우선) */
+        /* 반장/부반장: 메탈릭 테두리 (항상 최우선, 두께+글로우 레이어) */
         if(stu&&(stu.role==='president'||stu.role==='vice')){
-          ctx.strokeStyle='#F59E0B'; ctx.lineWidth=4;
+          var metalC=stu.role==='president'?'#D4AF37':'#A8A9AD';
+          var glowC =stu.role==='president'?'rgba(212,175,55,.35)':'rgba(200,200,200,.35)';
+          /* 글로우 레이어 */
+          ctx.save(); ctx.shadowColor=glowC; ctx.shadowBlur=10;
+          ctx.strokeStyle=metalC; ctx.lineWidth=4.5;
           roundRect(ctx,x,y,w,h,R,false,true);
+          ctx.restore();
+          /* 하이라이트 레이어 */
+          ctx.strokeStyle=stu.role==='president'?'#FFF0A0':'#F0F0F0';
+          ctx.lineWidth=1.5;
+          roundRect(ctx,x+2,y+2,w-4,h-4,R-1,false,true);
         }
 
         /* ── 메인 이름: 셀 너비에 맞게 폰트 크기 자동 조절 ── */
@@ -1868,9 +1882,8 @@ function doSaveImage(isTeacher){
           var totalLineH=nameSz+subSz+6;
           /* 가용 영역 내 수직 중앙 정렬 */
           var blockTop = nameZoneTop + (nameZoneH - totalLineH) / 2;
-          var mainDisplay=mainName+(stu&&stu.role==='president'?' 👑':stu&&stu.role==='vice'?' ⭐':'');
           ctx.fillStyle=tc2; ctx.textAlign='center'; ctx.textBaseline='top';
-          ctx.fillText(mainDisplay, x+w/2, blockTop);
+          ctx.fillText(mainName, x+w/2, blockTop);
           ctx.font='700 '+subSz+'px "'+F+'",sans-serif';
           ctx.globalAlpha=.75;
           ctx.fillText(subName, x+w/2, blockTop + nameSz + 4);
@@ -1882,9 +1895,8 @@ function doSaveImage(isTeacher){
           while(ctx.measureText(mainName).width>maxNameW&&nameSz>12){
             nameSz--; ctx.font='900 '+nameSz+'px "'+F+'",sans-serif';
           }
-          var nameWithIcon=mainName+(stu&&stu.role==='president'?' 👑':stu&&stu.role==='vice'?' ⭐':'');
           ctx.fillStyle=tc2; ctx.textAlign='center'; ctx.textBaseline='middle';
-          ctx.fillText(nameWithIcon, x+w/2, y+h*0.64);
+          ctx.fillText(mainName, x+w/2, y+h*0.64);
         }
       }
       cx+=CELL_W+GAP;
