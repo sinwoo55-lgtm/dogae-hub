@@ -191,9 +191,13 @@ input:checked+.tsl::before{transform:translateX(17px);}
 .seat.ec{background:var(--theme-empty);border-style:dashed;color:#9CA3AF;font-size:11px;cursor:default;}
 .seat.pinned::after{content:'📌';position:absolute;top:2px;right:3px;font-size:8px;}
 .seat-num{
-  display:block;font-size:13px;font-weight:800;
+  display:block;font-size:14px;font-weight:800;
   color:var(--theme-num,#94A3B8);line-height:1;
-  margin-bottom:2px;opacity:.8;text-align:center;
+  margin-top:6px;margin-bottom:1px;opacity:.8;text-align:center;
+}
+.seat-name-inner{
+  display:block;line-height:1.1;word-break:keep-all;text-align:center;
+  padding:0 4px;margin-bottom:4px;
 }
 
 /* 분단 구분 공백 - 명확한 빈 공간 */
@@ -517,6 +521,12 @@ input:checked+.tsl::before{transform:translateX(17px);}
 .print-board-bottom{display:none;}
 
 /* 토스트 */
+.drag-guide{
+  font-size:12px;color:var(--muted);background:var(--surface);
+  border:1px dashed var(--border);border-radius:8px;
+  padding:7px 16px;margin-bottom:14px;text-align:center;
+  opacity:.75;
+}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(14px);background:#1A1E2E;color:#fff;padding:9px 20px;border-radius:100px;font-size:13px;font-weight:500;opacity:0;transition:all .28s;z-index:900;pointer-events:none;}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
@@ -601,8 +611,9 @@ input:checked+.tsl::before{transform:translateX(17px);}
     </div>
     <div class="s3-hint">
       <b>💡 프리뷰 사용법</b><br>
-      셀 사이 <b>+</b> → 분단 구분선<br>
-      셀 클릭 → 빈 자리 / 학생 고정
+      셀과 셀 사이에 마우스를 올리면 <b>+</b> 버튼이 나타나요.<br>
+      클릭하면 <b>분단 구분 공백</b>이 추가되고, 다시 클릭하면 제거됩니다.<br><br>
+      <b>셀 클릭</b> → 빈 자리 지정 또는 특정 학생 고정 배치
     </div>
     <button class="btn btn-special" onclick="openSpecialModal()">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg>
@@ -637,6 +648,10 @@ input:checked+.tsl::before{transform:translateX(17px);}
       <span class="s4-badge" id="s4badge"></span>
     </div>
     <div class="s4-toolbar">
+      <label class="print-opt" id="genderToggleWrap" title="남/여 색상 구분">
+        <input type="checkbox" id="genderColorCheck" checked onchange="toggleGenderColor()"/>
+        남/여 색 구분
+      </label>
       <select class="theme-select" id="themeSelect">
         <option value="simple">🎨 테마 선택</option>
         <option value="simple">심플</option>
@@ -663,6 +678,9 @@ input:checked+.tsl::before{transform:translateX(17px);}
   <div class="s4-body">
     <div class="layout-area">
       <div class="board-tag-area">▲ 칠판 (교단)</div>
+      <div class="drag-guide" id="dragGuide">
+        ✋ 학생 카드를 드래그하면 자리를 바꿀 수 있습니다
+      </div>
       <div class="seat-grid-outer">
         <div class="seat-grid-inner">
           <div id="seatGrid"></div>
@@ -1375,6 +1393,20 @@ document.getElementById('themeSelect').addEventListener('change',function(){
   showToast('테마: '+THEMES[this.value]);
 });
 
+function toggleGenderColor(){
+  var on=document.getElementById('genderColorCheck').checked;
+  // 성별 구분 on/off 스타일
+  var style=document.getElementById('genderColorStyle');
+  if(!style){style=document.createElement('style');style.id='genderColorStyle';document.head.appendChild(style);}
+  if(!on){
+    style.textContent='.seat.male{background:var(--theme-seat)!important;border-color:var(--theme-border)!important;color:var(--theme-text)!important;}.seat.male::before{background:var(--theme-card-top)!important;}.seat.female{background:var(--theme-seat)!important;border-color:var(--theme-border)!important;color:var(--theme-text)!important;}.seat.female::before{background:var(--theme-card-top)!important;}';
+    showToast('남/여 색 구분 해제');
+  } else {
+    style.textContent='';
+    showToast('남/여 색 구분 적용');
+  }
+}
+
 /* ──────────── 인쇄 ──────────── */
 function doPrint(){
   var withCmt=document.getElementById('printCommentCheck').checked;
@@ -1422,7 +1454,7 @@ function doSaveImage(){
   var cmt=document.getElementById('printCommentText').textContent||'';
 
   /* 테마 변수 가져오기 */
-  var cs=getComputedStyle(document.documentElement);
+  var cs=getComputedStyle(document.body);
   function tv(n){return cs.getPropertyValue(n).trim()||'';}
   var bgColor   = tv('--theme-bg-color') || '#F2F4FB';
   var seatBg    = tv('--theme-seat')     || '#ffffff';
@@ -1462,13 +1494,7 @@ function doSaveImage(){
   wrap.style.cssText='position:fixed;top:-9999px;left:-9999px;width:'+canvasW+'px;'
     +'background:'+bgColor+';padding:'+MARGIN+'px;font-family:'+themeFont+',Noto Sans KR,sans-serif;';
 
-  /* 칠판 (학생 시점 기준 위 = 교사 시점 기준 아래) → 이미지 상단에 표시 */
-  var bb=document.createElement('div');
-  bb.style.cssText='background:'+boardBg+';color:'+boardText+';text-align:center;'
-    +'padding:12px;border-radius:10px;font-size:18px;font-weight:900;letter-spacing:3px;'
-    +'margin-bottom:18px;';
-  bb.textContent='▲ 칠판 (교단)';
-  wrap.appendChild(bb);
+  /* 칠판 표시는 하단(교사 시점 표시)에만 → 상단 제거 */
 
   /* 그리드 */
   var grid=document.createElement('div');
@@ -1524,7 +1550,7 @@ function doSaveImage(){
 
         /* 번호 */
         var numEl=document.createElement('div');
-        numEl.style.cssText='font-size:15px;font-weight:800;color:'+tc2+';opacity:.75;line-height:1;margin-top:6px;';
+        numEl.style.cssText='font-size:14px;font-weight:800;color:'+tc2+';opacity:.75;line-height:1;margin-top:8px;';
         numEl.textContent=stu?stu.num:'';
         cell.appendChild(numEl);
 
