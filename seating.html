@@ -721,8 +721,8 @@ input:checked+.tsl::before{transform:translateX(17px);}
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.12"/></svg>재배치
       </button>
       <!-- 배치 완료 -->
-      <button class="btn btn-primary btn-sm" onclick="openCompleteModal()" style="padding:7px 16px;">
-        ✅ 배치 완료
+      <button class="btn btn-primary btn-sm" onclick="openPreviewModal()" style="padding:7px 16px;">
+        🔍 미리보기 / 저장
       </button>
     </div>
   </div>
@@ -858,35 +858,42 @@ input:checked+.tsl::before{transform:translateX(17px);}
   </div>
 </div>
 
-<!-- 배치 완료 팝업 -->
-<div class="modal-overlay" id="completeModal">
-  <div class="modal" style="max-width:420px;">
-    <div class="modal-title" style="margin-bottom:6px;">✅ 배치 완료</div>
-    <div style="font-size:12.5px;color:var(--muted);margin-bottom:22px;">저장 방식을 선택하세요</div>
-
-    <!-- 서버에 기록하기 -->
-    <button class="btn btn-primary" style="width:100%;justify-content:center;margin-bottom:10px;padding:13px;" onclick="openSaveFromComplete()">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-      서버에 기록하기
-    </button>
-
-    <!-- 이미지 저장 (학생 시점) -->
-    <button class="btn btn-secondary" style="width:100%;justify-content:center;margin-bottom:10px;padding:12px;" onclick="saveStudentView()">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-      📷 이미지 저장 (학생 시점)
-    </button>
-
-    <!-- 이미지 저장 (교사 시점) -->
-    <button class="btn btn-secondary" style="width:100%;justify-content:center;padding:12px;" onclick="saveTeacherView()">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-      📷 이미지 저장 (교사 시점)
-    </button>
-
-    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center;">
+<!-- 미리보기 / 저장 팝업 -->
+<div class="modal-overlay" id="completeModal" style="align-items:center;padding:20px;">
+  <div class="modal" style="max-width:860px;width:96%;max-height:92vh;display:flex;flex-direction:column;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-shrink:0;">
+      <div class="modal-title" style="margin-bottom:0;">🔍 미리보기</div>
+      <button class="btn btn-secondary btn-sm" onclick="closeCompleteModal()">✕ 닫기</button>
+    </div>
+    <!-- 프리뷰 이미지 영역 -->
+    <div style="flex:1;overflow:auto;display:flex;align-items:center;justify-content:center;background:var(--bg);border-radius:10px;border:1.5px solid var(--border);min-height:200px;margin-bottom:14px;padding:8px;">
+      <div id="previewSpinner" style="color:var(--muted);font-size:13px;">이미지 생성 중...</div>
+      <img id="previewImg" style="max-width:100%;max-height:62vh;border-radius:6px;display:none;box-shadow:0 4px 20px rgba(0,0,0,.12);" alt="배치표 미리보기"/>
+    </div>
+    <!-- 탭: 교사/학생 시점 전환 -->
+    <div style="display:flex;gap:6px;margin-bottom:12px;flex-shrink:0;">
+      <button class="btn btn-secondary btn-sm" id="pvTabTeacher" onclick="switchPreviewTab(true)"
+        style="flex:1;justify-content:center;background:var(--navy);color:#fff;border-color:var(--navy);">
+        교사 시점 (칠판 하단)
+      </button>
+      <button class="btn btn-secondary btn-sm" id="pvTabStudent" onclick="switchPreviewTab(false)"
+        style="flex:1;justify-content:center;">
+        학생 시점 (칠판 상단)
+      </button>
+    </div>
+    <!-- 하단 버튼 -->
+    <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;flex-wrap:wrap;">
       <label class="print-opt" style="font-size:12.5px;">
         <input type="checkbox" id="completeCommentCheck"/> 코멘트 추가
       </label>
-      <button class="btn btn-secondary btn-sm" style="margin-left:auto;" onclick="closeCompleteModal()">닫기</button>
+      <div style="flex:1;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;">
+        <button class="btn btn-secondary" onclick="downloadCurrentPreview()" style="padding:9px 16px;">
+          📥 이미지 저장
+        </button>
+        <button class="btn btn-primary" onclick="openSaveFromComplete()" style="padding:9px 16px;">
+          💾 서버에 기록
+        </button>
+      </div>
     </div>
   </div>
 </div>
@@ -1686,6 +1693,10 @@ function confirmComment(){
   var el=document.getElementById('printCommentText');
   el.textContent=txt;el.style.display='block';
   closeCommentModal();
+  /* 미리보기 팝업이 열려있으면 프리뷰 갱신 후 다운로드 */
+  if(document.getElementById('completeModal').classList.contains('active')){
+    downloadCurrentPreview(); return;
+  }
   var isTeacher=(window._saveMode==='teacher');
   window._saveMode=null;
   doSaveImage(isTeacher);
@@ -1701,15 +1712,13 @@ function saveAsImage_old(){
   }
 }
 
-function doSaveImage(isTeacher){
-  closeCompleteModal();
-  showToast('이미지 생성 중...');
+function buildImageCanvas(isTeacher,cmt){
 
   var rows=parseInt(document.getElementById('sRows').value)||5;
   var cols=parseInt(document.getElementById('sCols').value)||6;
   var cgArr=Array.from(colGaps).sort(function(a,b){return a-b;});
   var rgArr=Array.from(rowGaps).sort(function(a,b){return a-b;});
-  var cmt=document.getElementById('printCommentText').textContent||'';
+  cmt=cmt||'';
 
   /* 테마 변수 */
   var cs=getComputedStyle(document.body);
@@ -1951,9 +1960,14 @@ function doSaveImage(isTeacher){
   ctx.textAlign='right'; ctx.textBaseline='middle';
   ctx.fillText(d.getFullYear()+'.'+String(d.getMonth()+1)+'.'+d.getDate()+' 생성', A4_W-SIDE, dateY+DATE_H/2);
 
-  /* ── 저장 ── */
-  var link=document.createElement('a');
+  return canvas;
+}
+function doSaveImage(isTeacher){
+  var cmt=document.getElementById('printCommentText').textContent||'';
+  var canvas=buildImageCanvas(isTeacher,cmt);
+  var d=new Date();
   var vl=isTeacher?'_교사시점':'_학생시점';
+  var link=document.createElement('a');
   link.download='자리배치표_'+curClass+vl+'_'+d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()+'.png';
   link.href=canvas.toDataURL('image/png');
   link.click();
@@ -1975,12 +1989,65 @@ function roundRect(ctx,x,y,w,h,r,fill,stroke){
 }
 
 
-/* ──────────── 배치 완료 팝업 ──────────── */
-function openCompleteModal(){
+/* ──────────── 미리보기 / 저장 팝업 ──────────── */
+var _pvIsTeacher=true; /* 현재 미리보기 시점 */
+
+function openPreviewModal(){
   document.getElementById('completeModal').classList.add('active');
+  _pvIsTeacher=true;
+  /* 교사 시점 탭 활성화 */
+  document.getElementById('pvTabTeacher').style.background='var(--navy)';
+  document.getElementById('pvTabTeacher').style.color='#fff';
+  document.getElementById('pvTabTeacher').style.borderColor='var(--navy)';
+  document.getElementById('pvTabStudent').style.background='var(--bg)';
+  document.getElementById('pvTabStudent').style.color='var(--navy)';
+  document.getElementById('pvTabStudent').style.borderColor='var(--border)';
+  renderPreviewImage(true);
 }
 function closeCompleteModal(){
   document.getElementById('completeModal').classList.remove('active');
+}
+function switchPreviewTab(isTeacher){
+  _pvIsTeacher=isTeacher;
+  var tBtn=document.getElementById('pvTabTeacher'),sBtn=document.getElementById('pvTabStudent');
+  if(isTeacher){
+    tBtn.style.background='var(--navy)';tBtn.style.color='#fff';tBtn.style.borderColor='var(--navy)';
+    sBtn.style.background='var(--bg)';sBtn.style.color='var(--navy)';sBtn.style.borderColor='var(--border)';
+  } else {
+    sBtn.style.background='var(--navy)';sBtn.style.color='#fff';sBtn.style.borderColor='var(--navy)';
+    tBtn.style.background='var(--bg)';tBtn.style.color='var(--navy)';tBtn.style.borderColor='var(--border)';
+  }
+  renderPreviewImage(isTeacher);
+}
+function renderPreviewImage(isTeacher){
+  var spinner=document.getElementById('previewSpinner');
+  var img=document.getElementById('previewImg');
+  spinner.style.display='block'; img.style.display='none';
+  var cmt=document.getElementById('completeCommentCheck').checked
+    ? (document.getElementById('printCommentText').textContent||'') : '';
+  /* setTimeout으로 DOM 업데이트 후 Canvas 생성 */
+  setTimeout(function(){
+    var canvas=buildImageCanvas(isTeacher,cmt);
+    img.src=canvas.toDataURL('image/png');
+    img.onload=function(){spinner.style.display='none';img.style.display='block';};
+  },50);
+}
+function downloadCurrentPreview(){
+  var withCmt=document.getElementById('completeCommentCheck').checked;
+  if(withCmt&&!document.getElementById('printCommentText').textContent){
+    openCommentModal();
+    window._saveMode=_pvIsTeacher?'teacher':'student';
+    return;
+  }
+  var cmt=withCmt?document.getElementById('printCommentText').textContent:'';
+  var canvas=buildImageCanvas(_pvIsTeacher,cmt);
+  var d=new Date();
+  var vl=_pvIsTeacher?'_교사시점':'_학생시점';
+  var link=document.createElement('a');
+  link.download='자리배치표_'+curClass+vl+'_'+d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()+'.png';
+  link.href=canvas.toDataURL('image/png');
+  link.click();
+  showToast('📷 이미지 저장 완료!');
 }
 function openSaveFromComplete(){
   closeCompleteModal();
@@ -1988,36 +2055,18 @@ function openSaveFromComplete(){
   document.getElementById('saveModal').classList.add('active');
   setTimeout(function(){document.getElementById('saveLabel').focus();},160);
 }
-
-/* 학생 시점 - 뒤집지 않고 그대로 */
-function saveStudentView(){
-  var withCmt=document.getElementById('completeCommentCheck').checked;
-  if(withCmt){
-    /* 코멘트 입력 후 저장 */
-    document.getElementById('commentInput').value='';
-    document.getElementById('commentModal').classList.add('active');
-    /* 확인 버튼이 교사시점 저장하도록 임시 모드 변경 */
-    window._saveMode='student';
-    setTimeout(function(){document.getElementById('commentInput').focus();},160);
-  } else {
-    document.getElementById('printCommentText').textContent='';
-    doSaveImage(false);
-  }
-}
-
-/* 교사 시점 - 행/열 역순 */
-function saveTeacherView(){
-  var withCmt=document.getElementById('completeCommentCheck').checked;
-  if(withCmt){
-    document.getElementById('commentInput').value='';
-    document.getElementById('commentModal').classList.add('active');
-    window._saveMode='teacher';
-    setTimeout(function(){document.getElementById('commentInput').focus();},160);
-  } else {
-    document.getElementById('printCommentText').textContent='';
-    doSaveImage(true);
-  }
-}
+/* 코멘트 체크박스 변경 시 프리뷰 갱신 */
+document.addEventListener('DOMContentLoaded',function(){
+  var chk=document.getElementById('completeCommentCheck');
+  if(chk) chk.addEventListener('change',function(){
+    if(document.getElementById('completeModal').classList.contains('active')){
+      renderPreviewImage(_pvIsTeacher);
+    }
+  });
+});
+/* saveStudentView/saveTeacherView (코멘트 모달 경유 시 사용) */
+function saveStudentView(){ renderPreviewImage(false); }
+function saveTeacherView(){ renderPreviewImage(true); }
 
 /* ──────────── 저장 / 히스토리 ──────────── */
 function openSaveModal(){
