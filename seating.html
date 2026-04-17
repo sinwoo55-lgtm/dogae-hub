@@ -30,7 +30,7 @@ body{display:flex;flex-direction:column;min-height:100vh;}
 header{flex-shrink:0;background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:80;}
 .back-btn{display:flex;align-items:center;gap:6px;padding:6px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:12.5px;font-weight:500;color:var(--navy);text-decoration:none;transition:var(--tr);}
 .back-btn:hover{background:var(--navy);color:#fff;}
-.page-title{font-family:'Noto Serif KR',serif;font-size:15px;font-weight:700;color:var(--navy);margin-left:12px;}
+.page-title{font-family:'Noto Sans KR',sans-serif;font-size:15px;font-weight:700;color:var(--navy);margin-left:12px;}
 .logo-wrap img{width:30px;height:30px;border-radius:50%;border:1.5px solid var(--border);}
 
 /* ── 공통 버튼 ── */
@@ -53,7 +53,7 @@ header{flex-shrink:0;background:var(--surface);border-bottom:1px solid var(--bor
 /* ══ S1 학급 선택 ══ */
 #s1{align-items:center;justify-content:center;padding:32px 20px;}
 .class-card{background:var(--surface);border-radius:20px;padding:44px 40px;width:100%;max-width:400px;box-shadow:0 8px 40px rgba(37,62,138,.1);text-align:center;}
-.class-card h2{font-family:'Noto Serif KR',serif;font-size:21px;color:var(--navy-dark);margin-bottom:8px;}
+.class-card h2{font-family:'Noto Sans KR',sans-serif;font-size:21px;color:var(--navy-dark);margin-bottom:8px;}
 .class-card p{font-size:13px;color:var(--muted);margin-bottom:24px;}
 .class-input{width:100%;padding:13px 16px;background:var(--bg);border:1.5px solid var(--border);border-radius:11px;font-family:inherit;font-size:18px;color:var(--text);outline:none;text-align:center;letter-spacing:3px;margin-bottom:12px;transition:var(--tr);}
 .class-input:focus{border-color:var(--navy);background:#fff;}
@@ -67,7 +67,7 @@ header{flex-shrink:0;background:var(--surface);border-bottom:1px solid var(--bor
 /* ══ S2 학생 명단 ══ */
 #s2{overflow:hidden;}
 .s2-top{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;height:60px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:12px;}
-.s2-title{font-family:'Noto Serif KR',serif;font-size:16px;color:var(--navy-dark);}
+.s2-title{font-family:'Noto Sans KR',sans-serif;font-size:16px;color:var(--navy-dark);}
 .s2-controls{display:flex;align-items:center;gap:10px;}
 .count-box{display:flex;align-items:center;gap:8px;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:7px 12px;}
 .count-box label{font-size:12.5px;color:var(--muted);}
@@ -114,7 +114,7 @@ header{flex-shrink:0;background:var(--surface);border-bottom:1px solid var(--bor
 #s3{flex-direction:row;overflow:hidden;}
 .s3-left{width:300px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);overflow-y:auto;padding:20px;}
 .s3-right{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;background:var(--bg);overflow:auto;min-height:0;}
-.s3-title{font-family:'Noto Serif KR',serif;font-size:15px;color:var(--navy-dark);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border);}
+.s3-title{font-family:'Noto Sans KR',sans-serif;font-size:15px;color:var(--navy-dark);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border);}
 .form-group{margin-bottom:14px;}
 .form-label{display:block;font-size:11px;font-weight:700;color:var(--navy);letter-spacing:.5px;margin-bottom:6px;}
 .form-label small{font-weight:400;color:var(--muted);margin-left:4px;}
@@ -128,12 +128,16 @@ header{flex-shrink:0;background:var(--surface);border-bottom:1px solid var(--bor
 .tsl::before{content:'';position:absolute;width:15px;height:15px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.25s;box-shadow:0 1px 3px rgba(0,0,0,.2);}
 input:checked+.tsl{background:var(--navy);}
 input:checked+.tsl::before{transform:translateX(17px);}
-.s3-hint{background:var(--navy-pale);border-radius:9px;padding:11px 12px;font-size:11.5px;color:var(--navy);margin-bottom:12px;line-height:1.8;}
+.s3-hint{background:var(--navy-pale);border-radius:9px;padding:12px 14px;font-size:12.5px;font-weight:500;color:var(--navy);margin-bottom:12px;line-height:1.9;}
 .s3-actions{display:flex;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid var(--border);}
 
 /* 프리뷰 - 창 크기에 맞춤 */
 .preview-wrap{display:flex;flex-direction:column;align-items:center;width:100%;height:100%;}
-.preview-board-tag{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:2px;margin-bottom:8px;}
+.preview-board-tag{
+  font-size:13px;font-weight:800;color:#fff;letter-spacing:3px;
+  background:var(--navy);border-radius:8px;
+  padding:8px 28px;margin-top:12px;display:inline-block;
+}
 .preview-grid-outer{flex:1;overflow:auto;display:flex;align-items:flex-start;justify-content:center;width:100%;}
 .preview-grid{display:inline-flex;flex-direction:column;}
 .pv-row{display:flex;align-items:center;}
@@ -179,14 +183,18 @@ input:checked+.tsl::before{transform:translateX(17px);}
 /* ══ S4 배치표 ══ */
 #s4{overflow:hidden;}
 .s4-top{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;flex-shrink:0;}
-.s4-badge{font-family:'Noto Serif KR',serif;font-size:14px;font-weight:700;color:var(--navy);}
+.s4-badge{font-family:'Noto Sans KR',sans-serif;font-size:14px;font-weight:700;color:var(--navy);}
 .s4-toolbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
 .theme-select{padding:6px 10px;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:12.5px;color:var(--navy);cursor:pointer;outline:none;}
 .s4-body{flex:1;overflow:auto;display:flex;min-height:0;}
 
 /* 배치표 영역 - 창 크기 맞춤 */
 .layout-area{flex:1;padding:20px;display:flex;flex-direction:column;align-items:center;overflow:auto;min-height:0;}
-.board-tag-area{font-size:10.5px;font-weight:700;color:var(--muted);letter-spacing:2.5px;margin-bottom:12px;padding:6px 20px;background:var(--surface);border:1px solid var(--border);border-radius:100px;}
+.board-tag-area{
+  font-size:14px;font-weight:800;color:var(--theme-board-text,#fff);
+  background:var(--theme-board-bg,var(--navy));letter-spacing:3px;
+  padding:10px 28px;border-radius:8px;display:inline-block;
+}
 .seat-grid-outer{flex:1;display:flex;align-items:flex-start;justify-content:center;width:100%;overflow:auto;}
 .seat-grid-inner{display:inline-flex;flex-direction:column;}
 .seat-row{display:flex;align-items:center;}
@@ -528,7 +536,7 @@ input:checked+.tsl::before{transform:translateX(17px);}
   .print-comment{
     display:block!important;text-align:center;
     padding:10px 0 4px;font-size:13px;
-    font-family:var(--theme-font,'Noto Serif KR'),serif;
+    font-family:var(--theme-font,'Noto Sans KR'),sans-serif;
     color:var(--theme-comment-color,#1A1E2E);
     font-weight:500;letter-spacing:.3px;
   }
@@ -538,10 +546,10 @@ input:checked+.tsl::before{transform:translateX(17px);}
 
 /* 토스트 */
 .drag-guide{
-  font-size:12px;color:var(--muted);background:var(--surface);
-  border:1px dashed var(--border);border-radius:8px;
-  padding:7px 16px;margin-bottom:14px;text-align:center;
-  opacity:.75;
+  font-size:13px;font-weight:600;color:var(--navy);
+  background:var(--navy-pale);border:1.5px dashed var(--border);
+  border-radius:8px;padding:8px 18px;margin-bottom:12px;
+  text-align:center;
 }
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(14px);background:#1A1E2E;color:#fff;padding:9px 20px;border-radius:100px;font-size:13px;font-weight:500;opacity:0;transition:all .28s;z-index:900;pointer-events:none;}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
@@ -734,15 +742,15 @@ input:checked+.tsl::before{transform:translateX(17px);}
       <!-- 화면용 타이틀 헤더 -->
       <div id="layoutTitleWrap" style="width:100%;text-align:center;padding:14px 0 8px;flex-shrink:0;border-bottom:1px solid var(--border);margin-bottom:10px;position:relative;">
         <!-- 클릭 편집 안내 -->
-        <div style="position:absolute;top:6px;right:10px;font-size:10px;color:var(--muted);display:flex;align-items:center;gap:4px;opacity:.7;">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        <div style="position:absolute;top:8px;right:12px;font-size:12px;font-weight:600;color:var(--navy);background:var(--navy-pale);border:1px solid var(--border);border-radius:7px;padding:4px 10px;display:flex;align-items:center;gap:5px;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           제목 클릭 시 수정 가능
         </div>
         <div id="layoutSchoolName"
           contenteditable="true"
           spellcheck="false"
           title="클릭하여 학교명 수정"
-          style="font-family:'Noto Serif KR',serif;font-size:clamp(14px,2vw,22px);font-weight:900;color:var(--navy);margin-bottom:2px;outline:none;cursor:text;border-radius:6px;padding:2px 6px;display:inline-block;"
+          style="font-family:'Noto Sans KR',sans-serif;font-size:clamp(14px,2vw,22px);font-weight:900;color:var(--navy);margin-bottom:2px;outline:none;cursor:text;border-radius:6px;padding:2px 6px;display:inline-block;"
           onFocus="this.style.background='var(--navy-pale)'"
           onBlur="this.style.background='transparent'">도개중고등학교</div>
         <br>
@@ -750,10 +758,10 @@ input:checked+.tsl::before{transform:translateX(17px);}
           contenteditable="true"
           spellcheck="false"
           title="클릭하여 학반 수정"
-          style="font-family:'Noto Serif KR',serif;font-size:clamp(20px,3.5vw,40px);font-weight:900;color:var(--navy-dark);line-height:1.1;outline:none;cursor:text;border-radius:6px;padding:2px 8px;display:inline-block;"
+          style="font-family:'Noto Sans KR',sans-serif;font-size:clamp(20px,3.5vw,40px);font-weight:900;color:var(--navy-dark);line-height:1.1;outline:none;cursor:text;border-radius:6px;padding:2px 8px;display:inline-block;"
           onFocus="this.style.background='var(--navy-pale)'"
           onBlur="this.style.background='transparent'"></div>
-        <div id="layoutSubtitle" style="font-size:clamp(10px,1.2vw,13px);color:var(--muted);margin-top:6px;">교사 시점 (교탁에서 바라본 배치도)</div>
+        <div id="layoutSubtitle" style="font-size:clamp(12px,1.4vw,14px);color:var(--muted);font-weight:500;margin-top:6px;">교사 시점 (교탁에서 바라본 배치도)</div>
       </div>
       <div class="drag-guide" id="dragGuide">
         ✋ 학생 카드를 드래그하면 자리를 바꿀 수 있습니다
@@ -764,7 +772,7 @@ input:checked+.tsl::before{transform:translateX(17px);}
         </div>
       </div>
       <!-- 칠판 바 - 이미지와 동일한 스타일 -->
-      <div id="screenBoardBar" style="flex-shrink:0;margin-top:10px;padding:10px;border-radius:10px;background:var(--theme-board-bg,var(--navy));color:var(--theme-board-text,#fff);text-align:center;font-family:'Noto Serif KR',serif;font-size:clamp(13px,1.8vw,20px);font-weight:900;letter-spacing:2px;width:calc(100% - 48px);">▼ 칠판 (교사 시점)</div>
+      <div id="screenBoardBar" style="flex-shrink:0;margin-top:10px;padding:10px;border-radius:10px;background:var(--theme-board-bg,var(--navy));color:var(--theme-board-text,#fff);text-align:center;font-family:'Noto Sans KR',sans-serif;font-size:clamp(13px,1.8vw,20px);font-weight:900;letter-spacing:2px;width:calc(100% - 48px);">▼ 칠판 (교사 시점)</div>
       <!-- 인쇄용 코멘트 -->
       <div class="print-comment" id="printCommentText"></div>
     </div>
