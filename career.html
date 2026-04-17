@@ -638,7 +638,7 @@ var trashCol=db.collection('career_trash');
 
 /* ── 상태 ── */
 var acts=[],trashedActs=[];
-var isAdmin=sessionStorage.getItem('career_admin')==='true';
+var isAdmin=sessionStorage.getItem('dogae_admin')==='true';
 var filterGrade='전체',filterStream='전체',filterSem='전체',searchQ='';
 var editingId=null,popupId=null,deletePendingId=null;
 var currentTags=[],logoClicks=0,logoTimer=null;
@@ -1215,10 +1215,10 @@ function openAdminModal(){document.getElementById('adminModal').classList.add('a
 function closeAdminModal(){document.getElementById('adminModal').classList.remove('active');document.getElementById('adminId').value='';document.getElementById('adminPw').value='';document.getElementById('adminErr').style.display='none';}
 function confirmAdmin(){
   var id=document.getElementById('adminId').value.trim(),pw=document.getElementById('adminPw').value;
-  if(id===ADMIN_ID&&pw===ADMIN_PW){isAdmin=true;sessionStorage.setItem('career_admin','true');updateAdminUI();closeAdminModal();}
+  if(id===ADMIN_ID&&pw===ADMIN_PW){isAdmin=true;sessionStorage.setItem('dogae_admin','true');updateAdminUI();closeAdminModal();}
   else{document.getElementById('adminErr').style.display='block';}
 }
-document.getElementById('adminLogout').addEventListener('click',function(){isAdmin=false;sessionStorage.removeItem('career_admin');updateAdminUI();});
+document.getElementById('adminLogout').addEventListener('click',function(){isAdmin=false;sessionStorage.removeItem('dogae_admin');updateAdminUI();});
 document.getElementById('adminModal').addEventListener('click',function(e){if(e.target===this)closeAdminModal();});
 document.getElementById('adminModalClose').addEventListener('click',closeAdminModal);
 document.getElementById('adminCancelBtn').addEventListener('click',closeAdminModal);
