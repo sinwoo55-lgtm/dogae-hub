@@ -95,6 +95,9 @@ header{flex-shrink:0;background:var(--surface);border-bottom:1px solid var(--bor
 .g-btn.m.on{background:var(--male-bg);color:var(--male);border-color:var(--male);}
 .g-btn.f.on{background:var(--female-bg);color:var(--female);border-color:var(--female);}
 .g-btn.ab.on{background:#FFF0F0;border-color:#F5C0C0;color:#C53030;}
+.role-btn{padding:4px 7px;border:1.5px solid var(--border);border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;transition:var(--tr);background:var(--bg);color:var(--muted);white-space:nowrap;}
+.role-btn.president{background:#FFFBEB;border-color:#F59E0B;color:#B45309;}
+.role-btn.vice{background:#F0F9FF;border-color:#38BDF8;color:#0369A1;}
 
 /* ══ S3 교실 설정 ══ */
 #s3{flex-direction:row;overflow:hidden;}
@@ -1062,6 +1065,9 @@ function makeRow(num,s){
     '<div class="gender-group">'+
       '<button class="g-btn m'+(s.gender==='M'?' on':'')+'" onclick="setG(this,\'M\')">남</button>'+
       '<button class="g-btn f'+(s.gender==='F'?' on':'')+'" onclick="setG(this,\'F\')">여</button>'+
+      '<button class="role-btn'+(s.role==='president'?' president':s.role==='vice'?' vice':'')+'" onclick="cycleRole(this)">'+
+      (s.role==='president'?'👑 반장':s.role==='vice'?'⭐ 부반장':'역할')+
+    '</button>'+
       '<button class="g-btn ab'+(s.absent?' on':'')+'" onclick="toggleAbsent(this)">결번</button>'+
     '</div>';
   return d;
@@ -1081,13 +1087,30 @@ function toggleAbsent(btn){
   if(now){inp.value='';row.querySelectorAll('.g-btn.m,.g-btn.f').forEach(function(b){b.classList.remove('on');});}
   btn.classList.toggle('on',now);
 }
+function cycleRole(btn){
+  var row=btn.closest('.stu-row');
+  if(row.classList.contains('absent')) return;
+  if(btn.classList.contains('president')){
+    btn.classList.remove('president');
+    btn.classList.add('vice');
+    btn.textContent='⭐ 부반장';
+  } else if(btn.classList.contains('vice')){
+    btn.classList.remove('vice');
+    btn.textContent='역할';
+  } else {
+    btn.classList.add('president');
+    btn.textContent='👑 반장';
+  }
+}
 function collectStudents(){
   return Array.from(document.querySelectorAll('.stu-row')).map(function(row){
     var num=parseInt(row.dataset.num);
     var absent=row.classList.contains('absent');
     var name=row.querySelector('.stu-name').value.trim();
     var gm=row.querySelector('.g-btn.m.on'),gf=row.querySelector('.g-btn.f.on');
-    return{num,name,gender:gm?'M':gf?'F':'',absent};
+    var rb=row.querySelector('.role-btn');
+    var role=rb?rb.classList.contains('president')?'president':rb.classList.contains('vice')?'vice':'':'';
+    return{num,name,gender:gm?'M':gf?'F':'',absent,role};
   });
 }
 function goToSettings(){
@@ -1491,7 +1514,11 @@ function renderSeatGrid(cfg){
         else if(stu&&stu.gender==='F') seat.classList.add('female');
         if(fx[c+'-'+r]===name) seat.classList.add('pinned');
         var fnSize=name.length>=4?'13px':name.length===3?'15px':'17px';
-        seat.innerHTML='<span class="seat-num">'+(stu?stu.num:'')+'</span>'
+        var roleBadge='';
+        if(stu&&stu.role==='president') roleBadge='<span style="position:absolute;top:3px;right:4px;font-size:10px;line-height:1;">👑</span>';
+        else if(stu&&stu.role==='vice') roleBadge='<span style="position:absolute;top:3px;right:4px;font-size:10px;line-height:1;">⭐</span>';
+        seat.innerHTML=roleBadge
+          +'<span class="seat-num">'+(stu?stu.num:'')+'</span>'
           +'<span class="seat-name-inner" style="font-size:'+fnSize+';font-weight:900;line-height:1.15;word-break:keep-all;text-align:center;padding:0 3px;">'+esc(name)+'</span>';
         seat.draggable=true;
         seat.addEventListener('dragstart',function(){dragSrc=this;this.classList.add('dragging');});
@@ -1782,6 +1809,14 @@ function doSaveImage(isTeacher){
         ctx.textAlign='center'; ctx.textBaseline='top';
         ctx.fillText(stu?String(stu.num):'', x+w/2, y+h*0.10);
         ctx.globalAlpha=1;
+        /* 반장/부반장 뱃지 */
+        if(stu&&(stu.role==='president'||stu.role==='vice')){
+          var badgeSz=Math.round(h*0.20);
+          ctx.font=badgeSz+'px serif';
+          ctx.textAlign='right'; ctx.textBaseline='top';
+          ctx.fillText(stu.role==='president'?'👑':'⭐', x+w-6, y+6);
+          ctx.textAlign='center';
+        }
 
         /* ── 메인 이름: 셀 너비에 맞게 폰트 크기 자동 조절 ── */
         var maxNameW=w*0.86;
