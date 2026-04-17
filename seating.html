@@ -1553,6 +1553,16 @@ function doSaveImage(isTeacher){
 
   /* 칠판 표시는 하단(교사 시점 표시)에만 → 상단 제거 */
 
+  /* 학생 시점: 칠판 상단 표시 */
+  if(!isTeacher){
+    var bbTop=document.createElement('div');
+    bbTop.style.cssText='background:'+boardBg+';color:'+boardText+';text-align:center;'
+      +'padding:12px;border-radius:10px;font-size:18px;font-weight:900;letter-spacing:3px;'
+      +'margin-bottom:18px;';
+    bbTop.textContent='▲ 칠판 (교단)';
+    wrap.appendChild(bbTop);
+  }
+
   /* 그리드 */
   var grid=document.createElement('div');
   grid.style.cssText='display:inline-flex;flex-direction:column;gap:0;';
@@ -1626,13 +1636,15 @@ function doSaveImage(isTeacher){
   }
   wrap.appendChild(grid);
 
-  /* 시점 표시 */
-  var bottom=document.createElement('div');
-  bottom.style.cssText='text-align:center;font-size:12px;font-weight:700;letter-spacing:2px;'
-    +'color:'+boardBg+';margin-top:14px;padding-top:10px;'
-    +'border-top:2px solid '+boardBg+';';
-  bottom.textContent=isTeacher?'▼ 칠판 (교사 시점)':'▲ 칠판 (학생 시점)';
-  wrap.appendChild(bottom);
+  /* 교사 시점 하단 칠판 표시 */
+  if(isTeacher){
+    var bottom=document.createElement('div');
+    bottom.style.cssText='text-align:center;font-size:12px;font-weight:700;letter-spacing:2px;'
+      +'color:'+boardBg+';margin-top:14px;padding-top:10px;'
+      +'border-top:2px solid '+boardBg+';';
+    bottom.textContent='▼ 칠판 (교사 시점)';
+    wrap.appendChild(bottom);
+  }
 
   /* 코멘트 */
   if(cmt){
@@ -1716,6 +1728,22 @@ function openSaveModal(){
   setTimeout(function(){document.getElementById('saveLabel').focus();},160);
 }
 function closeSaveModal(){document.getElementById('saveModal').classList.remove('active');}
+function flattenLayout(grid){
+  /* 2D → 1D 변환 (Firestore 중첩 배열 미지원) */
+  var flat=[];
+  for(var r=0;r<grid.length;r++) for(var c=0;c<grid[r].length;c++) flat.push(grid[r][c]||'');
+  return flat;
+}
+function restoreLayout(flat,rows,cols){
+  /* 1D → 2D 복원 */
+  var grid=[];
+  for(var r=0;r<rows;r++){
+    var row=[];
+    for(var c=0;c<cols;c++) row.push(flat[r*cols+c]||null);
+    grid.push(row);
+  }
+  return grid;
+}
 function confirmSave(){
   var label=document.getElementById('saveLabel').value.trim()||nowStr();
   var rows=parseInt(document.getElementById('sRows').value)||5;
@@ -1723,12 +1751,26 @@ function confirmSave(){
   var cfg={rows,cols,genderSep:document.getElementById('optGender').checked,
     colGaps:Array.from(colGaps),rowGaps:Array.from(rowGaps),
     emptySeats:Array.from(emptySeats),fixedSeats,pairs,avoids,prefZones};
+  var layoutFlat=flattenLayout(layout);
   var ref=db.collection('seating_classes').doc(curClass);
-  ref.set({students,settings:cfg,currentLayout:layout,savedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true})
-    .then(function(){return ref.collection('history').add({label,layout,savedAt:firebase.firestore.FieldValue.serverTimestamp()});})
+  ref.set({
+    students,settings:cfg,
+    currentLayout:layoutFlat,       /* flat 1D */
+    layoutRows:rows,layoutCols:cols, /* 복원용 크기 정보 */
+    savedAt:firebase.firestore.FieldValue.serverTimestamp()
+  },{merge:true})
+    .then(function(){
+      return ref.collection('history').add({
+        label,
+        layout:layoutFlat,
+        layoutRows:rows,layoutCols:cols,
+        savedAt:firebase.firestore.FieldValue.serverTimestamp()
+      });
+    })
     .then(function(){closeSaveModal();showToast('💾 저장 완료!');loadHistory();})
     .catch(function(err){alert('저장 오류: '+err.message);});
 }
+
 function loadHistory(){
   db.collection('seating_classes').doc(curClass).collection('history').orderBy('savedAt','desc').limit(20).get().then(function(snap){
     var list=document.getElementById('histList');list.innerHTML='';
@@ -1739,7 +1781,11 @@ function loadHistory(){
       item.innerHTML='<div class="hist-date">'+esc(d.data().label||date)+'</div><div class="hist-lbl">'+date+'</div>';
       item.onclick=function(){
         if(!confirm('이 배치로 복원할까요?')) return;
-        layout=d.data().layout;renderSeatGrid();showToast('복원 완료!');
+        var flat=d.data().layout;
+        var hr=d.data().layoutRows||parseInt(document.getElementById('sRows').value)||5;
+        var hc=d.data().layoutCols||parseInt(document.getElementById('sCols').value)||6;
+        layout=Array.isArray(flat[0])?flat:restoreLayout(flat,hr,hc);
+        renderSeatGrid();showToast('복원 완료!');
       };
       list.appendChild(item);
     });
