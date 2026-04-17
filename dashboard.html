@@ -436,7 +436,7 @@ var colRef = db.collection('dashboard_posts');
 /* ═══ 상태 ═══ */
 var posts=[], editingId=null, popupId=null;
 var curFilter='all', curSort='deadline', dashSearch='';
-var isAdmin=sessionStorage.getItem('dash_admin')==='true';
+var isAdmin=sessionStorage.getItem('dogae_admin')==='true';
 var selectedIds=new Set(), logoClicks=0, logoTimer=null;
 
 /* ═══ 유틸 ═══ */
@@ -593,11 +593,11 @@ function confirmAdmin(){
   var id=document.getElementById('adminIdInput').value.trim();
   var pw=document.getElementById('adminPwInput').value;
   if(id===ADMIN_ID&&pw===ADMIN_PW){
-    isAdmin=true;sessionStorage.setItem('dash_admin','true');
+    isAdmin=true;sessionStorage.setItem('dogae_admin','true');
     updateAdminUI();closeAdminModal();
   }else{document.getElementById('adminErr').style.display='block';}
 }
-function logoutAdmin(){isAdmin=false;sessionStorage.removeItem('dash_admin');selectedIds.clear();updateAdminUI();}
+function logoutAdmin(){isAdmin=false;sessionStorage.removeItem('dogae_admin');selectedIds.clear();updateAdminUI();}
 function updateAdminUI(){
   document.getElementById('adminBadge').classList.toggle('show',isAdmin);
   document.getElementById('adminTools').classList.toggle('show',isAdmin);
