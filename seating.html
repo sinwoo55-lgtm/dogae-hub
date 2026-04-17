@@ -1115,7 +1115,18 @@ function buildPreview(){
       cell.style.cssText='width:'+sz.w+'px;height:'+sz.h+'px;';
       cell.dataset.c=c;cell.dataset.r=r;
       cell.innerHTML='<span class="pv-cell-label">'+c+'-'+r+'</span>'+(isEmpty?'빈':isFixed?esc(isFixed).slice(0,3):'');
-      (function(cv,rv){cell.addEventListener('click',function(e){e.stopPropagation();openCellMenu(e,cv,rv);});})(c,r);
+      (function(ck,cv,rv,isEs){cell.addEventListener('click',function(e){
+        e.stopPropagation();
+        if(isEs){
+          /* 빈자리 → 원래대로 */
+          emptySeats.delete(ck);
+        } else {
+          /* 일반/고정 → 빈자리 */
+          emptySeats.add(ck);
+          delete fixedSeats[ck];
+        }
+        buildPreview();
+      });})(key,c,r,isEmpty);
       rowEl.appendChild(cell);
     }
     wrap.appendChild(rowEl);
