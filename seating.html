@@ -104,15 +104,10 @@ header{flex-shrink:0;background:var(--surface);border-bottom:1px solid var(--bor
 .role-popup-item{padding:7px 12px;border-radius:7px;font-size:12.5px;font-weight:700;cursor:pointer;transition:var(--tr);display:flex;align-items:center;gap:6px;}
 .role-popup-item:hover{background:var(--navy-pale);}
 .role-popup-item.clear{color:var(--muted);}
-/* 반장: 금색 메탈릭 테두리 */
-.seat.is-president{
-  border:3px solid #D4AF37 !important;
-  box-shadow:0 0 0 1.5px #FFF0A0,0 0 8px 2px rgba(212,175,55,.45) !important;
-}
-/* 부반장: 은색 메탈릭 테두리 */
-.seat.is-vice{
-  border:3px solid #A8A9AD !important;
-  box-shadow:0 0 0 1.5px #F0F0F0,0 0 8px 2px rgba(168,169,173,.45) !important;
+/* 역할 텍스트 표시 */
+.seat-role-text{
+  font-size:10px;font-weight:700;color:var(--muted);
+  line-height:1;text-align:center;margin-top:2px;letter-spacing:.3px;
 }
 
 /* ══ S3 교실 설정 ══ */
@@ -684,11 +679,11 @@ input:checked+.tsl::before{transform:translateX(17px);}
   </div>
   <div class="s3-right" id="s3right">
     <div class="preview-wrap">
-      <div class="preview-board-tag">▲ 칠판 (교단)</div>
       <div class="preview-grid-outer">
         <div class="preview-grid" id="previewGrid"></div>
       </div>
-      <div style="margin-top:10px;font-size:11px;color:var(--muted);text-align:center;">
+      <div class="preview-board-tag" style="margin-bottom:0;margin-top:10px;letter-spacing:2px;">▼ 칠판 (교사 시점)</div>
+      <div style="margin-top:6px;font-size:11px;color:var(--muted);text-align:center;">
         <b>셀 클릭</b> : 빈 자리 지정/해제 &nbsp;&nbsp;|&nbsp;&nbsp; <b>셀 사이 클릭</b> : 분단 구분선 추가/제거
       </div>
     </div>
@@ -733,7 +728,11 @@ input:checked+.tsl::before{transform:translateX(17px);}
   </div>
   <div class="s4-body">
     <div class="layout-area">
-      <div class="board-tag-area">▲ 칠판 (교단)</div>
+      <!-- 화면용 타이틀 헤더 -->
+      <div class="layout-title-wrap" id="layoutTitleWrap" style="width:100%;text-align:center;padding:12px 0 6px;flex-shrink:0;">
+        <div class="layout-school-name" id="layoutSchoolName" style="font-family:'Noto Serif KR',serif;font-size:18px;font-weight:900;color:var(--navy);">도개중고등학교</div>
+        <div class="layout-class-name" id="layoutClassName" style="font-family:'Noto Serif KR',serif;font-size:26px;font-weight:900;color:var(--navy-dark);"></div>
+      </div>
       <div class="drag-guide" id="dragGuide">
         ✋ 학생 카드를 드래그하면 자리를 바꿀 수 있습니다
       </div>
@@ -742,8 +741,7 @@ input:checked+.tsl::before{transform:translateX(17px);}
           <div id="seatGrid"></div>
         </div>
       </div>
-      <!-- 인쇄용 칠판 하단 표시 -->
-      <div class="print-board-bottom">▼ 칠판 (교사 시점)</div>
+      <div class="board-tag-area" style="margin-top:10px;flex-shrink:0;">▼ 칠판 (교사 시점)</div>
       <!-- 인쇄용 코멘트 -->
       <div class="print-comment" id="printCommentText"></div>
     </div>
@@ -1192,8 +1190,8 @@ function buildPreview(){
   var wrap=document.getElementById('previewGrid');wrap.innerHTML='';
   var addSz=Math.max(10,Math.min(16,Math.round(sz.cg*0.9)));
 
-  for(var r=1;r<=rows;r++){
-    if(r>1){
+  for(var r=rows;r>=1;r--){
+    if(r<rows){
       /* 행 갭 존 */
       var rgRow=document.createElement('div');rgRow.className='pv-row-gap';
       for(var c2=1;c2<=cols;c2++){
@@ -1203,11 +1201,11 @@ function buildPreview(){
           rgRow.appendChild(sp);
         }
         var rgCell=document.createElement('div');
-        rgCell.className='pv-row-gap-cell'+(rowGaps.has(r-1)?' on':'');
+        rgCell.className='pv-row-gap-cell'+(rowGaps.has(r)?' on':'');
         rgCell.style.cssText='width:'+sz.w+'px;height:'+sz.rg+'px;';
-        rgCell.dataset.rg=r-1;
+        rgCell.dataset.rg=r;
         rgCell.innerHTML='<div class="rg-line" style="width:70%;height:2px;"></div><div class="rg-add" style="width:'+addSz+'px;height:'+addSz+'px;">+</div>';
-        (function(rv){rgCell.addEventListener('click',function(){if(rowGaps.has(rv))rowGaps.delete(rv);else rowGaps.add(rv);buildPreview();});})(r-1);
+        (function(rv){rgCell.addEventListener('click',function(){if(rowGaps.has(rv))rowGaps.delete(rv);else rowGaps.add(rv);buildPreview();});})(r);
         rgRow.appendChild(rgCell);
       }
       wrap.appendChild(rgRow);
@@ -1343,7 +1341,7 @@ function buildZoneMiniGrid(){
     hdrRow.appendChild(ch);
   }
   wrap.appendChild(hdrRow);
-  for(var r=1;r<=rows;r++){
+  for(var r=rows;r>=1;r--){
     var row=document.createElement('div');row.className='zone-mini-row';
     var rh=document.createElement('div');rh.className='zone-row-hdr';rh.textContent=r+'행';
     (function(rv){rh.addEventListener('click',function(){toggleZoneRow(rv,cols);});})(r);
@@ -1422,6 +1420,8 @@ function generateLayout(){
   if(!best){alert('제약 조건이 너무 많아 배치가 불가능해요.\n조건을 줄여보세요.');return;}
   layout=best;
   document.getElementById('s4badge').textContent=curClass+' 학급 배치표';
+  var cnEl=document.getElementById('layoutClassName');
+  if(cnEl) cnEl.textContent=curClass+' 학급';
   goScreen('s4');
   applyTheme(curTheme);
   requestAnimationFrame(function(){
@@ -1526,8 +1526,8 @@ function renderSeatGrid(cfg){
   /* 열 구분 총 너비 계산 (행 구분선용) */
   var totalW=(sz.w+8)*cols+sz.cg*cgSet.size;
 
-  for(var r=1;r<=rows;r++){
-    if(rgSet.has(r-1)){
+  for(var r=rows;r>=1;r--){
+    if(rgSet.has(r)){
       var rgs=document.createElement('div');
       rgs.className='row-gap-space';
       rgs.style.cssText='width:'+totalW+'px;height:'+sz.rg+'px;';
@@ -1554,10 +1554,10 @@ function renderSeatGrid(cfg){
         else if(stu&&stu.gender==='F') seat.classList.add('female');
         if(fx[c+'-'+r]===name) seat.classList.add('pinned');
         var fnSize=name.length>=4?'13px':name.length===3?'15px':'17px';
-        if(stu&&stu.role==='president') seat.classList.add('is-president');
-        else if(stu&&stu.role==='vice')      seat.classList.add('is-vice');
+        var roleText=stu&&stu.role==='president'?'(반장)':stu&&stu.role==='vice'?'(부반장)':'';
         seat.innerHTML='<span class="seat-num">'+(stu?stu.num:'')+'</span>'
-          +'<span class="seat-name-inner" style="font-size:'+fnSize+';font-weight:900;line-height:1.15;word-break:keep-all;text-align:center;padding:0 3px;">'+esc(name)+'</span>';
+          +'<span class="seat-name-inner" style="font-size:'+fnSize+';font-weight:900;line-height:1.15;word-break:keep-all;text-align:center;padding:0 3px;">'+esc(name)+'</span>'
+          +(roleText?'<span class="seat-role-text">'+roleText+'</span>':'');
         seat.draggable=true;
         seat.addEventListener('dragstart',function(){dragSrc=this;this.classList.add('dragging');});
         seat.addEventListener('dragover',function(e){e.preventDefault();if(this!==dragSrc)this.classList.add('drag-over');});
@@ -1847,19 +1847,15 @@ function doSaveImage(isTeacher){
         ctx.textAlign='center'; ctx.textBaseline='top';
         ctx.fillText(stu?String(stu.num):'', x+w/2, y+h*0.10);
         ctx.globalAlpha=1;
-        /* 반장/부반장: 메탈릭 테두리 (항상 최우선, 두께+글로우 레이어) */
+        /* 반장/부반장 역할 텍스트 */
         if(stu&&(stu.role==='president'||stu.role==='vice')){
-          var metalC=stu.role==='president'?'#D4AF37':'#A8A9AD';
-          var glowC =stu.role==='president'?'rgba(212,175,55,.35)':'rgba(200,200,200,.35)';
-          /* 글로우 레이어 */
-          ctx.save(); ctx.shadowColor=glowC; ctx.shadowBlur=10;
-          ctx.strokeStyle=metalC; ctx.lineWidth=4.5;
-          roundRect(ctx,x,y,w,h,R,false,true);
-          ctx.restore();
-          /* 하이라이트 레이어 */
-          ctx.strokeStyle=stu.role==='president'?'#FFF0A0':'#F0F0F0';
-          ctx.lineWidth=1.5;
-          roundRect(ctx,x+2,y+2,w-4,h-4,R-1,false,true);
+          var roleTxt=stu.role==='president'?'(반장)':'(부반장)';
+          var roleTxtSz=Math.round(h*0.13);
+          ctx.fillStyle=tc2; ctx.globalAlpha=.65;
+          ctx.font='700 '+roleTxtSz+'px "'+F+'",sans-serif';
+          ctx.textAlign='center'; ctx.textBaseline='bottom';
+          ctx.fillText(roleTxt, x+w/2, y+h-Math.round(h*0.06));
+          ctx.globalAlpha=1;
         }
 
         /* ── 메인 이름: 셀 너비에 맞게 폰트 크기 자동 조절 ── */
@@ -2136,6 +2132,10 @@ function openLoadHistoryModal(){
           closeLoadHistoryModal();
           /* 배치표 화면으로 이동 */
           document.getElementById('s4badge').textContent=curClass+' 학급 배치표';
+          var cnEl2=document.getElementById('layoutClassName');
+          if(cnEl2) cnEl2.textContent=curClass+' 학급';
+  var cnEl=document.getElementById('layoutClassName');
+  if(cnEl) cnEl.textContent=curClass+' 학급';
           var cfg={rows:hr,cols:hc,colGaps:Array.from(colGaps),rowGaps:Array.from(rowGaps),
             emptySeats:Array.from(emptySeats),fixedSeats:fixedSeats};
           goScreen('s4');
