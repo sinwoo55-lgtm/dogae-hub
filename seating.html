@@ -1625,10 +1625,8 @@ function renderSeatGrid(cfg){
         if(fx[c+'-'+r]===name) seat.classList.add('pinned');
         var fnSize=name.length>=4?'13px':name.length===3?'15px':'17px';
         var roleText=stu&&stu.role==='president'?'(반장)':stu&&stu.role==='vice'?'(부반장)':'';
-        /* 역할 있으면 이름 폰트 살짝 축소 */
-        var actualFnSize=roleText?(name.length>=4?'11px':name.length===3?'13px':'15px'):fnSize;
         seat.innerHTML='<span class="seat-num">'+(stu?stu.num:'')+'</span>'
-          +'<span class="seat-name-inner" style="font-size:'+actualFnSize+';font-weight:900;line-height:1.1;word-break:keep-all;text-align:center;padding:0 3px;">'+esc(name)+'</span>'
+          +'<span class="seat-name-inner" style="font-size:'+fnSize+';font-weight:900;line-height:1.15;word-break:keep-all;text-align:center;padding:0 3px;">'+esc(name)+'</span>'
           +(roleText?'<span class="seat-role-text">'+roleText+'</span>':'');
         seat.draggable=true;
         seat.addEventListener('dragstart',function(){dragSrc=this;this.classList.add('dragging');});
@@ -1932,10 +1930,12 @@ function buildImageCanvas(isTeacher,cmt){
         ctx.quadraticCurveTo(x,y,x+R,y); ctx.closePath(); ctx.fill();
         ctx.restore();
 
-        /* ── 이름 파싱 (괄호 분리) ── */
+        /* ── 이름 파싱 (괄호 분리 + 역할 텍스트 통합) ── */
         var parenMatch=name.match(/^([^(（]+)([(（].+[)）])$/);
         var mainName=parenMatch?parenMatch[1].trim():name;
-        var subName =parenMatch?parenMatch[2]:null;
+        /* 역할 텍스트가 있으면 subName으로 처리 (괄호 이름이 없을 때만) */
+        var roleSubName=stu&&stu.role==='president'?'(반장)':stu&&stu.role==='vice'?'(부반장)':null;
+        var subName=parenMatch?parenMatch[2]:(roleSubName||null);
 
         /* ── 번호 ── */
         var numSz=Math.round(h*0.18);
@@ -1944,22 +1944,7 @@ function buildImageCanvas(isTeacher,cmt){
         ctx.textAlign='center'; ctx.textBaseline='top';
         ctx.fillText(stu?String(stu.num):'', x+w/2, y+h*0.10);
         ctx.globalAlpha=1;
-        /* 반장/부반장 역할 텍스트 - 이름 폰트의 70%, 이름 아래 */
-        if(stu&&(stu.role==='president'||stu.role==='vice')){
-          var roleTxt2=stu.role==='president'?'(반장)':'(부반장)';
-          /* nameSz가 아직 정의되지 않았으므로 일반 이름 기준으로 미리 계산 */
-          var _tmpSz=Math.round(h*0.34);
-          var _ctx2Font='900 '+_tmpSz+'px "'+F+'",sans-serif';
-          ctx.font=_ctx2Font;
-          var _mw=w*0.86;
-          while(ctx.measureText(mainName).width>_mw&&_tmpSz>12){_tmpSz--;ctx.font='900 '+_tmpSz+'px "'+F+'",sans-serif';}
-          var roleSz=Math.round(_tmpSz*0.70);
-          ctx.fillStyle=tc2; ctx.globalAlpha=.65;
-          ctx.font='700 '+roleSz+'px "'+F+'",sans-serif';
-          ctx.textAlign='center'; ctx.textBaseline='top';
-          ctx.fillText(roleTxt2, x+w/2, y+h*0.64+(_tmpSz*0.55));
-          ctx.globalAlpha=1;
-        }
+        /* 역할 텍스트는 아래 subName 처리에서 자동 적용됨 */
 
         /* ── 메인 이름: 셀 너비에 맞게 폰트 크기 자동 조절 ── */
         var maxNameW=w*0.86;
