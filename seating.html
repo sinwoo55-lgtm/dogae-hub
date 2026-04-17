@@ -727,21 +727,23 @@ input:checked+.tsl::before{transform:translateX(17px);}
     </div>
   </div>
   <div class="s4-body">
-    <div class="layout-area">
+    <div class="layout-area" style="display:flex;flex-direction:column;align-items:center;">
       <!-- 화면용 타이틀 헤더 -->
-      <div class="layout-title-wrap" id="layoutTitleWrap" style="width:100%;text-align:center;padding:12px 0 6px;flex-shrink:0;">
-        <div class="layout-school-name" id="layoutSchoolName" style="font-family:'Noto Serif KR',serif;font-size:18px;font-weight:900;color:var(--navy);">도개중고등학교</div>
-        <div class="layout-class-name" id="layoutClassName" style="font-family:'Noto Serif KR',serif;font-size:26px;font-weight:900;color:var(--navy-dark);"></div>
+      <div id="layoutTitleWrap" style="width:100%;text-align:center;padding:14px 0 8px;flex-shrink:0;border-bottom:1px solid var(--border);margin-bottom:10px;">
+        <div id="layoutSchoolName" style="font-family:'Noto Serif KR',serif;font-size:clamp(14px,2vw,22px);font-weight:900;color:var(--navy);margin-bottom:2px;">도개중고등학교</div>
+        <div id="layoutClassName" style="font-family:'Noto Serif KR',serif;font-size:clamp(20px,3.5vw,40px);font-weight:900;color:var(--navy-dark);line-height:1.1;"></div>
+        <div id="layoutSubtitle" style="font-size:clamp(10px,1.2vw,13px);color:var(--muted);margin-top:6px;">교사 시점 (교탁에서 바라본 배치도)</div>
       </div>
       <div class="drag-guide" id="dragGuide">
         ✋ 학생 카드를 드래그하면 자리를 바꿀 수 있습니다
       </div>
-      <div class="seat-grid-outer">
+      <div class="seat-grid-outer" style="flex:1;min-height:0;overflow:auto;display:flex;align-items:flex-start;justify-content:center;">
         <div class="seat-grid-inner">
           <div id="seatGrid"></div>
         </div>
       </div>
-      <div class="board-tag-area" style="margin-top:10px;flex-shrink:0;">▼ 칠판 (교사 시점)</div>
+      <!-- 칠판 바 - 이미지와 동일한 스타일 -->
+      <div id="screenBoardBar" style="flex-shrink:0;margin-top:10px;padding:10px;border-radius:10px;background:var(--theme-board-bg,var(--navy));color:var(--theme-board-text,#fff);text-align:center;font-family:'Noto Serif KR',serif;font-size:clamp(13px,1.8vw,20px);font-weight:900;letter-spacing:2px;width:calc(100% - 48px);">▼ 칠판 (교사 시점)</div>
       <!-- 인쇄용 코멘트 -->
       <div class="print-comment" id="printCommentText"></div>
     </div>
@@ -768,34 +770,48 @@ input:checked+.tsl::before{transform:translateX(17px);}
 
 <!-- 특수 설정 모달 -->
 <div class="modal-overlay" id="specialModal">
-  <div class="modal" style="max-width:520px;">
+  <div class="modal" style="max-width:540px;">
     <div class="modal-title">⭐ 특수 설정</div>
     <div class="modal-sub">배치 알고리즘에 적용될 조건을 설정하세요</div>
-    <div class="modal-sec">
-      <div class="modal-sec-title">🔗 짝 고정 — 두 학생을 항상 옆자리로</div>
+    <!-- 탭 -->
+    <div style="display:flex;gap:0;border:1.5px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:18px;">
+      <button class="spec-tab active" onclick="switchSpecTab('pair',this)" style="flex:1;padding:10px;font-family:inherit;font-size:13px;font-weight:700;border:none;cursor:pointer;background:var(--navy);color:#fff;transition:var(--tr);">🔗 짝 고정</button>
+      <button class="spec-tab" onclick="switchSpecTab('avoid',this)" style="flex:1;padding:10px;font-family:inherit;font-size:13px;font-weight:700;border:none;cursor:pointer;background:var(--bg);color:var(--navy);transition:var(--tr);border-left:1.5px solid var(--border);">🚷 기피</button>
+      <button class="spec-tab" onclick="switchSpecTab('pref',this)" style="flex:1;padding:10px;font-family:inherit;font-size:13px;font-weight:700;border:none;cursor:pointer;background:var(--bg);color:var(--navy);transition:var(--tr);border-left:1.5px solid var(--border);">🎯 선호 구역</button>
+    </div>
+    <!-- 짝 고정 탭 -->
+    <div id="specTab-pair" class="spec-tab-content">
+      <div style="background:var(--navy-pale);border-radius:9px;padding:10px 13px;margin-bottom:12px;font-size:12px;color:var(--navy);line-height:1.7;">
+        두 학생을 항상 같은 <b>옆자리</b>에 배치합니다
+      </div>
       <div class="add-row">
-        <input class="si" id="pairA" placeholder="학생 A"/>
-        <input class="si" id="pairB" placeholder="학생 B"/>
+        <input class="si" id="pairA" placeholder="학생 A 이름"/>
+        <input class="si" id="pairB" placeholder="학생 B 이름"/>
         <button class="btn btn-secondary btn-sm" onclick="addPair()">추가</button>
       </div>
       <div id="pairList"></div>
     </div>
-    <div class="modal-sec">
-      <div class="modal-sec-title">🚷 기피 — 두 학생 사이 거리 최대화</div>
+    <!-- 기피 탭 -->
+    <div id="specTab-avoid" class="spec-tab-content" style="display:none;">
+      <div style="background:var(--navy-pale);border-radius:9px;padding:10px 13px;margin-bottom:12px;font-size:12px;color:var(--navy);line-height:1.7;">
+        두 학생 사이 <b>거리를 최대화</b>합니다. 강도가 높을수록 더 멀리 배치됩니다.
+      </div>
       <div class="add-row">
-        <input class="si" id="avoidA" placeholder="학생 A"/>
-        <input class="si" id="avoidB" placeholder="학생 B"/>
+        <input class="si" id="avoidA" placeholder="학생 A 이름"/>
+        <input class="si" id="avoidB" placeholder="학생 B 이름"/>
         <select class="sel" id="avoidLv">
-          <option value="1">약 (2칸)</option>
-          <option value="2" selected>중 (3칸)</option>
-          <option value="3">강 (최대)</option>
+          <option value="1">약 (2칸 이상)</option>
+          <option value="2" selected>중 (3칸 이상)</option>
+          <option value="3">강 (최대한 멀리)</option>
         </select>
         <button class="btn btn-secondary btn-sm" onclick="addAvoid()">추가</button>
       </div>
       <div id="avoidList"></div>
     </div>
+    <!-- 선호 구역 탭 -->
+    <div id="specTab-pref" class="spec-tab-content" style="display:none;">
     <div class="modal-sec">
-      <div class="modal-sec-title">🎯 선호 구역 — 특정 학생을 지정 구역에 배치</div>
+      <div class="modal-sec-title" style="display:none;">🎯 선호 구역</div>
       <div style="background:var(--navy-pale);border-radius:9px;padding:10px 13px;margin-bottom:12px;font-size:12px;color:var(--navy);line-height:1.85;">
         <b>① 학생 이름</b>을 아래에 입력하세요<br>
         <b>② 좌석 그리드</b>에서 배치할 구역 셀을 클릭해 선택하세요<br>
@@ -815,9 +831,13 @@ input:checked+.tsl::before{transform:translateX(17px);}
         <div style="padding:10px;overflow:auto;display:flex;justify-content:center;">
           <div id="zoneMiniGrid"></div>
         </div>
+        <div style="background:var(--navy);color:#fff;text-align:center;font-size:11px;font-weight:700;letter-spacing:2px;padding:7px;width:100%;border-radius:0 0 9px 9px;">
+          ▼ 칠판 (교사 시점)
+        </div>
       </div>
       <div id="prefList" style="margin-top:8px;"></div>
     </div>
+    </div><!-- /specTab-pref -->
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeSpecialModal()">닫기</button>
       <button class="btn btn-primary" onclick="saveSpecialSettings()">💾 저장</button>
@@ -1287,6 +1307,14 @@ function openSpecialModal(){
   document.getElementById('specialModal').classList.add('active');
 }
 function closeSpecialModal(){document.getElementById('specialModal').classList.remove('active');}
+function switchSpecTab(name, btn){
+  document.querySelectorAll('.spec-tab-content').forEach(function(el){el.style.display='none';});
+  document.getElementById('specTab-'+name).style.display='block';
+  document.querySelectorAll('.spec-tab').forEach(function(b){
+    b.style.background='var(--bg)'; b.style.color='var(--navy)';
+  });
+  btn.style.background='var(--navy)'; btn.style.color='#fff';
+}
 function saveSpecialSettings(){
   /* 특수 설정 저장 (학급 데이터에 merge) */
   if(!curClass) return;
