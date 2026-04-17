@@ -530,12 +530,40 @@ input:checked+.tsl::before{transform:translateX(17px);}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(14px);background:#1A1E2E;color:#fff;padding:9px 20px;border-radius:100px;font-size:13px;font-weight:500;opacity:0;transition:all .28s;z-index:900;pointer-events:none;}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
+/* ── 반응형 레이아웃 ── */
+/* 노트북/소형 화면 (1200px 이하) */
+@media(max-width:1200px){
+  .students-grid{grid-template-columns:repeat(4,1fr)!important;}
+  .s3-left{width:260px;}
+}
+/* 태블릿 (900px 이하) */
+@media(max-width:900px){
+  .students-grid{grid-template-columns:repeat(3,1fr)!important;}
+  .s2-top{padding:0 14px;flex-wrap:wrap;height:auto;padding-top:10px;padding-bottom:10px;}
+  .s2-title{font-size:14px;}
+  .s4-top{padding:8px 12px;flex-wrap:wrap;gap:6px;}
+  .s4-toolbar{flex-wrap:wrap;gap:5px;}
+  .s4-badge{font-size:13px;}
+  .board-tag-area{font-size:9px;padding:4px 12px;}
+  .theme-select{font-size:11.5px;padding:5px 8px;}
+  .btn.btn-sm{padding:5px 9px;font-size:11.5px;}
+  .s3-left{width:240px;padding:14px;}
+  .s3-title{font-size:14px;}
+}
+/* 소형 모바일 (700px 이하) */
 @media(max-width:700px){
   #s3{flex-direction:column;}
   .s3-left{width:100%;border-right:none;border-bottom:1px solid var(--border);}
   .hist-panel{display:none!important;}
   .students-grid{grid-template-columns:repeat(2,1fr)!important;}
+  .stu-row{padding:9px 10px;gap:6px;}
+  .stu-name{font-size:12.5px;}
+  .g-btn{padding:3px 6px;font-size:11px;}
 }
+/* 좌우 스크롤 방지 */
+#s2,#s3,#s4{overflow-x:hidden;}
+.s2-body{overflow-x:hidden;}
+.seat-grid-outer{overflow-x:auto;} /* 배치표만 가로 스크롤 허용 */
 
 </style>
 </head>
@@ -1717,16 +1745,38 @@ function doSaveImage(isTeacher){
 
   document.body.appendChild(wrap);
 
+  /* A4 가로 비율로 캔버스 크기 조정 */
+  var A4_W=1684, A4_H=1191; /* 96dpi 기준 A4 가로 (297mm × 210mm) */
+  var contentW=wrap.scrollWidth, contentH=wrap.scrollHeight;
+  /* 여백 포함해서 A4 비율에 맞게 실제 높이 계산 */
+  var targetH=Math.max(A4_H, Math.ceil(contentW * A4_H / A4_W));
+  wrap.style.minHeight=targetH+'px';
+  /* 내용이 A4보다 넓으면 스케일 조정 */
+  var useW=Math.max(contentW, A4_W);
+  var useH=Math.max(targetH, A4_H);
+
   html2canvas(wrap,{
-    scale:2.5, useCORS:true, backgroundColor:bgColor, logging:false,
-    width:wrap.scrollWidth, height:wrap.scrollHeight
+    scale:2, useCORS:true, backgroundColor:bgColor, logging:false,
+    width:useW, height:useH,
+    windowWidth:useW, windowHeight:useH
   }).then(function(canvas){
+    /* 결과 캔버스를 A4 가로 비율로 크롭/패딩 */
+    var finalCanvas=document.createElement('canvas');
+    finalCanvas.width=A4_W*2;finalCanvas.height=A4_H*2;
+    var ctx=finalCanvas.getContext('2d');
+    ctx.fillStyle=bgColor||'#ffffff';
+    ctx.fillRect(0,0,finalCanvas.width,finalCanvas.height);
+    /* 비율 맞춰 그리기 */
+    var scale2=Math.min(finalCanvas.width/canvas.width, finalCanvas.height/canvas.height);
+    var ox=(finalCanvas.width-canvas.width*scale2)/2;
+    var oy=20; /* 약간 위쪽 정렬 */
+    ctx.drawImage(canvas, ox, oy, canvas.width*scale2, canvas.height*scale2);
     document.body.removeChild(wrap);
     var link=document.createElement('a');
     var d=new Date();
     var viewLabel=isTeacher?'_교사시점':'_학생시점';
     link.download='자리배치표_'+curClass+viewLabel+'_'+d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()+'.png';
-    link.href=canvas.toDataURL('image/png');
+    link.href=finalCanvas.toDataURL('image/png');
     link.click();
     showToast('📷 이미지 저장 완료!');
   }).catch(function(err){
