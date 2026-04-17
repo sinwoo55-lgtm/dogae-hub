@@ -98,6 +98,14 @@ header{flex-shrink:0;background:var(--surface);border-bottom:1px solid var(--bor
 .role-btn{padding:4px 7px;border:1.5px solid var(--border);border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;transition:var(--tr);background:var(--bg);color:var(--muted);white-space:nowrap;}
 .role-btn.president{background:#FFFBEB;border-color:#F59E0B;color:#B45309;}
 .role-btn.vice{background:#F0F9FF;border-color:#38BDF8;color:#0369A1;}
+/* 역할 팝업 */
+.role-popup{position:fixed;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.13);padding:6px;z-index:600;display:none;flex-direction:column;gap:4px;min-width:110px;}
+.role-popup.show{display:flex;}
+.role-popup-item{padding:7px 12px;border-radius:7px;font-size:12.5px;font-weight:700;cursor:pointer;transition:var(--tr);display:flex;align-items:center;gap:6px;}
+.role-popup-item:hover{background:var(--navy-pale);}
+.role-popup-item.clear{color:var(--muted);}
+/* 반장/부반장 금색 테두리 - 항상 최우선 적용 */
+.seat.has-role{border:3px solid #F59E0B !important;box-shadow:0 0 0 1px #F59E0B !important;}
 
 /* ══ S3 교실 설정 ══ */
 #s3{flex-direction:row;overflow:hidden;}
@@ -886,6 +894,12 @@ input:checked+.tsl::before{transform:translateX(17px);}
   </div>
 </div>
 
+<!-- 역할 선택 팝업 -->
+<div class="role-popup" id="rolePopup">
+  <div class="role-popup-item" onclick="applyRole('president')">👑 반장</div>
+  <div class="role-popup-item" onclick="applyRole('vice')">⭐ 부반장</div>
+  <div class="role-popup-item clear" onclick="applyRole('')">✕ 역할 없음</div>
+</div>
 <div class="toast" id="toast"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -1065,7 +1079,7 @@ function makeRow(num,s){
     '<div class="gender-group">'+
       '<button class="g-btn m'+(s.gender==='M'?' on':'')+'" onclick="setG(this,\'M\')">남</button>'+
       '<button class="g-btn f'+(s.gender==='F'?' on':'')+'" onclick="setG(this,\'F\')">여</button>'+
-      '<button class="role-btn'+(s.role==='president'?' president':s.role==='vice'?' vice':'')+'" onclick="cycleRole(this)">'+
+      '<button class="role-btn'+(s.role==='president'?' president':s.role==='vice'?' vice':'')+" onclick=\"openRolePopup(this,event)\""+'>'+
       (s.role==='president'?'👑 반장':s.role==='vice'?'⭐ 부반장':'역할')+
     '</button>'+
       '<button class="g-btn ab'+(s.absent?' on':'')+'" onclick="toggleAbsent(this)">결번</button>'+
@@ -1087,21 +1101,39 @@ function toggleAbsent(btn){
   if(now){inp.value='';row.querySelectorAll('.g-btn.m,.g-btn.f').forEach(function(b){b.classList.remove('on');});}
   btn.classList.toggle('on',now);
 }
-function cycleRole(btn){
+var _roleTargetBtn=null;
+function openRolePopup(btn,e){
+  e.stopPropagation();
   var row=btn.closest('.stu-row');
   if(row.classList.contains('absent')) return;
-  if(btn.classList.contains('president')){
-    btn.classList.remove('president');
-    btn.classList.add('vice');
-    btn.textContent='⭐ 부반장';
-  } else if(btn.classList.contains('vice')){
-    btn.classList.remove('vice');
-    btn.textContent='역할';
-  } else {
-    btn.classList.add('president');
-    btn.textContent='👑 반장';
-  }
+  _roleTargetBtn=btn;
+  var pop=document.getElementById('rolePopup');
+  var x=Math.min(e.clientX, window.innerWidth-130);
+  var y=Math.min(e.clientY+6, window.innerHeight-120);
+  pop.style.left=x+'px'; pop.style.top=y+'px';
+  pop.classList.add('show');
 }
+function applyRole(role){
+  var pop=document.getElementById('rolePopup');
+  pop.classList.remove('show');
+  if(!_roleTargetBtn) return;
+  _roleTargetBtn.classList.remove('president','vice');
+  if(role==='president'){
+    _roleTargetBtn.classList.add('president');
+    _roleTargetBtn.textContent='👑 반장';
+  } else if(role==='vice'){
+    _roleTargetBtn.classList.add('vice');
+    _roleTargetBtn.textContent='⭐ 부반장';
+  } else {
+    _roleTargetBtn.textContent='역할';
+  }
+  _roleTargetBtn=null;
+}
+document.addEventListener('click',function(e){
+  if(!e.target.closest('.role-popup')&&!e.target.closest('.role-btn')){
+    document.getElementById('rolePopup').classList.remove('show');
+  }
+});
 function collectStudents(){
   return Array.from(document.querySelectorAll('.stu-row')).map(function(row){
     var num=parseInt(row.dataset.num);
@@ -1514,12 +1546,13 @@ function renderSeatGrid(cfg){
         else if(stu&&stu.gender==='F') seat.classList.add('female');
         if(fx[c+'-'+r]===name) seat.classList.add('pinned');
         var fnSize=name.length>=4?'13px':name.length===3?'15px':'17px';
-        var roleBadge='';
-        if(stu&&stu.role==='president') roleBadge='<span style="position:absolute;top:3px;right:4px;font-size:10px;line-height:1;">👑</span>';
-        else if(stu&&stu.role==='vice') roleBadge='<span style="position:absolute;top:3px;right:4px;font-size:10px;line-height:1;">⭐</span>';
-        seat.innerHTML=roleBadge
-          +'<span class="seat-num">'+(stu?stu.num:'')+'</span>'
-          +'<span class="seat-name-inner" style="font-size:'+fnSize+';font-weight:900;line-height:1.15;word-break:keep-all;text-align:center;padding:0 3px;">'+esc(name)+'</span>';
+        /* 금색 테두리: 반장/부반장은 테마/성별 무관하게 항상 적용 */
+        if(stu&&(stu.role==='president'||stu.role==='vice')){
+          seat.classList.add('has-role');
+        }
+        var roleIcon=stu&&stu.role==='president'?' 👑':stu&&stu.role==='vice'?' ⭐':'';
+        seat.innerHTML='<span class="seat-num">'+(stu?stu.num:'')+'</span>'
+          +'<span class="seat-name-inner" style="font-size:'+fnSize+';font-weight:900;line-height:1.15;word-break:keep-all;text-align:center;padding:0 3px;">'+esc(name)+roleIcon+'</span>';
         seat.draggable=true;
         seat.addEventListener('dragstart',function(){dragSrc=this;this.classList.add('dragging');});
         seat.addEventListener('dragover',function(e){e.preventDefault();if(this!==dragSrc)this.classList.add('drag-over');});
@@ -1809,13 +1842,10 @@ function doSaveImage(isTeacher){
         ctx.textAlign='center'; ctx.textBaseline='top';
         ctx.fillText(stu?String(stu.num):'', x+w/2, y+h*0.10);
         ctx.globalAlpha=1;
-        /* 반장/부반장 뱃지 */
+        /* 반장/부반장: 금색 테두리 (항상 최우선) */
         if(stu&&(stu.role==='president'||stu.role==='vice')){
-          var badgeSz=Math.round(h*0.20);
-          ctx.font=badgeSz+'px serif';
-          ctx.textAlign='right'; ctx.textBaseline='top';
-          ctx.fillText(stu.role==='president'?'👑':'⭐', x+w-6, y+6);
-          ctx.textAlign='center';
+          ctx.strokeStyle='#F59E0B'; ctx.lineWidth=4;
+          roundRect(ctx,x,y,w,h,R,false,true);
         }
 
         /* ── 메인 이름: 셀 너비에 맞게 폰트 크기 자동 조절 ── */
@@ -1838,8 +1868,9 @@ function doSaveImage(isTeacher){
           var totalLineH=nameSz+subSz+6;
           /* 가용 영역 내 수직 중앙 정렬 */
           var blockTop = nameZoneTop + (nameZoneH - totalLineH) / 2;
+          var mainDisplay=mainName+(stu&&stu.role==='president'?' 👑':stu&&stu.role==='vice'?' ⭐':'');
           ctx.fillStyle=tc2; ctx.textAlign='center'; ctx.textBaseline='top';
-          ctx.fillText(mainName, x+w/2, blockTop);
+          ctx.fillText(mainDisplay, x+w/2, blockTop);
           ctx.font='700 '+subSz+'px "'+F+'",sans-serif';
           ctx.globalAlpha=.75;
           ctx.fillText(subName, x+w/2, blockTop + nameSz + 4);
@@ -1851,8 +1882,9 @@ function doSaveImage(isTeacher){
           while(ctx.measureText(mainName).width>maxNameW&&nameSz>12){
             nameSz--; ctx.font='900 '+nameSz+'px "'+F+'",sans-serif';
           }
+          var nameWithIcon=mainName+(stu&&stu.role==='president'?' 👑':stu&&stu.role==='vice'?' ⭐':'');
           ctx.fillStyle=tc2; ctx.textAlign='center'; ctx.textBaseline='middle';
-          ctx.fillText(mainName, x+w/2, y+h*0.64);
+          ctx.fillText(nameWithIcon, x+w/2, y+h*0.64);
         }
       }
       cx+=CELL_W+GAP;
