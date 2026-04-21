@@ -738,7 +738,7 @@ input:checked+.tsl::before{transform:translateX(17px);}
     </div>
   </div>
   <div class="s4-body">
-    <div class="layout-area" style="display:flex;flex-direction:column;align-items:center;justify-content:flex-start;">
+    <div class="layout-area" style="display:flex;flex-direction:column;align-items:center;">
       <!-- 화면용 타이틀 헤더 -->
       <div id="layoutTitleWrap" style="width:100%;text-align:center;padding:14px 0 8px;flex-shrink:0;border-bottom:1px solid var(--border);margin-bottom:10px;position:relative;">
         <!-- 클릭 편집 안내 -->
@@ -766,13 +766,13 @@ input:checked+.tsl::before{transform:translateX(17px);}
       <div class="drag-guide" id="dragGuide">
         ✋ 학생 카드를 드래그하면 자리를 바꿀 수 있습니다
       </div>
-      <div class="seat-grid-outer" style="overflow:auto;display:flex;align-items:flex-start;justify-content:center;width:100%;">
+      <!-- 그리드+칠판을 하나의 컨텐츠 블록으로 묶어서 항상 좌석 바로 아래에 칠판 표시 -->
+      <div style="display:inline-flex;flex-direction:column;align-items:stretch;flex-shrink:0;max-width:100%;overflow:auto;">
         <div class="seat-grid-inner">
           <div id="seatGrid"></div>
         </div>
+        <div id="screenBoardBar" style="margin-top:6px;padding:10px;border-radius:10px;background:var(--theme-board-bg,var(--navy));color:var(--theme-board-text,#fff);text-align:center;font-family:'Noto Sans KR',sans-serif;font-size:clamp(13px,1.8vw,20px);font-weight:900;letter-spacing:2px;">▼ 칠판 (교사 시점)</div>
       </div>
-      <!-- 칠판 바 - 이미지와 동일한 스타일 -->
-      <div id="screenBoardBar" style="flex-shrink:0;margin-top:10px;padding:10px;border-radius:10px;background:var(--theme-board-bg,var(--navy));color:var(--theme-board-text,#fff);text-align:center;font-family:'Noto Sans KR',sans-serif;font-size:clamp(13px,1.8vw,20px);font-weight:900;letter-spacing:2px;width:calc(100% - 48px);">▼ 칠판 (교사 시점)</div>
       <!-- 인쇄용 코멘트 -->
       <div class="print-comment" id="printCommentText"></div>
     </div>
@@ -1491,10 +1491,7 @@ function generateLayout(){
   requestAnimationFrame(function(){
     setTimeout(function(){
       renderSeatGrid(cfg);
-      /* 칠판 바 위치 재조정 */
-      var boardBar=document.getElementById('screenBoardBar');
-      var outer=document.querySelector('.seat-grid-outer');
-      if(boardBar&&outer&&outer.parentNode) outer.parentNode.insertBefore(boardBar,outer.nextSibling);
+
     },80);
   });
 }
@@ -1654,13 +1651,7 @@ function renderSeatGrid(cfg){
 }
 window.addEventListener('resize',function(){if(document.getElementById('s4').classList.contains('active')) renderSeatGrid();});
 /* 칠판 바를 seatGrid 바로 아래로 이동 */
-(function moveBoardBar(){
-  var boardBar=document.getElementById('screenBoardBar');
-  var outer=document.querySelector('.seat-grid-outer');
-  if(boardBar&&outer&&outer.parentNode){
-    outer.parentNode.insertBefore(boardBar, outer.nextSibling);
-  }
-})();
+
 
 /* ──────────── 테마 ──────────── */
 var THEMES={
