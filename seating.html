@@ -1039,7 +1039,7 @@ function enterClass(){
         prefZones=st.prefZones||[];
         if(st.cols) document.getElementById('sCols').value=st.cols;
         if(st.rows) document.getElementById('sRows').value=st.rows;
-        if(st.genderSep) document.getElementById('optGender').checked=true;
+        document.getElementById('optGender').checked=!!st.genderSep;
       }
       /* 특수 설정 불러오기 */
       if(d.specialSettings){
@@ -1213,10 +1213,19 @@ function goToSettings(){
   if(!valid.length){alert('학생 이름을 하나 이상 입력해주세요.');return;}
   /* Firebase에 학생 명단 저장 */
   /* 학생 명단 + 특수 설정 함께 저장 */
+  /* 학생 명단 + 교실 설정(행/열/빈자리/분단/남녀분리) 함께 저장 */
+  var rowsV=parseInt(document.getElementById('sRows').value)||5;
+  var colsV=parseInt(document.getElementById('sCols').value)||6;
+  var genderV=document.getElementById('optGender').checked;
   db.collection('seating_classes').doc(curClass).set({
     students:students,
+    settings:{
+      rows:rowsV, cols:colsV, genderSep:genderV,
+      colGaps:Array.from(colGaps), rowGaps:Array.from(rowGaps),
+      emptySeats:Array.from(emptySeats), fixedSeats:fixedSeats
+    },
     specialSettings:{pairs:pairs,avoids:avoids,prefZones:prefZones}
-  },{merge:true}).then(function(){showToast('📝 학생 명단 저장됨');});
+  },{merge:true}).then(function(){showToast('📝 명단·설정 저장됨');});
   goScreen('s3');
   /* 화면 전환 후 DOM 렌더링 완료 시점에 프리뷰 빌드 */
   requestAnimationFrame(function(){
@@ -1468,6 +1477,14 @@ function generateLayout(){
   var rows=parseInt(document.getElementById('sRows').value)||5;
   var cols=parseInt(document.getElementById('sCols').value)||6;
   var genderSep=document.getElementById('optGender').checked;
+  /* 교실 설정 즉시 저장(다음 접속에도 유지) */
+  if(curClass) db.collection('seating_classes').doc(curClass).set({
+    settings:{
+      rows:rows, cols:cols, genderSep:genderSep,
+      colGaps:Array.from(colGaps), rowGaps:Array.from(rowGaps),
+      emptySeats:Array.from(emptySeats), fixedSeats:fixedSeats
+    }
+  },{merge:true}).catch(function(){});
   var cfg={rows,cols,genderSep,
     colGaps:Array.from(colGaps),rowGaps:Array.from(rowGaps),
     emptySeats:Array.from(emptySeats),fixedSeats:fixedSeats,
