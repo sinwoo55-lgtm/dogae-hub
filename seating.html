@@ -1853,13 +1853,15 @@ function buildImageCanvas(isTeacher,cmt){
   var dateY = cmtY + CMT_H + 10;
 
   /* 시점 전환 */
+  /* 교사 시점: 화면과 동일하게 행만 역순(열은 정방향) */
+  /* 학생 시점: 교사 시점의 180° 회전 = 행 정방향+열 역순 */
   var flipped=[];
   if(isTeacher){
-    for(var r=rows-1;r>=0;r--){var row2=[];for(var c=cols-1;c>=0;c--) row2.push(layout[r][c]);flipped.push(row2);}
+    for(var r=rows-1;r>=0;r--){var row2=[];for(var c=0;c<cols;c++) row2.push(layout[r][c]);flipped.push(row2);}
   } else {
-    for(var r=0;r<rows;r++){var row2=[];for(var c=0;c<cols;c++) row2.push(layout[r][c]);flipped.push(row2);}
+    for(var r=0;r<rows;r++){var row2=[];for(var c=cols-1;c>=0;c--) row2.push(layout[r][c]);flipped.push(row2);}
   }
-  var fCG=isTeacher?cgArr.map(function(cg){return cols-cg;}).sort(function(a,b){return a-b;}):cgArr;
+  var fCG=isTeacher?cgArr:cgArr.map(function(cg){return cols-cg;}).sort(function(a,b){return a-b;});
   var fRG=isTeacher?rgArr.map(function(rg){return rows-rg;}).sort(function(a,b){return a-b;}):rgArr;
 
   /* ── Canvas ── */
