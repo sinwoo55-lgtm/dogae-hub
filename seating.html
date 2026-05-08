@@ -1518,59 +1518,79 @@ function generateLayout(){
 }
 
 function runSim(active,valid,rows,cols,cfg){
+  /* 우선순위: 고정좌석 → 단일셀 선호구역 → 짝 → 다중셀 선호구역 → 남녀분리 → 나머지 랜덤 */
   var g=[];
   for(var r=0;r<rows;r++){g.push([]);for(var c=0;c<cols;c++) g[r].push(null);}
+  /* 1) 빈 자리 마킹 */
   cfg.emptySeats.forEach(function(k){
     var p=k.split('-'); var c=parseInt(p[0])-1, r=parseInt(p[1])-1;
     if(r>=0&&r<rows&&c>=0&&c<cols) g[r][c]='EMPTY';
   });
-  var used=new Set();
+  var placed=new Set();
+  /* 2) 고정 좌석 (최우선) */
   Object.keys(cfg.fixedSeats).forEach(function(k){
     var p=k.split('-'),c=parseInt(p[0])-1,r=parseInt(p[1])-1;
-    if(r>=0&&r<rows&&c>=0&&c<cols&&g[r][c]!=='EMPTY'){g[r][c]=cfg.fixedSeats[k];used.add(cfg.fixedSeats[k]);}
-  });
-  var remaining=shuffle(active.filter(function(s){return!used.has(s.name);}));
-  var free=shuffle(valid.filter(function(s){return g[s.r-1][s.c-1]===null;}));
-
-  /* 짝 고정 */
-  var pplaced=new Set();
-  cfg.pairs.forEach(function(pair){
-    var sA=remaining.find(function(s){return s.name===pair.a;});
-    var sB=remaining.find(function(s){return s.name===pair.b;});
-    if(!sA||!sB) return;
-    for(var i=0;i<free.length-1;i++){
-      var s1=free[i],s2=free[i+1];
-      if(g[s1.r-1][s1.c-1]||g[s2.r-1][s2.c-1]) continue;
-      if(s1.r===s2.r&&Math.abs(s1.c-s2.c)===1){
-        g[s1.r-1][s1.c-1]=sA.name;g[s2.r-1][s2.c-1]=sB.name;
-        pplaced.add(sA.name);pplaced.add(sB.name);break;
-      }
+    if(r>=0&&r<rows&&c>=0&&c<cols&&g[r][c]!=='EMPTY'){
+      g[r][c]=cfg.fixedSeats[k];placed.add(cfg.fixedSeats[k]);
     }
   });
-
-  /* 선호 구역 */
-  var zplaced=new Set();
+  /* 3) 단일 셀 선호구역 - 고정 좌석과 동급 우선 처리 */
   cfg.prefZones.forEach(function(pz){
-    var s=remaining.find(function(st){return st.name===pz.name&&!pplaced.has(st.name)&&!zplaced.has(st.name);});
-    if(!s) return;
-    var cellSet=new Set(pz.cells);
-    var zfree=free.filter(function(seat){return cellSet.has(seat.c+'-'+seat.r)&&g[seat.r-1][seat.c-1]===null;});
-    if(zfree.length){g[zfree[0].r-1][zfree[0].c-1]=s.name;zplaced.add(s.name);}
+    if(pz.cells.length!==1||placed.has(pz.name)) return;
+    var p=pz.cells[0].split('-'),c=parseInt(p[0])-1,r=parseInt(p[1])-1;
+    if(r>=0&&r<rows&&c>=0&&c<cols&&g[r][c]===null){
+      g[r][c]=pz.name;placed.add(pz.name);
+    }
   });
-
-  /* 남녀 분리 */
-  var left3=remaining.filter(function(s){return!pplaced.has(s.name)&&!zplaced.has(s.name);});
-  var free3=free.filter(function(s){return g[s.r-1][s.c-1]===null;});
+  /* 4) 짝 고정 */
+  shuffle(cfg.pairs.slice()).forEach(function(pair){
+    if(placed.has(pair.a)||placed.has(pair.b)) return;
+    var candidates=[];
+    for(var r=0;r<rows;r++){
+      for(var c=0;c<cols-1;c++){
+        if(g[r][c]===null&&g[r][c+1]===null) candidates.push([r,c,r,c+1]);
+      }
+    }
+    candidates=shuffle(candidates);
+    if(candidates.length){
+      var p=candidates[0];
+      g[p[0]][p[1]]=pair.a;g[p[2]][p[3]]=pair.b;
+      placed.add(pair.a);placed.add(pair.b);
+    }
+  });
+  /* 5) 다중 셀 선호구역 (랜덤) */
+  shuffle(cfg.prefZones.slice()).forEach(function(pz){
+    if(pz.cells.length<=1||placed.has(pz.name)) return;
+    var cellSet=new Set(pz.cells);
+    var zoneFree=[];
+    for(var r=0;r<rows;r++){
+      for(var c=0;c<cols;c++){
+        if(g[r][c]===null&&cellSet.has((c+1)+'-'+(r+1))) zoneFree.push({r,c});
+      }
+    }
+    if(zoneFree.length){
+      var pick=zoneFree[Math.floor(Math.random()*zoneFree.length)];
+      g[pick.r][pick.c]=pz.name;
+      placed.add(pz.name);
+    }
+  });
+  /* 6) 나머지 랜덤 + 남녀 분리 */
+  var left=shuffle(active.filter(function(s){return!placed.has(s.name);}));
+  var freeIdx=[];
+  for(var r=0;r<rows;r++) for(var c=0;c<cols;c++) if(g[r][c]===null) freeIdx.push({r,c});
+  freeIdx=shuffle(freeIdx);
   if(cfg.genderSep){
-    var males=left3.filter(function(s){return s.gender==='M';});
-    var females=left3.filter(function(s){return s.gender!=='M';});
+    var males=left.filter(function(s){return s.gender==='M';});
+    var females=left.filter(function(s){return s.gender!=='M';});
     var half=Math.ceil(cols/2);
-    var lf=free3.filter(function(s){return s.c<=half;});
-    var rf=free3.filter(function(s){return s.c>half;});
-    place(g,males,lf.length>=males.length?lf:free3.slice(0,males.length));
-    place(g,females,rf.length>=females.length?rf:free3.slice(males.length));
+    var leftHalf=freeIdx.filter(function(p){return (p.c+1)<=half;});
+    var rightHalf=freeIdx.filter(function(p){return (p.c+1)>half;});
+    while(leftHalf.length<males.length&&rightHalf.length>0) leftHalf.push(rightHalf.pop());
+    while(rightHalf.length<females.length&&leftHalf.length>0) rightHalf.push(leftHalf.pop());
+    males.forEach(function(s,i){if(leftHalf[i]) g[leftHalf[i].r][leftHalf[i].c]=s.name;});
+    females.forEach(function(s,i){if(rightHalf[i]) g[rightHalf[i].r][rightHalf[i].c]=s.name;});
   } else {
-    place(g,left3,free3);
+    left.forEach(function(s,i){if(freeIdx[i]) g[freeIdx[i].r][freeIdx[i].c]=s.name;});
   }
   return g;
 }
@@ -1579,10 +1599,27 @@ function place(g,stus,seats){
 }
 function evalScore(g,active,cfg,rows,cols){
   var sc=Math.random()*0.3;
+  /* 미배치 학생 큰 감점 */
+  var placedNames=new Set();
+  for(var r=0;r<rows;r++) for(var c=0;c<cols;c++){var v=g[r][c];if(v&&v!=='EMPTY') placedNames.add(v);}
+  var unplaced=active.filter(function(s){return!placedNames.has(s.name);}).length;
+  sc-=unplaced*100;
+  /* 짝/선호 위반 감점 */
+  cfg.pairs.forEach(function(pair){
+    var pA=findPos(g,pair.a,rows,cols),pB=findPos(g,pair.b,rows,cols);
+    if(!pA||!pB){sc-=20;return;}
+    if(pA.r===pB.r&&Math.abs(pA.c-pB.c)===1) sc+=10; else sc-=15;
+  });
+  cfg.prefZones.forEach(function(pz){
+    var p=findPos(g,pz.name,rows,cols);
+    if(!p){sc-=10;return;}
+    var cellSet=new Set(pz.cells);
+    if(cellSet.has((p.c+1)+'-'+(p.r+1))) sc+=8; else sc-=12;
+  });
   cfg.avoids.forEach(function(av){
     var pA=findPos(g,av.a,rows,cols),pB=findPos(g,av.b,rows,cols);
     if(!pA||!pB) return;
-    sc+=(Math.abs(pA.r-pB.r)+Math.abs(pA.c-pB.c))*av.level*0.1;
+    sc+=(Math.abs(pA.r-pB.r)+Math.abs(pA.c-pB.c))*av.level*0.5;
   });
   return sc;
 }
