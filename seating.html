@@ -1242,6 +1242,10 @@ function calcCellSize(){
 function buildPreview(){
   var rows=parseInt(document.getElementById('sRows').value)||5;
   var cols=parseInt(document.getElementById('sCols').value)||6;
+  /* 범위 밖 데이터 정리 */
+  Array.from(emptySeats).forEach(function(k){var p=k.split('-');var c=parseInt(p[0]),r=parseInt(p[1]);if(c<1||c>cols||r<1||r>rows) emptySeats.delete(k);});
+  Array.from(colGaps).forEach(function(c){if(c<1||c>=cols) colGaps.delete(c);});
+  Array.from(rowGaps).forEach(function(r){if(r<1||r>=rows) rowGaps.delete(r);});
   var sz=calcCellSize();
   var wrap=document.getElementById('previewGrid');wrap.innerHTML='';
   var addSz=Math.max(10,Math.min(16,Math.round(sz.cg*0.9)));
@@ -1499,7 +1503,10 @@ function generateLayout(){
 function runSim(active,valid,rows,cols,cfg){
   var g=[];
   for(var r=0;r<rows;r++){g.push([]);for(var c=0;c<cols;c++) g[r].push(null);}
-  cfg.emptySeats.forEach(function(k){var p=k.split('-');g[parseInt(p[1])-1][parseInt(p[0])-1]='EMPTY';});
+  cfg.emptySeats.forEach(function(k){
+    var p=k.split('-'); var c=parseInt(p[0])-1, r=parseInt(p[1])-1;
+    if(r>=0&&r<rows&&c>=0&&c<cols) g[r][c]='EMPTY';
+  });
   var used=new Set();
   Object.keys(cfg.fixedSeats).forEach(function(k){
     var p=k.split('-'),c=parseInt(p[0])-1,r=parseInt(p[1])-1;
