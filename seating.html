@@ -1619,7 +1619,10 @@ function evalScore(g,active,cfg,rows,cols){
   cfg.avoids.forEach(function(av){
     var pA=findPos(g,av.a,rows,cols),pB=findPos(g,av.b,rows,cols);
     if(!pA||!pB) return;
-    sc+=(Math.abs(pA.r-pB.r)+Math.abs(pA.c-pB.c))*av.level*0.5;
+    var dist=Math.abs(pA.r-pB.r)+Math.abs(pA.c-pB.c);
+    var target=av.level===1?2:av.level===2?3:(rows+cols);
+    if(dist>=target) sc+=5*av.level;
+    else            sc-=(target-dist)*3*av.level;
   });
   return sc;
 }
