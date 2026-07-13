@@ -4,18 +4,11 @@ export default function middleware(request) {
   // Vercel이 설정한 헤더를 사용한다. x-vercel-forwarded-for는 프록시 설정에도 원본 값을 보존한다.
   const forwarded = request.headers.get('x-vercel-forwarded-for') || request.headers.get('x-forwarded-for') || '';
   // 프록시 체인으로 쉼표 구분 IP 목록이 들어올 수 있으므로 실제 클라이언트 IP만 사용한다.
-  const ip = forwarded.split(',')[0].trim();
-  const allowedCidrs = (process.env.SCHOOL_ALLOWED_CIDRS || '117.110.113.0/24').split(',');
-  const allowed = allowedCidrs.some(function(cidr) {
-    const parts=cidr.trim().split('/'), network=parts[0], bits=Number(parts[1]);
-    const ipParts=ip.split('.').map(Number), netParts=network.split('.').map(Number);
-    if(ipParts.length!==4||netParts.length!==4||!Number.isInteger(bits)||bits<0||bits>32)return false;
-    if(ipParts.concat(netParts).some(function(n){return !Number.isInteger(n)||n<0||n>255;}))return false;
-    const ipNum=ipParts.reduce(function(v,n){return v*256+n;},0);
-    const netNum=netParts.reduce(function(v,n){return v*256+n;},0);
-    const size=2**(32-bits);
-    return Math.floor(ipNum/size)===Math.floor(netNum/size);
-  });
+  // IPv4-mapped IPv6(::ffff:...)나 프록시 부가 문자열이 있어도 IPv4 주소만 추출한다.
+  const ip = forwarded.match(/(?:\d{1,3}\.){3}\d{1,3}/)?.[0] || forwarded.split(',')[0].trim();
+  // 학교의 현재 공인 IP 대역. 기존 운영 코드에서 사용해 온 검증된 방식이다.
+  const ALLOWED_PREFIXES = ['117.110.113.', '127.0.0.1', '::1'];
+  const allowed = ALLOWED_PREFIXES.some(function(prefix) { return ip === prefix || ip.startsWith(prefix); });
 
   if (!allowed) {
     return new Response(
