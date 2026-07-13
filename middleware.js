@@ -2,7 +2,9 @@ export const config = { matcher: '/:path*' };
 
 export default function middleware(request) {
   // Vercel이 설정한 헤더를 사용한다. x-vercel-forwarded-for는 프록시 설정에도 원본 값을 보존한다.
-  const ip = request.headers.get('x-vercel-forwarded-for') || request.headers.get('x-forwarded-for') || '';
+  const forwarded = request.headers.get('x-vercel-forwarded-for') || request.headers.get('x-forwarded-for') || '';
+  // 프록시 체인으로 쉼표 구분 IP 목록이 들어올 수 있으므로 실제 클라이언트 IP만 사용한다.
+  const ip = forwarded.split(',')[0].trim();
   const allowedCidrs = (process.env.SCHOOL_ALLOWED_CIDRS || '117.110.113.0/24').split(',');
   const allowed = allowedCidrs.some(function(cidr) {
     const parts=cidr.trim().split('/'), network=parts[0], bits=Number(parts[1]);
