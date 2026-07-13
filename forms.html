@@ -884,41 +884,5 @@
   </div>
 </div>
 
-<!-- Firebase SDK (compat 버전: 전역 함수로 사용 가능) -->
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-
-<script>
-/* ═══ Apps Script (Drive 파일 업로드) ═══ */
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby1qH88hvklDug2ZMT-gAJdRVWby-mMIg6PnHtg4ny5cXk5Xi76y0x3vRorWmIe01yy/exec';
-
-/* ═══ Firebase 초기화 ═══ */
-const firebaseConfig = {
-  apiKey:            "AIzaSyCtrmjngavD91SRzv6ECUPZWI3JRWTSaxM",
-  authDomain:        "dogae-school-hub.firebaseapp.com",
-  projectId:         "dogae-school-hub",
-  storageBucket:     "dogae-school-hub.firebasestorage.app",
-  messagingSenderId: "396914634674",
-  appId:             "1:396914634674:web:464ab689726e2c5586feab"
-};
-firebase.initializeApp(firebaseConfig);
-const db     = firebase.firestore();
-const colRef = db.collection('forms_files');
-const trashCol = db.collection('forms_trash');
-
-// compat API 래퍼 (기존 코드와 호환)
-function serverTimestamp(){ return firebase.firestore.FieldValue.serverTimestamp(); }
-async function addDoc(col, data){ return await col.add(data); }
-async function updateDoc(ref, data){ return await ref.update(data); }
-async function deleteDoc(ref){ return await ref.delete(); }
-function doc(db_unused, colName, id){ return db.collection(colName).doc(id); }
-function onSnapshot(q, cb){
-  return q.onSnapshot(snap=>{
-    const docs = snap.docs.map(d=>({id:d.id,...d.data()}));
-    cb({docs: snap.docs.map(d=>({id:d.id, data:()=>d.data()}))});
-  });
-}
-</script>
-
 </body>
 </html>
