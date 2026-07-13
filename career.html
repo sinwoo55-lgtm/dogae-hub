@@ -620,25 +620,16 @@ mark{background:#FFF3CD;border-radius:2px;padding:0 1px;}
   </div>
 </div>
 
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
-var ADMIN_ID='admin', ADMIN_PW='admin';
-firebase.initializeApp({
-  apiKey:"AIzaSyCtrmjngavD91SRzv6ECUPZWI3JRWTSaxM",
-  authDomain:"dogae-school-hub.firebaseapp.com",
-  projectId:"dogae-school-hub",
-  storageBucket:"dogae-school-hub.firebasestorage.app",
-  messagingSenderId:"396914634674",
-  appId:"1:396914634674:web:464ab689726e2c5586feab"
-});
-var db=firebase.firestore();
-var colRef=db.collection('career_acts');
-var trashCol=db.collection('career_trash');
+/* 학교망 서버 API */
+function careerRequest(method,body){return fetch('/api/career',{method:method,headers:{'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined}).then(function(r){return r.json().then(function(data){if(!r.ok)throw new Error(data.error||'요청에 실패했습니다.');return data;});});}
+function applyCareer(data){acts=data.acts||[];trashedActs=data.trash||[];render();updateTrashBadge();if(document.getElementById('trashOverlay').classList.contains('active'))renderTrash();}
+function loadCareer(){return careerRequest('GET').then(applyCareer).catch(function(err){console.error(err);alert(err.message||'진로 활동을 불러오지 못했습니다.');});}
+function careerAction(action,payload){return careerRequest('POST',Object.assign({action:action},payload||{})).then(applyCareer).catch(function(err){alert(err.message||'저장하지 못했습니다.');throw err;});}
 
 /* ── 상태 ── */
 var acts=[],trashedActs=[];
-var isAdmin=sessionStorage.getItem('dogae_admin')==='true';
+var isAdmin=true;
 var filterGrade='전체',filterStream='전체',filterSem='전체',searchQ='';
 var editingId=null,popupId=null,deletePendingId=null;
 var currentTags=[],logoClicks=0,logoTimer=null;
@@ -1109,7 +1100,7 @@ document.getElementById('actSubmitBtn').addEventListener('click',function(){
   if(!tags.length){alert('진로 태그를 하나 이상 입력해주세요.');return;}
   var data={name:name,grade:grade,stream:stream,sem:sem,count:count,time:time,desc:desc,tags:tags,date:nowDate()};
   var btn=document.getElementById('actSubmitBtn');btn.disabled=true;btn.textContent='저장 중...';
-  var p=editingId?db.collection('career_acts').doc(editingId).update(data):colRef.add(Object.assign(data,{ts:firebase.firestore.FieldValue.serverTimestamp()}));
+  var p=careerAction('act:save',{id:editingId||undefined,data:data});
   p.then(function(){closeActModal();btn.disabled=false;}).catch(function(err){alert('오류: '+err.message);btn.disabled=false;btn.textContent=editingId?'수정 완료':'등록하기';});
 });
 
@@ -1126,8 +1117,7 @@ document.getElementById('delModalClose').addEventListener('click',closeDelModal)
 document.getElementById('delModalCancel').addEventListener('click',closeDelModal);
 document.getElementById('delConfirmBtn').addEventListener('click',function(){
   var a=acts.find(function(x){return x.id===deletePendingId;});if(!a)return;
-  var td=Object.assign({},a,{deletedAt:Date.now(),deletedDate:new Date().toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric'}),origId:deletePendingId});
-  trashCol.add(td).then(function(){return db.collection('career_acts').doc(deletePendingId).delete();}).then(closeDelModal).catch(function(err){alert('오류: '+err.message);});
+  careerAction('trash:move',{id:deletePendingId}).then(closeDelModal).catch(function(){});
 });
 
 /* ── 휴지통 ── */
@@ -1150,19 +1140,18 @@ function renderTrash(){
     item.querySelector('.btn-restore').addEventListener('click',function(){
       var id=item.querySelector('.btn-restore').dataset.id;
       var tf=trashedActs.find(function(x){return x.id===id;});if(!tf)return;
-      var r=Object.assign({},tf);delete r.deletedAt;delete r.deletedDate;delete r.origId;
-      colRef.add(Object.assign(r,{ts:firebase.firestore.FieldValue.serverTimestamp()})).then(function(){return trashCol.doc(id).delete();}).then(function(){renderTrash();updateTrashBadge();});
+      careerAction('trash:restore',{id:id}).then(function(){renderTrash();updateTrashBadge();});
     });
     item.querySelector('.btn-perm-del').addEventListener('click',function(){
       var id=item.querySelector('.btn-perm-del').dataset.id;
       var tf=trashedActs.find(function(x){return x.id===id;});
       if(!confirm('"'+(tf&&tf.name||'')+'" 영구 삭제할까요?'))return;
-      trashCol.doc(id).delete().then(function(){renderTrash();updateTrashBadge();});
+      careerAction('trash:delete',{id:id}).then(function(){renderTrash();updateTrashBadge();});
     });
     body.appendChild(item);
   });
 }
-document.getElementById('btnEmptyTrash').addEventListener('click',function(){if(!confirm('휴지통을 완전히 비울까요?'))return;Promise.all(trashedActs.map(function(a){return trashCol.doc(a.id).delete();})).then(function(){renderTrash();updateTrashBadge();});});
+document.getElementById('btnEmptyTrash').addEventListener('click',function(){if(!confirm('휴지통을 완전히 비울까요?'))return;careerAction('trash:clear').then(function(){renderTrash();updateTrashBadge();});});
 document.getElementById('btnTrash').addEventListener('click',openTrash);
 document.getElementById('trashOverlay').addEventListener('click',function(e){if(e.target===this)closeTrash();});
 document.getElementById('trashModalClose').addEventListener('click',closeTrash);
@@ -1214,11 +1203,9 @@ function updateAdminUI(){
 function openAdminModal(){document.getElementById('adminModal').classList.add('active');setTimeout(function(){document.getElementById('adminId').focus();},160);}
 function closeAdminModal(){document.getElementById('adminModal').classList.remove('active');document.getElementById('adminId').value='';document.getElementById('adminPw').value='';document.getElementById('adminErr').style.display='none';}
 function confirmAdmin(){
-  var id=document.getElementById('adminId').value.trim(),pw=document.getElementById('adminPw').value;
-  if(id===ADMIN_ID&&pw===ADMIN_PW){isAdmin=true;sessionStorage.setItem('dogae_admin','true');updateAdminUI();closeAdminModal();}
-  else{document.getElementById('adminErr').style.display='block';}
+  isAdmin=true;updateAdminUI();closeAdminModal();
 }
-document.getElementById('adminLogout').addEventListener('click',function(){isAdmin=false;sessionStorage.removeItem('dogae_admin');updateAdminUI();});
+document.getElementById('adminLogout').addEventListener('click',function(){updateAdminUI();});
 document.getElementById('adminModal').addEventListener('click',function(e){if(e.target===this)closeAdminModal();});
 document.getElementById('adminModalClose').addEventListener('click',closeAdminModal);
 document.getElementById('adminCancelBtn').addEventListener('click',closeAdminModal);
@@ -1232,18 +1219,9 @@ document.addEventListener('keydown',function(e){
   if(e.key==='Escape'){closePopup();closeTagPopup();closeActModal();closeDelModal();closeTrash();closeAdminModal();}
 });
 
-/* ── Firebase 실시간 구독 ── */
-colRef.orderBy('ts','desc').onSnapshot(function(snap){
-  acts=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});
-  render();
-});
-trashCol.orderBy('deletedAt','desc').onSnapshot(function(snap){
-  trashedActs=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});
-  updateTrashBadge();
-  if(document.getElementById('trashOverlay').classList.contains('active'))renderTrash();
-});
-
 updateAdminUI();
+loadCareer();
+setInterval(loadCareer,30000);
 </script>
 </body>
 </html>

@@ -1,19 +1,18 @@
 export const config = { matcher: '/:path*' };
 
 export default function middleware(request) {
-  const ip =
-    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-    request.headers.get('x-real-ip') || '';
-
-  // ★ 허용 IP 목록
-  const ALLOWED = [
-    '117.110.113.',   // 학교 IP 대역 전체 (117.110.113.0 ~ 117.110.113.255)
-    '127.0.0.1',      // 로컬 테스트
-    '::1',            // 로컬 IPv6
-  ];
-
-  const allowed = ALLOWED.some(function(a) {
-    return ip === a || ip.startsWith(a);
+  // Vercel이 설정한 헤더를 사용한다. x-vercel-forwarded-for는 프록시 설정에도 원본 값을 보존한다.
+  const ip = request.headers.get('x-vercel-forwarded-for') || request.headers.get('x-forwarded-for') || '';
+  const allowedCidrs = (process.env.SCHOOL_ALLOWED_CIDRS || '117.110.113.0/24').split(',');
+  const allowed = allowedCidrs.some(function(cidr) {
+    const parts=cidr.trim().split('/'), network=parts[0], bits=Number(parts[1]);
+    const ipParts=ip.split('.').map(Number), netParts=network.split('.').map(Number);
+    if(ipParts.length!==4||netParts.length!==4||!Number.isInteger(bits)||bits<0||bits>32)return false;
+    if(ipParts.concat(netParts).some(function(n){return !Number.isInteger(n)||n<0||n>255;}))return false;
+    const ipNum=ipParts.reduce(function(v,n){return v*256+n;},0);
+    const netNum=netParts.reduce(function(v,n){return v*256+n;},0);
+    const size=2**(32-bits);
+    return Math.floor(ipNum/size)===Math.floor(netNum/size);
   });
 
   if (!allowed) {
