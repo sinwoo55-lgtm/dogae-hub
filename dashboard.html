@@ -803,6 +803,7 @@
 
 <script>
 /* ═══ 학교망 서버 API ═══ */
+var ADMIN_ID='admin', ADMIN_PW='admin';
 function applyDashboard(data){
   posts=data.posts||[];links=data.links||[];
   departments=(data.departments&&data.departments.length)?data.departments:DEFAULT_DEPTS;
@@ -838,7 +839,7 @@ var COLOR_POOL = ['#B14A3B','#3E6B8A','#4C7A52','#C08A2E','#6B5B95','#A24B72','#
 var posts=[], links=[], departments=[], editingId=null, popupId=null, editingLinkId=null;
 var curView='calendar';
 var curFilter='all', curSort='deadline', dashSearch='', linkOnly=false, deptFilterVal='all';
-var isAdmin=true; // 학교망 접근 자체를 쓰기 권한으로 사용한다.
+var isAdmin=sessionStorage.getItem('isAdmin')==='true';
 var selectedIds=new Set(), logoClicks=0, logoTimer=null;
 var viewYear, viewMonth, selectedDayKey=null;
 (function(){var t=new Date();viewYear=t.getFullYear();viewMonth=t.getMonth();})();
@@ -1384,9 +1385,12 @@ function closeAdminModal(){
   document.getElementById('adminErr').style.display='none';
 }
 function confirmAdmin(){
-  isAdmin=true;updateAdminUI();closeAdminModal();
+  var id=document.getElementById('adminIdInput').value.trim(),pw=document.getElementById('adminPwInput').value;
+  if(id===ADMIN_ID&&pw===ADMIN_PW){isAdmin=true;sessionStorage.setItem('isAdmin','true');updateAdminUI();closeAdminModal();}
+  else{document.getElementById('adminErr').textContent='아이디 또는 비밀번호가 올바르지 않습니다.';document.getElementById('adminErr').style.display='block';}
 }
-function logoutAdmin(){selectedIds.clear();updateAdminUI();}
+function logoutAdmin(){isAdmin=false;sessionStorage.removeItem('isAdmin');selectedIds.clear();updateAdminUI();}
+function refreshAdminSession(){updateAdminUI();}
 function updateAdminUI(){
   document.getElementById('adminBadge').classList.toggle('show',isAdmin);
   document.getElementById('adminTools').classList.toggle('show',isAdmin);
@@ -1556,7 +1560,7 @@ document.getElementById('btnSubmit').addEventListener('click',function(){
 
 document.addEventListener('keydown',function(e){if(e.key==='Escape'){closeRangePop();closeModal();closeLinkModal();closePopup();closeAdminModal();}});
 
-updateAdminUI();
+refreshAdminSession();
 switchView('calendar');
 loadDashboard();
 setInterval(loadDashboard,30000);

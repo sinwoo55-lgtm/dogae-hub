@@ -622,6 +622,7 @@ mark{background:#FFF3CD;border-radius:2px;padding:0 1px;}
 
 <script>
 /* 학교망 서버 API */
+var ADMIN_ID='admin', ADMIN_PW='admin';
 function careerRequest(method,body){return fetch('/api/career',{method:method,headers:{'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined}).then(function(r){return r.json().then(function(data){if(!r.ok)throw new Error(data.error||'요청에 실패했습니다.');return data;});});}
 function applyCareer(data){acts=data.acts||[];trashedActs=data.trash||[];render();updateTrashBadge();if(document.getElementById('trashOverlay').classList.contains('active'))renderTrash();}
 function loadCareer(){return careerRequest('GET').then(applyCareer).catch(function(err){console.error(err);alert(err.message||'진로 활동을 불러오지 못했습니다.');});}
@@ -629,7 +630,7 @@ function careerAction(action,payload){return careerRequest('POST',Object.assign(
 
 /* ── 상태 ── */
 var acts=[],trashedActs=[];
-var isAdmin=true;
+var isAdmin=sessionStorage.getItem('isAdmin')==='true';
 var filterGrade='전체',filterStream='전체',filterSem='전체',searchQ='';
 var editingId=null,popupId=null,deletePendingId=null;
 var currentTags=[],logoClicks=0,logoTimer=null;
@@ -1203,9 +1204,12 @@ function updateAdminUI(){
 function openAdminModal(){document.getElementById('adminModal').classList.add('active');setTimeout(function(){document.getElementById('adminId').focus();},160);}
 function closeAdminModal(){document.getElementById('adminModal').classList.remove('active');document.getElementById('adminId').value='';document.getElementById('adminPw').value='';document.getElementById('adminErr').style.display='none';}
 function confirmAdmin(){
-  isAdmin=true;updateAdminUI();closeAdminModal();
+  var id=document.getElementById('adminId').value.trim(),pw=document.getElementById('adminPw').value;
+  if(id===ADMIN_ID&&pw===ADMIN_PW){isAdmin=true;sessionStorage.setItem('isAdmin','true');updateAdminUI();closeAdminModal();}
+  else{document.getElementById('adminErr').textContent='아이디 또는 비밀번호가 올바르지 않습니다.';document.getElementById('adminErr').style.display='block';}
 }
-document.getElementById('adminLogout').addEventListener('click',function(){updateAdminUI();});
+document.getElementById('adminLogout').addEventListener('click',function(){isAdmin=false;sessionStorage.removeItem('isAdmin');updateAdminUI();});
+function refreshAdminSession(){updateAdminUI();}
 document.getElementById('adminModal').addEventListener('click',function(e){if(e.target===this)closeAdminModal();});
 document.getElementById('adminModalClose').addEventListener('click',closeAdminModal);
 document.getElementById('adminCancelBtn').addEventListener('click',closeAdminModal);
@@ -1219,7 +1223,7 @@ document.addEventListener('keydown',function(e){
   if(e.key==='Escape'){closePopup();closeTagPopup();closeActModal();closeDelModal();closeTrash();closeAdminModal();}
 });
 
-updateAdminUI();
+refreshAdminSession();
 loadCareer();
 setInterval(loadCareer,30000);
 </script>
