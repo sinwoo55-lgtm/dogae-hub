@@ -46,9 +46,9 @@
 ## 캘린더 외부 일정 캐시
 
 - 매일 한국 시간 01:00에 나이스 학사일정 정보를 갱신합니다. 공휴일도 나이스 학사일정에 등재된 정보를 사용합니다.
-- 현재 연도 기준 앞뒤 10년(총 21년)의 정보를 Firestore `calendar_cache`에 연도별로 저장합니다.
+- 현재 연도 기준 앞뒤 2년(총 5년)의 정보를 Firestore `calendar_cache`에 연도별로 저장합니다.
 - 교사가 캘린더를 열 때는 외부 API가 아닌 저장된 캐시만 읽습니다.
-- 최초 테스트는 교내망에서 `/api/calendar-refresh?span=0`를 열어 현재 연도만 빠르게 저장한 뒤 확인합니다. 전체 범위는 `/api/calendar-refresh` 또는 다음 새벽 자동 갱신으로 처리합니다.
+- 최초 테스트는 교내망에서 `/api/calendar-refresh?span=0`를 열어 현재 연도만 빠르게 저장한 뒤 확인합니다. 5년 범위는 `/api/calendar-refresh` 또는 다음 새벽 자동 갱신으로 처리합니다.
 
 ## Firestore Rules
 
