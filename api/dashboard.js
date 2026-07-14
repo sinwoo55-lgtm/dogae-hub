@@ -84,7 +84,7 @@ export default async function handler(req, res) {
       const next = postData(data || {});
       if (!next) return res.status(400).json({ error: '게시물 입력값이 올바르지 않습니다.' });
       if (id && validId(id)) await POSTS.doc(id).update(next);
-      else await POSTS.add({ ...next, createdAt: new Date().toLocaleDateString('ko-KR'), ts: FieldValue.serverTimestamp() });
+      else await POSTS.add({ ...next, createdAt: new Date().toLocaleDateString('ko-KR'), newUntil: Date.now() + (24 * 60 * 60 * 1000), ts: FieldValue.serverTimestamp() });
     } else if (action === 'post:delete' && validId(id)) {
       await POSTS.doc(id).delete();
     } else if (action === 'post:delete-many' && Array.isArray(ids) && ids.length <= 100 && ids.every(validId)) {
