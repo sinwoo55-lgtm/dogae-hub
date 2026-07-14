@@ -26,15 +26,17 @@ function date(value) {
 
 function postData(value) {
   const author = text(value.author, 20);
-  const content = text(value.content, 400);
+  const title = text(value.title ?? value.content, 80);
+  const content = value.content === '' || value.content === undefined ? '' : text(value.content, 400);
   const link = value.link === '' ? '' : text(value.link, 1000);
   const dept = value.dept === '' ? '' : text(value.dept, 80);
   const start = date(value.start ?? '');
   const end = date(value.end ?? '');
-  if (!author || !content || link === null || dept === null || start === null || end === null) return null;
+  const isNotice = value.isNotice === true;
+  if (!author || !title || content === null || link === null || dept === null || start === null || end === null) return null;
   if (link && !/^https?:\/\//i.test(link)) return null;
   if (start && end && start > end) return null;
-  return { author, content, link, dept, start, end, deadline: end || start || '' };
+  return { author, title, content, link, dept, isNotice, start, end, deadline: end || start || '' };
 }
 
 function linkData(value) {
