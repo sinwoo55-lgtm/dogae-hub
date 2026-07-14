@@ -32,13 +32,15 @@ async function getJson(url) {
 async function schoolSchedules(year, month, events) {
   const key = process.env.NEIS_API_KEY;
   const office = process.env.NEIS_OFFICE_CODE;
-  const school = process.env.NEIS_SCHOOL_CODE;
-  if (!key || !office || !school) return false;
+  const schools = String(process.env.NEIS_SCHOOL_CODE || '').split(',').map((value) => value.trim()).filter(Boolean);
+  if (!key || !office || !schools.length) return false;
   const range = monthRange(year, month);
-  const query = new URLSearchParams({ KEY: key, Type: 'json', pIndex: '1', pSize: '1000', ATPT_OFCDC_SC_CODE: office, SD_SCHUL_CODE: school, AA_FROM_YMD: range.start, AA_TO_YMD: range.end });
-  const data = await getJson(`https://open.neis.go.kr/hub/SchoolSchedule?${query}`);
-  const rows = data?.SchoolSchedule?.[1]?.row || [];
-  rows.forEach((row) => addEvent(events, row.AA_YMD, 'academic', row.EVENT_NM));
+  for (const school of schools) {
+    const query = new URLSearchParams({ KEY: key, Type: 'json', pIndex: '1', pSize: '1000', ATPT_OFCDC_SC_CODE: office, SD_SCHUL_CODE: school, AA_FROM_YMD: range.start, AA_TO_YMD: range.end });
+    const data = await getJson(`https://open.neis.go.kr/hub/SchoolSchedule?${query}`);
+    const rows = data?.SchoolSchedule?.[1]?.row || [];
+    rows.forEach((row) => addEvent(events, row.AA_YMD, 'academic', row.EVENT_NM));
+  }
   return true;
 }
 
