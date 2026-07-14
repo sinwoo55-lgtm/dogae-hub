@@ -44,8 +44,10 @@ function linkData(value) {
   const url = text(value.url, 1000);
   const desc = value.desc === '' ? '' : text(value.desc, 200);
   const dept = value.dept === '' ? '' : text(value.dept, 80);
-  if (!title || !url || desc === null || dept === null || !/^https?:\/\//i.test(url)) return null;
-  return { title, url, desc, dept };
+  if (!Array.isArray(value.tags) || value.tags.length > 10) return null;
+  const tags = [...new Set(value.tags.map((tag) => text(tag, 20)))];
+  if (!title || !url || desc === null || dept === null || tags.some((tag) => !tag) || !/^https?:\/\//i.test(url)) return null;
+  return { title, url, desc, dept, tags };
 }
 
 function departmentList(value) {
