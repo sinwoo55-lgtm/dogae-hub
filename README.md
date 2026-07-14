@@ -25,7 +25,7 @@
 - 브라우저는 Firestore에 직접 연결하지 않습니다.
 - Firestore Rules는 모든 브라우저 요청을 차단합니다.
 - 서버 API는 Firebase 서비스 계정으로 Firestore에 접근합니다.
-- 현재 학교 IP 허용 대역은 `117.110.113.*`입니다. 학교 공인 IP가 바뀌면 `middleware.js`와 `lib/school-access.js`를 함께 갱신해야 합니다.
+- 현재 학교 IP 허용 목록은 유선망 `117.110.113.*`와 무선망 `117.111.141.213`입니다. 학교 공인 IP가 바뀌면 `middleware.js`와 `lib/school-access.js`를 함께 갱신해야 합니다.
 
 ## Vercel 환경변수
 
