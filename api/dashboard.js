@@ -42,10 +42,11 @@ function postData(value) {
 function linkData(value) {
   const title = text(value.title, 40);
   const url = text(value.url, 1000);
-  const desc = value.desc === '' ? '' : text(value.desc, 200);
-  const dept = value.dept === '' ? '' : text(value.dept, 80);
-  if (!Array.isArray(value.tags) || value.tags.length > 10) return null;
-  const tags = [...new Set(value.tags.map((tag) => text(tag, 20)))];
+  const desc = value.desc === '' || value.desc === undefined ? '' : text(value.desc, 200);
+  const dept = value.dept === '' || value.dept === undefined ? '' : text(value.dept, 80);
+  const rawTags = value.tags === undefined ? [] : value.tags;
+  if (!Array.isArray(rawTags) || rawTags.length > 10) return null;
+  const tags = [...new Set(rawTags.map((tag) => text(tag, 20)))];
   if (!title || !url || desc === null || dept === null || tags.some((tag) => !tag) || !/^https?:\/\//i.test(url)) return null;
   return { title, url, desc, dept, tags };
 }
