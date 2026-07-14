@@ -13,7 +13,7 @@
     document.head.appendChild(style);
     var shade=document.createElement('div');shade.className='hub-nav-shade';
     var nav=document.createElement('aside');nav.className='hub-nav';
-    nav.innerHTML='<div class="hub-nav-head">메뉴 <button class="hub-nav-close">×</button></div><div class="hub-nav-label">메인</div><a href="index.html">⌂&nbsp; 업무 홈</a><a href="links.html">🔗&nbsp; 링크 모음</a><div class="hub-nav-label">기능</div><a href="mindmap.html">🧭&nbsp; 업무분장</a><a href="career.html">🌱&nbsp; 진로 활동 탐색기</a><a href="seating.html">▦&nbsp; 자리 배치표</a><a href="forms.html">▤&nbsp; 양식 자료실</a><div class="hub-nav-label">관리</div><a href="dashboard.html">⚙&nbsp; 공지 관리</a>';
+    nav.innerHTML='<div class="hub-nav-head">메뉴 <button class="hub-nav-close">×</button></div><div class="hub-nav-label">메인</div><a href="index.html">⌂&nbsp; 업무 홈</a><a href="links.html">🔗&nbsp; 링크 모음</a><div class="hub-nav-label">기능</div><a href="mindmap.html">🧭&nbsp; 업무분장</a><a href="career.html">🌱&nbsp; 진로 활동 탐색기</a><a href="seating.html">▦&nbsp; 자리 배치표</a><a href="forms.html">▤&nbsp; 양식 자료실</a>';
     document.body.append(shade,nav);
     function toggle(open){shade.classList.toggle('open',open);nav.classList.toggle('open',open)}
     button.addEventListener('click',function(){toggle(true)});shade.addEventListener('click',function(){toggle(false)});nav.querySelector('button').addEventListener('click',function(){toggle(false)});
