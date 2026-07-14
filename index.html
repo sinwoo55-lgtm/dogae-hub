@@ -50,6 +50,11 @@
     @media(max-width:900px){.calendar .day-num{top:6px}.calendar .event-lanes{top:27px;grid-template-rows:repeat(4,16px);row-gap:2px}.calendar .event-lanes .event-line,.calendar .event-lanes .event-spacer{height:16px;min-height:16px}.calendar .event-lanes .event-line{line-height:16px}.calendar .event-lanes .event-line.line-start{margin-left:7px}.calendar .event-lanes .event-line.line-end{margin-right:7px}}
     /* 버튼의 브라우저 기본 세로 정렬을 제거해 날짜도 칸 상단에 붙인다. */
     .calendar .day{appearance:none;-webkit-appearance:none;display:block}
+    /* 달력 칸과 부서별 일정을 한눈에 구분할 수 있게 대비를 높인다. */
+    .calendar .day{border-color:#D4DDEC!important;border-right-color:#C7D2E5!important;border-bottom-color:#D4DDEC!important}
+    .calendar .day:nth-child(7n){border-right-color:#B8C7DE!important}.calendar .day:hover{background:#F3F7FF}.week{border-bottom:2px solid #C9D5E8;padding-bottom:6px;margin-bottom:0}
+    .event-line{box-shadow:inset 0 0 0 1px rgba(255,255,255,.22),0 1px 2px rgba(20,35,65,.16);font-weight:700}
+    .post-complete{display:inline-flex;align-items:center;gap:3px;height:25px;padding:0 5px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--muted);font-size:10px;font-weight:700;cursor:pointer}.post-complete input{width:13px;height:13px;margin:0;accent-color:#C53030;cursor:pointer}.post-complete:hover{border-color:#C53030;color:#A82121}.post.notice .post-complete{display:none}.post-title-main{position:relative;display:inline-block}.post.is-complete .post-title-main:after{content:'';position:absolute;inset:-5px -8px -4px;border:2px solid rgba(197,48,48,.9);border-radius:48% 52% 46% 54%;transform:rotate(-4deg);pointer-events:none}.post.is-complete .post-title-main:before{content:'';position:absolute;inset:-3px -6px -6px;border:1px solid rgba(214,65,65,.62);border-radius:53% 47% 55% 45%;transform:rotate(3deg);pointer-events:none}
   </style>
 </head>
 <body>

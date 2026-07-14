@@ -372,6 +372,7 @@
     .search-empty h3 { font-family:'Noto Serif KR',serif; font-size:16px; color:var(--navy); }
     .search-empty p { font-size:13px; color:var(--muted); }
   </style>
+  <style>header{visibility:hidden}</style>
 </head>
 <body>
 
@@ -566,10 +567,10 @@ var ICONS = {
 };
 
 var DEPARTMENT_COLORS = {
-  '교무기획부':'#253E8A','학생안전부':'#1E7C5A','교육연구부':'#7A3A7A',
-  '교육과정부':'#B5500A','학력관리부':'#2B8AB5','진로상담부':'#C9284D',
-  '정보부':'#3A6B3A','정보환경부':'#6B3FA0','교육지원부':'#1A6B6B',
-  '체육부':'#8B3A3A','1학년부':'#5A6B00','2학년부':'#2A5A8A','3학년부':'#7A5C00'
+  '교무기획부':'#1D4ED8','학생안전부':'#059669','교육연구부':'#9333EA',
+  '교육과정부':'#EA580C','학력관리부':'#0284C7','진로상담부':'#E11D48',
+  '정보부':'#16A34A','정보환경부':'#7C3AED','교육지원부':'#0F766E',
+  '체육부':'#B91C1C','1학년부':'#65A30D','2학년부':'#2563EB','3학년부':'#A16207'
 };
 var PALETTE = Object.values(DEPARTMENT_COLORS);
 var depts = ORG_DATA.departments.map(function(d,i){ return Object.assign({},d,{color:DEPARTMENT_COLORS[d.name]||PALETTE[i%PALETTE.length],idx:i}); });

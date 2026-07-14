@@ -36,26 +36,12 @@ async function schoolSchedules(year, events) {
   return true;
 }
 
-async function holidays(year, events) {
-  const key = process.env.HOLIDAY_API_KEY;
-  if (!key) return false;
-  await Promise.all(Array.from({ length: 12 }, async (_, index) => {
-    const query = new URLSearchParams({ serviceKey: decodeURIComponent(key), solYear: String(year), solMonth: String(index + 1).padStart(2, '0'), _type: 'json', numOfRows: '100' });
-    const data = await getJson(`https://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getRestDeInfo?${query}`);
-    const items = data?.response?.body?.items?.item || [];
-    (Array.isArray(items) ? items : [items]).forEach((item) => addEvent(events, item.locdate, 'holiday', item.dateName));
-  }));
-  return true;
-}
-
 export async function refreshCalendarYear(year) {
   const events = {};
   const warnings = [];
   let academicConfigured = false;
-  let holidayConfigured = false;
   try { academicConfigured = await schoolSchedules(year, events); } catch (error) { warnings.push('학사일정을 불러오지 못했습니다.'); console.warn(error); }
-  try { holidayConfigured = await holidays(year, events); } catch (error) { warnings.push('공휴일을 불러오지 못했습니다.'); console.warn(error); }
-  const value = { events, configured: { academic: academicConfigured, holiday: holidayConfigured }, warnings, refreshedAt: new Date().toISOString() };
+  const value = { events, configured: { academic: academicConfigured, holiday: false }, warnings, refreshedAt: new Date().toISOString() };
   await CACHE.doc(String(year)).set(value);
   return value;
 }
@@ -69,7 +55,8 @@ export default async function handler(req, res) {
     const snapshot = await CACHE.doc(String(year)).get();
     const cached = snapshot.exists ? snapshot.data() : { events: {}, configured: { academic: false, holiday: false }, warnings: ['일정 캐시를 준비 중입니다.'] };
     const prefix = `${year}-${String(month).padStart(2, '0')}-`;
-    const events = Object.fromEntries(Object.entries(cached.events || {}).filter(([date]) => date.startsWith(prefix)));
+    // 공휴일은 나이스 학사일정에 이미 포함되어 있으므로, 이전 캐시에 남은 외부 API 데이터도 제외한다.
+    const events = Object.fromEntries(Object.entries(cached.events || {}).filter(([date]) => date.startsWith(prefix)).map(([date, list]) => [date, (list || []).filter((item) => item.type !== 'holiday')]));
     return res.status(200).json({ events, configured: cached.configured, warnings: cached.warnings || [], refreshedAt: cached.refreshedAt || null, cached: snapshot.exists });
   } catch (error) {
     console.error('calendar cache read error', error);
