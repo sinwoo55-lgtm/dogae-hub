@@ -436,6 +436,28 @@ input:checked+.tsl::before{transform:translateX(17px);}
 /* S4 전체 배경 */
 [class*="theme-"] #s4{background:var(--theme-bg-color);}
 
+/* 전역 다크 모드와 별개로, 완성된 배치표는 선택한 밝은 출력 테마를 유지한다. */
+html[data-theme="dark"] #s4.seating-light-output{background:var(--theme-bg-color,#F2F4FB)!important;color:var(--text)!important;}
+html[data-theme="dark"] #s4.seating-light-output .layout-area{background:var(--theme-bg,var(--bg))!important;color:var(--text)!important;}
+html[data-theme="dark"] #s4.seating-light-output .s4-top,
+html[data-theme="dark"] #s4.seating-light-output .hist-panel{background:var(--surface)!important;border-color:var(--border)!important;color:var(--text)!important;}
+html[data-theme="dark"] #s4.seating-light-output .s4-badge{color:var(--navy)!important;}
+html[data-theme="dark"] #s4.seating-light-output .theme-select,
+html[data-theme="dark"] #s4.seating-light-output .btn-secondary{background:var(--bg)!important;border-color:var(--border)!important;color:var(--navy)!important;}
+html[data-theme="dark"] #completeModal .modal{--bg:#F2F4FB!important;--surface:#fff!important;--text:#1A1E2E!important;--muted:#64748B!important;--border:#E0E5F0!important;--navy:#253E8A!important;--navy-dark:#182B6A!important;--navy-pale:#EEF2FB!important;background:#fff!important;color:#1A1E2E!important;}
+html[data-theme="dark"] #completeModal .modal .modal-title,
+html[data-theme="dark"] #completeModal .modal h1,
+html[data-theme="dark"] #completeModal .modal h2,
+html[data-theme="dark"] #completeModal .modal h3{color:#182B6A!important;}
+html[data-theme="dark"] .g-btn.m.on{background:#183B67!important;border-color:#5FA4E8!important;color:#A8D6FF!important;}
+html[data-theme="dark"] .g-btn.f.on{background:#4A254D!important;border-color:#D67BDE!important;color:#FFC0FA!important;}
+html[data-theme="dark"] .g-btn.ab.on{background:#4A2028!important;border-color:#E87986!important;color:#FFB3BC!important;}
+html[data-theme="dark"] .role-btn.president{background:#4D3610!important;border-color:#DFAF42!important;color:#FFE08A!important;}
+html[data-theme="dark"] .role-btn.vice{background:#123D5C!important;border-color:#4FA4D7!important;color:#A9DEFF!important;}
+/* 미설정 좌석은 빈자리보다 한 단계 밝게 보여, 클릭 전·후 상태를 즉시 구분할 수 있다. */
+html[data-theme="dark"] .pv-cell:not(.es){background:#34445F!important;border-color:#5C6D8B!important;color:#E5ECFA!important;}
+html[data-theme="dark"] .pv-cell.es{background:#1A2233!important;border-color:#37445B!important;color:#9CA3AF!important;}
+
 .print-comment{display:none;text-align:center;padding:16px 0 8px;font-size:14px;color:var(--theme-comment-color);font-family:var(--theme-font);}
 
 /* 테마들 */
@@ -592,6 +614,7 @@ input:checked+.tsl::before{transform:translateX(17px);}
 
 </style>
 <style>header{visibility:hidden}</style>
+  <script src="theme.js"></script>
 </head>
 <body>
 <header>
@@ -1744,6 +1767,24 @@ var THEMES={
   spring:'봄',summer:'여름',autumn:'가을',winter:'겨울',
   cute:'아기자기',kinder:'유치원'
 };
+var OUTPUT_PALETTE_VARS=['--bg','--surface','--text','--muted','--border','--navy','--navy-dark','--navy-pale','--theme-bg','--theme-bg-color','--theme-surface','--theme-seat','--theme-border','--theme-male-bg','--theme-male','--theme-female-bg','--theme-female','--theme-empty','--theme-gap','--theme-text','--theme-num','--theme-card-top','--theme-board-bg','--theme-board-text','--theme-comment-color','--theme-font'];
+var OUTPUT_LIGHT_PALETTE={
+  '--bg':'#F2F4FB','--surface':'#FFFFFF','--text':'#1A1E2E','--muted':'#64748B','--border':'#E0E5F0','--navy':'#253E8A','--navy-dark':'#182B6A','--navy-pale':'#EEF2FB',
+  '--theme-bg':'#F8F9FA','--theme-bg-color':'#F8F9FA','--theme-surface':'#FFFFFF','--theme-seat':'#FFFFFF','--theme-border':'#DEE2E6',
+  '--theme-male-bg':'#EAF3FF','--theme-male':'#3B82F6','--theme-female-bg':'#FFF0F7','--theme-female':'#EC4899','--theme-empty':'#F1F3F5','--theme-gap':'#868E96',
+  '--theme-text':'#1A1E2E','--theme-num':'#64748B','--theme-card-top':'#DEE2E6','--theme-board-bg':'#253E8A','--theme-board-text':'#FFFFFF','--theme-comment-color':'#1A1E2E','--theme-font':'Noto Sans KR'
+};
+function refreshOutputPalette(){
+  var output=document.getElementById('s4');
+  if(!output)return;
+  OUTPUT_PALETTE_VARS.forEach(function(name){output.style.removeProperty(name);});
+  var root=document.documentElement;
+  var dark=root.dataset.theme==='dark';
+  output.classList.toggle('seating-light-output',dark);
+  if(!dark)return;
+  /* 출력물은 화면 테마와 무관하게 항상 명확한 밝은 인쇄 팔레트를 사용한다. */
+  OUTPUT_PALETTE_VARS.forEach(function(name){output.style.setProperty(name,OUTPUT_LIGHT_PALETTE[name]||'', 'important');});
+}
 function applyTheme(t){
   curTheme=t;
   var body=document.body;
@@ -1752,7 +1793,9 @@ function applyTheme(t){
   /* 배치 영역 배경 */
   var la=document.querySelector('.layout-area');
   if(la) la.style.background='var(--theme-bg,var(--bg))';
+  refreshOutputPalette();
 }
+window.addEventListener('dogae-theme-change',refreshOutputPalette);
 document.getElementById('themeSelect').addEventListener('change',function(){
   applyTheme(this.value);
   showToast('테마: '+THEMES[this.value]);
@@ -1847,7 +1890,9 @@ function buildImageCanvas(isTeacher,cmt){
   cmt=cmt||'';
 
   /* 테마 변수 */
-  var cs=getComputedStyle(document.body);
+  /* 최종 화면에 고정한 밝은 출력 팔레트를 기준으로 이미지도 생성한다. */
+  refreshOutputPalette();
+  var cs=getComputedStyle(document.getElementById('s4'));
   function tv(n){return cs.getPropertyValue(n).trim()||'';}
   var bgColor  =tv('--theme-bg-color')||'#ffffff';
   var seatBg   =tv('--theme-seat')||'#ffffff';
