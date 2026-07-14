@@ -565,8 +565,14 @@ var ICONS = {
   default:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>'
 };
 
-var PALETTE = ['#253E8A','#1E7C5A','#7A3A7A','#B5500A','#2B8AB5','#C9284D','#3A6B3A','#6B3FA0','#1A6B6B','#8B3A3A','#5A6B00','#2A5A8A','#7A5C00'];
-var depts = ORG_DATA.departments.map(function(d,i){ return Object.assign({},d,{color:PALETTE[i%PALETTE.length],idx:i}); });
+var DEPARTMENT_COLORS = {
+  '교무기획부':'#253E8A','학생안전부':'#1E7C5A','교육연구부':'#7A3A7A',
+  '교육과정부':'#B5500A','학력관리부':'#2B8AB5','진로상담부':'#C9284D',
+  '정보부':'#3A6B3A','정보환경부':'#6B3FA0','교육지원부':'#1A6B6B',
+  '체육부':'#8B3A3A','1학년부':'#5A6B00','2학년부':'#2A5A8A','3학년부':'#7A5C00'
+};
+var PALETTE = Object.values(DEPARTMENT_COLORS);
+var depts = ORG_DATA.departments.map(function(d,i){ return Object.assign({},d,{color:DEPARTMENT_COLORS[d.name]||PALETTE[i%PALETTE.length],idx:i}); });
 
 var activeIdx   = null;
 var searchQuery = '';
@@ -778,5 +784,6 @@ document.getElementById('deptPopupOverlay').addEventListener('click', function(e
 
 buildGrid();
 </script>
+<script src="nav.js"></script>
 </body>
 </html>
