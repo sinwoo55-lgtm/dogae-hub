@@ -36,6 +36,10 @@
 | `FIREBASE_SERVICE_ACCOUNT_JSON` | Firebase Admin SDK 서비스 계정 JSON 전체 | Production, Preview |
 | `GROQ_API_KEY` | 진로 활동 전공 추천 API 키 | Production, Preview |
 | `SCHOOL_ALLOWED_CIDRS` | 서버 API의 추가 학교 IP CIDR 대역 | Production, Preview |
+| `NEIS_API_KEY` | 나이스 교육정보 개방 포털 학사일정 인증키 | Production, Preview |
+| `NEIS_OFFICE_CODE` | 나이스 교육청 코드 (도개중고등학교는 경상북도교육청 코드) | Production, Preview |
+| `NEIS_SCHOOL_CODE` | 나이스 학교 코드 | Production, Preview |
+| `HOLIDAY_API_KEY` | 공공데이터포털 특일 정보 API 서비스키 | Production, Preview |
 
 환경변수 변경 뒤에는 새 Vercel 배포가 필요합니다.
 
