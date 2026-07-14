@@ -40,8 +40,16 @@
 | `NEIS_OFFICE_CODE` | 나이스 교육청 코드 (도개중고등학교는 경상북도교육청 코드) | Production, Preview |
 | `NEIS_SCHOOL_CODE` | 나이스 학교 코드. 병설 학교는 중·고 코드를 쉼표로 연결 | Production, Preview |
 | `HOLIDAY_API_KEY` | 공공데이터포털 특일 정보 API 서비스키 | Production, Preview |
+| `CRON_SECRET` | 새벽 자동 캘린더 캐시 갱신용 임의의 긴 비밀 문자열 | Production |
 
 환경변수 변경 뒤에는 새 Vercel 배포가 필요합니다.
+
+## 캘린더 외부 일정 캐시
+
+- 매일 한국 시간 01:00에 나이스 학사일정과 공휴일 정보를 갱신합니다.
+- 현재 연도 기준 앞뒤 10년(총 21년)의 정보를 Firestore `calendar_cache`에 연도별로 저장합니다.
+- 교사가 캘린더를 열 때는 외부 API가 아닌 저장된 캐시만 읽습니다.
+- 최초 반영은 교내망에서 `/api/calendar-refresh`를 한 번 열어 실행하거나, 다음 새벽 자동 갱신을 기다리면 됩니다.
 
 ## Firestore Rules
 
