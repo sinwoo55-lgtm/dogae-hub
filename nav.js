@@ -1,25 +1,15 @@
 (function(){
   function init(){
-    var trigger=document.querySelector('a.back-btn, a.back');
-    if(!trigger)return;
-    var isCompact=trigger.classList.contains('back');
-    var header=trigger.closest('header');
-    var button=document.createElement('button');
-    button.type='button';button.className=trigger.className+' hub-menu-trigger';
-    button.setAttribute('aria-label','메뉴 열기');
-    button.innerHTML=isCompact?'☰':'☰ 메뉴';
-    trigger.replaceWith(button);
-    var target=header&&(isCompact?header:(header.querySelector('.header-right')||(header.children.length===2&&header.lastElementChild.tagName==='DIV'?header.lastElementChild:header)));
-    if(target)target.appendChild(button);
-    var style=document.createElement('style');
-    style.textContent='.hub-menu-trigger{position:relative!important;top:auto!important;right:auto!important;left:auto!important;z-index:auto!important;margin-left:12px!important;flex:0 0 auto!important;cursor:pointer!important;background:#fff!important;box-shadow:0 3px 12px rgba(12,24,58,.08)}header>.hub-menu-trigger{margin-left:auto!important}.hub-nav-shade{position:fixed;inset:0;background:rgba(12,24,58,.38);z-index:900;opacity:0;pointer-events:none;transition:.2s}.hub-nav-shade.open{opacity:1;pointer-events:auto}.hub-nav{position:fixed;right:0;top:0;bottom:0;width:min(330px,88vw);background:#fff;z-index:901;padding:25px;box-shadow:-16px 0 45px rgba(12,24,58,.2);transform:translateX(100%);transition:.24s;font-family:"Noto Sans KR",sans-serif}.hub-nav.open{transform:translateX(0)}.hub-nav-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;color:#182B6A;font-family:"Noto Serif KR",serif;font-size:19px}.hub-nav-close{width:34px;height:34px;border:0;border-radius:9px;background:#EEF2FB;color:#253E8A;font-size:22px;cursor:pointer}.hub-nav a{display:flex;gap:12px;align-items:center;padding:13px 11px;border-radius:10px;text-decoration:none;color:#1A1E2E;font-size:14px}.hub-nav a:hover{background:#EEF2FB;color:#253E8A}';
-    document.head.appendChild(style);
-    var shade=document.createElement('div');shade.className='hub-nav-shade';
-    var nav=document.createElement('aside');nav.className='hub-nav';
-    nav.innerHTML='<div class="hub-nav-head">메뉴 <button class="hub-nav-close">×</button></div><a href="index.html">▣&nbsp; 캘린더</a><a href="links.html">🔗&nbsp; 링크 모음</a><a href="mindmap.html">🧭&nbsp; 업무분장</a><a href="career.html">🌱&nbsp; 진로 활동 탐색기</a><a href="seating.html">▦&nbsp; 자리 배치표</a><a href="forms.html">▤&nbsp; 양식 자료실</a>';
-    document.body.append(shade,nav);
-    function toggle(open){shade.classList.toggle('open',open);nav.classList.toggle('open',open)}
-    button.addEventListener('click',function(){toggle(true)});shade.addEventListener('click',function(){toggle(false)});nav.querySelector('button').addEventListener('click',function(){toggle(false)});
+    var trigger=document.querySelector('a.back-btn, a.back'),header=trigger&&trigger.closest('header');
+    if(!trigger||!header)return;
+    var button=document.createElement('button');button.type='button';button.className='hub-menu-trigger';button.setAttribute('aria-label','메뉴 열기');button.textContent='☰ 메뉴';
+    var topbar=document.createElement('div');topbar.className='hub-topbar';topbar.innerHTML='<div class="hub-brand"><img src="logo.png" alt="도개중고등학교 로고"><div><b>도개중고등학교 정보 허브</b><small>DO GAE MIDDLE · HIGH SCHOOL</small></div></div><div class="hub-topbar-right"><span class="hub-date"></span></div>';
+    topbar.querySelector('.hub-date').textContent=new Date().toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric',weekday:'short'});
+    topbar.querySelector('.hub-topbar-right').appendChild(button);header.before(topbar);trigger.remove();
+    if(header.classList.contains('head'))header.style.display='none';else if(getComputedStyle(header).position==='sticky')header.style.top='68px';
+    var style=document.createElement('style');style.textContent='.hub-topbar{height:68px;background:rgba(255,255,255,.94);backdrop-filter:blur(14px);border-bottom:1px solid #DCE2F0;display:flex;align-items:center;justify-content:space-between;padding:0 clamp(16px,4vw,52px);position:sticky;top:0;z-index:850;font-family:"Noto Sans KR",sans-serif}.hub-brand{display:flex;align-items:center;gap:11px}.hub-brand img{width:38px;height:38px;object-fit:contain}.hub-brand b{display:block;font-family:"Noto Serif KR",serif;font-size:17px;color:#17245D}.hub-brand small{display:block;font-size:10px;letter-spacing:.08em;color:#68748A;margin-top:1px}.hub-topbar-right{display:flex;align-items:center;gap:10px}.hub-date{font-size:12px;color:#68748A}.hub-menu-trigger{height:34px;border:1px solid #DCE2F0;border-radius:10px;background:#fff;color:#253E8A;padding:0 12px;font:700 12px "Noto Sans KR",sans-serif;cursor:pointer}.hub-menu-trigger:hover{background:#EEF2FB}.hub-nav-shade{position:fixed;inset:0;background:rgba(12,24,58,.38);z-index:900;opacity:0;pointer-events:none;transition:.2s}.hub-nav-shade.open{opacity:1;pointer-events:auto}.hub-nav{position:fixed;right:0;top:0;bottom:0;width:min(330px,88vw);background:#fff;z-index:901;padding:25px;box-shadow:-16px 0 45px rgba(12,24,58,.2);transform:translateX(100%);transition:.24s;font-family:"Noto Sans KR",sans-serif}.hub-nav.open{transform:translateX(0)}.hub-nav-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;color:#182B6A;font-family:"Noto Serif KR",serif;font-size:19px}.hub-nav-close{width:34px;height:34px;border:0;border-radius:9px;background:#EEF2FB;color:#253E8A;font-size:22px;cursor:pointer}.hub-nav a{display:flex;gap:12px;align-items:center;padding:13px 11px;border-radius:10px;text-decoration:none;color:#1A1E2E;font-size:14px}.hub-nav a:hover{background:#EEF2FB;color:#253E8A}@media(max-width:520px){.hub-date{display:none}.hub-brand b{font-size:14px}.hub-brand small{font-size:8px}}';document.head.appendChild(style);
+    var shade=document.createElement('div');shade.className='hub-nav-shade';var nav=document.createElement('aside');nav.className='hub-nav';nav.innerHTML='<div class="hub-nav-head">메뉴 <button class="hub-nav-close">×</button></div><a href="index.html">▣&nbsp; 캘린더</a><a href="links.html">🔗&nbsp; 링크 모음</a><a href="mindmap.html">🧭&nbsp; 업무분장</a><a href="career.html">🌱&nbsp; 진로 활동 탐색기</a><a href="seating.html">▦&nbsp; 자리 배치표</a><a href="forms.html">▤&nbsp; 양식 자료실</a>';document.body.append(shade,nav);
+    function toggle(open){shade.classList.toggle('open',open);nav.classList.toggle('open',open)}button.onclick=function(){toggle(true)};shade.onclick=function(){toggle(false)};nav.querySelector('button').onclick=function(){toggle(false)};
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
