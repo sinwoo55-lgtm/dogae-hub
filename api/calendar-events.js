@@ -49,12 +49,12 @@ export async function refreshCalendarYear(year) {
 export default async function handler(req, res) {
   if (!allowJson(req, res, ['GET'])) return;
   if (!requireSchoolNetwork(req, res)) return;
-  const year = Number(req.query?.year), month = Number(req.query?.month);
-  if (!Number.isInteger(year) || year < 2020 || year > 2100 || !Number.isInteger(month) || month < 1 || month > 12) return res.status(400).json({ error: '연도 또는 월이 올바르지 않습니다.' });
+  const year = Number(req.query?.year), month = Number(req.query?.month), all = req.query?.all === '1';
+  if (!Number.isInteger(year) || year < 2020 || year > 2100 || (!all && (!Number.isInteger(month) || month < 1 || month > 12))) return res.status(400).json({ error: '연도 또는 월이 올바르지 않습니다.' });
   try {
     const snapshot = await CACHE.doc(String(year)).get();
     const cached = snapshot.exists ? snapshot.data() : { events: {}, configured: { academic: false, holiday: false }, warnings: ['일정 캐시를 준비 중입니다.'] };
-    const prefix = `${year}-${String(month).padStart(2, '0')}-`;
+    const prefix = all ? `${year}-` : `${year}-${String(month).padStart(2, '0')}-`;
     // 공휴일은 나이스 학사일정에 이미 포함되어 있으므로, 이전 캐시에 남은 외부 API 데이터도 제외한다.
     const events = Object.fromEntries(Object.entries(cached.events || {}).filter(([date]) => date.startsWith(prefix)).map(([date, list]) => [date, (list || []).filter((item) => item.type !== 'holiday')]));
     return res.status(200).json({ events, configured: cached.configured, warnings: cached.warnings || [], refreshedAt: cached.refreshedAt || null, cached: snapshot.exists });
