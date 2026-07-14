@@ -436,6 +436,25 @@ input:checked+.tsl::before{transform:translateX(17px);}
 /* S4 전체 배경 */
 [class*="theme-"] #s4{background:var(--theme-bg-color);}
 
+/* 전역 다크 모드와 별개로, 완성된 배치표는 선택한 밝은 출력 테마를 유지한다. */
+html[data-theme="dark"] #s4.seating-light-output{background:var(--theme-bg-color,#F2F4FB)!important;color:var(--text)!important;}
+html[data-theme="dark"] #s4.seating-light-output .layout-area{background:var(--theme-bg,var(--bg))!important;color:var(--text)!important;}
+html[data-theme="dark"] #s4.seating-light-output .s4-top,
+html[data-theme="dark"] #s4.seating-light-output .hist-panel{background:var(--surface)!important;border-color:var(--border)!important;color:var(--text)!important;}
+html[data-theme="dark"] #s4.seating-light-output .s4-badge{color:var(--navy)!important;}
+html[data-theme="dark"] #s4.seating-light-output .theme-select,
+html[data-theme="dark"] #s4.seating-light-output .btn-secondary{background:var(--bg)!important;border-color:var(--border)!important;color:var(--navy)!important;}
+html[data-theme="dark"] #completeModal .modal{--bg:#F2F4FB!important;--surface:#fff!important;--text:#1A1E2E!important;--muted:#64748B!important;--border:#E0E5F0!important;--navy:#253E8A!important;--navy-dark:#182B6A!important;--navy-pale:#EEF2FB!important;background:#fff!important;color:#1A1E2E!important;}
+html[data-theme="dark"] #completeModal .modal .modal-title,
+html[data-theme="dark"] #completeModal .modal h1,
+html[data-theme="dark"] #completeModal .modal h2,
+html[data-theme="dark"] #completeModal .modal h3{color:#182B6A!important;}
+html[data-theme="dark"] .g-btn.m.on{background:#183B67!important;border-color:#5FA4E8!important;color:#A8D6FF!important;}
+html[data-theme="dark"] .g-btn.f.on{background:#4A254D!important;border-color:#D67BDE!important;color:#FFC0FA!important;}
+html[data-theme="dark"] .g-btn.ab.on{background:#4A2028!important;border-color:#E87986!important;color:#FFB3BC!important;}
+html[data-theme="dark"] .role-btn.president{background:#4D3610!important;border-color:#DFAF42!important;color:#FFE08A!important;}
+html[data-theme="dark"] .role-btn.vice{background:#123D5C!important;border-color:#4FA4D7!important;color:#A9DEFF!important;}
+
 .print-comment{display:none;text-align:center;padding:16px 0 8px;font-size:14px;color:var(--theme-comment-color);font-family:var(--theme-font);}
 
 /* 테마들 */
@@ -1745,6 +1764,24 @@ var THEMES={
   spring:'봄',summer:'여름',autumn:'가을',winter:'겨울',
   cute:'아기자기',kinder:'유치원'
 };
+var OUTPUT_PALETTE_VARS=['--bg','--surface','--text','--muted','--border','--navy','--navy-dark','--navy-pale','--theme-bg','--theme-bg-color','--theme-surface','--theme-seat','--theme-border','--theme-male-bg','--theme-male','--theme-female-bg','--theme-female','--theme-empty','--theme-gap','--theme-text','--theme-num','--theme-card-top','--theme-board-bg','--theme-board-text','--theme-comment-color','--theme-font'];
+function refreshOutputPalette(){
+  var output=document.getElementById('s4');
+  if(!output)return;
+  OUTPUT_PALETTE_VARS.forEach(function(name){output.style.removeProperty(name);});
+  var root=document.documentElement;
+  var dark=root.dataset.theme==='dark';
+  output.classList.toggle('seating-light-output',dark);
+  if(!dark)return;
+  /* 다크 속성을 잠시 제거해 현재 선택된 배치 테마의 원래(밝은) 변수를 읽는다. */
+  var mode=root.dataset.theme;
+  delete root.dataset.theme;
+  var colors=getComputedStyle(document.body);
+  var values={};
+  OUTPUT_PALETTE_VARS.forEach(function(name){values[name]=colors.getPropertyValue(name).trim();});
+  root.dataset.theme=mode;
+  OUTPUT_PALETTE_VARS.forEach(function(name){if(values[name])output.style.setProperty(name,values[name],'important');});
+}
 function applyTheme(t){
   curTheme=t;
   var body=document.body;
@@ -1753,7 +1790,9 @@ function applyTheme(t){
   /* 배치 영역 배경 */
   var la=document.querySelector('.layout-area');
   if(la) la.style.background='var(--theme-bg,var(--bg))';
+  refreshOutputPalette();
 }
+window.addEventListener('dogae-theme-change',refreshOutputPalette);
 document.getElementById('themeSelect').addEventListener('change',function(){
   applyTheme(this.value);
   showToast('테마: '+THEMES[this.value]);
@@ -1848,7 +1887,9 @@ function buildImageCanvas(isTeacher,cmt){
   cmt=cmt||'';
 
   /* 테마 변수 */
-  var cs=getComputedStyle(document.body);
+  /* 최종 화면에 고정한 밝은 출력 팔레트를 기준으로 이미지도 생성한다. */
+  refreshOutputPalette();
+  var cs=getComputedStyle(document.getElementById('s4'));
   function tv(n){return cs.getPropertyValue(n).trim()||'';}
   var bgColor  =tv('--theme-bg-color')||'#ffffff';
   var seatBg   =tv('--theme-seat')||'#ffffff';
