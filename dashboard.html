@@ -540,7 +540,7 @@
   <div class="view-tabs">
     <button class="view-tab active" data-vview="calendar">📅 캘린더</button>
     <button class="view-tab" data-vview="board">🗂 게시판</button>
-    <button class="view-tab" data-vview="links">🔗 링크 모음</button>
+    <button class="view-tab" id="linkManageTab" data-vview="links">🔗 링크 관리</button>
   </div>
 
   <div class="header-right">
@@ -805,9 +805,13 @@
 /* ═══ 학교망 서버 API ═══ */
 var ADMIN_ID='admin', ADMIN_PW='admin';
 function applyDashboard(data){
+  var signature=JSON.stringify({posts:data.posts||[],links:data.links||[],departments:data.departments||[]});
+  if(signature===lastDashboardSignature)return false;
+  lastDashboardSignature=signature;
   posts=data.posts||[];links=data.links||[];
   departments=(data.departments&&data.departments.length)?data.departments:DEFAULT_DEPTS;
   populateDeptFilter();populateDeptSelect();populateLinkDeptSelect();renderAll();
+  return true;
 }
 function dashboardRequest(method,body){
   return fetch('/api/dashboard',{method:method,headers:{'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined})
@@ -837,6 +841,7 @@ var COLOR_POOL = ['#B14A3B','#3E6B8A','#4C7A52','#C08A2E','#6B5B95','#A24B72','#
 
 /* ═══ 상태 ═══ */
 var posts=[], links=[], departments=[], editingId=null, popupId=null, editingLinkId=null;
+var lastDashboardSignature='';
 var curView='calendar';
 var curFilter='all', curSort='deadline', dashSearch='', linkOnly=false, deptFilterVal='all';
 var isAdmin=sessionStorage.getItem('isAdmin')==='true';
@@ -1394,6 +1399,8 @@ function refreshAdminSession(){updateAdminUI();}
 function updateAdminUI(){
   document.getElementById('adminBadge').classList.toggle('show',isAdmin);
   document.getElementById('adminTools').classList.toggle('show',isAdmin);
+  document.getElementById('linkManageTab').style.display=isAdmin?'inline-flex':'none';
+  if(!isAdmin&&curView==='links')switchView('calendar');
   renderAll();
 }
 
