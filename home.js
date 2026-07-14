@@ -28,7 +28,7 @@
     if(!selectedDay&&!selectedPost){detail.innerHTML='<div class="day-detail-title">날짜를 선택하면 해당 공지와 일정을 표시합니다.</div>';return}
     var list=selectedPost?[selectedPost]:dayPosts(selectedDay);
     var rows=list.length?list.map(function(p){return '<div class="day-detail-item"><b>• '+esc(p.content)+'</b><small>'+esc(p.author||'작성자 미지정')+(p.dept?' · '+esc(p.dept):'')+' · '+rangeText(p)+'</small>'+(p.link?'<a href="'+esc(p.link)+'" target="_blank" rel="noopener">연결된 링크 ↗</a>':'')+(admin()?'<span class="day-item-actions"><button data-edit="'+p.id+'">수정</button><button data-delete="'+p.id+'">삭제</button></span>':'')+'</div>'}).join(''):'<div class="day-detail-item">등록된 공지나 일정이 없습니다.</div>';
-    detail.innerHTML='<div class="day-detail-title">'+(selectedPost?'공지 상세':dateLabel(selectedDay)+' 공지·일정')+'</div>'+rows+(admin()?'<button class="day-add" id="dayAdd">＋ '+(selectedPost?'새 공지·일정':'이 날짜에 공지·일정')+' 등록</button>':'');
+    detail.innerHTML='<div class="day-detail-title">'+(selectedPost?'공지 상세':dateLabel(selectedDay)+' 공지·일정')+'</div>'+rows+'<button class="day-add" id="dayAdd">＋ '+(selectedPost?'새 공지·일정':'이 날짜에 공지·일정')+' 등록</button>';
     var add=q('dayAdd');if(add)add.onclick=function(){openQuick(null)};
     detail.querySelectorAll('[data-edit]').forEach(function(button){button.onclick=function(){openQuick(posts.find(function(p){return p.id===button.dataset.edit}))}});
     detail.querySelectorAll('[data-delete]').forEach(function(button){button.onclick=function(){removePost(button.dataset.delete)}});
@@ -40,10 +40,10 @@
   };
   window.render=function(){window.renderCalendar();window.renderBoard();renderDetail()};
   window.changeCalendarMonth=function(delta){viewDate.setMonth(viewDate.getMonth()+delta);selectedDay='';selectedPost=null;window.render()};
-  window.updateHomeAdmin=function(){var add=q('addSchedule');if(add){add.hidden=!admin();add.onclick=function(){selectedPost=null;selectedDay=selectedDay||new Date().toISOString().slice(0,10);openQuick(null)}}window.render()};
+  window.updateHomeAdmin=function(){var add=q('addSchedule');if(add){add.hidden=false;add.onclick=function(){selectedPost=null;selectedDay=selectedDay||new Date().toISOString().slice(0,10);openQuick(null)}}window.render()};
   function departmentOptions(selected){return '<option value="">선택 안 함</option>'+(departments||[]).map(function(d){return '<option value="'+esc(d.name)+'"'+(d.name===selected?' selected':'')+'>'+esc(d.name)+'</option>'}).join('')}
   function openQuick(post){
-    editingId=post?post.id:null;q('quickTitle').textContent=post?'공지·일정 수정':'공지·일정 등록';q('quickAuthor').value=post?post.author||'':'관리자';q('quickContent').value=post?post.content||'':'';q('quickDept').innerHTML=departmentOptions(post?post.dept:'');q('quickStart').value=post?start(post):selectedDay;q('quickEnd').value=post?end(post):selectedDay;q('quickLink').value=post?post.link||'':'';modal.hidden=false;q('quickContent').focus();
+    editingId=post?post.id:null;q('quickTitle').textContent=post?'공지·일정 수정':'공지·일정 등록';q('quickAuthor').value=post?post.author||'':'';q('quickContent').value=post?post.content||'':'';q('quickDept').innerHTML=departmentOptions(post?post.dept:'');q('quickStart').value=post?start(post):selectedDay;q('quickEnd').value=post?end(post):selectedDay;q('quickLink').value=post?post.link||'':'';modal.hidden=false;q('quickContent').focus();
   }
   q('quickCancel').onclick=function(){modal.hidden=true};modal.onclick=function(e){if(e.target===modal)modal.hidden=true};
   q('quickSave').onclick=async function(){
