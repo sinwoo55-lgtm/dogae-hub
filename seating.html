@@ -454,6 +454,9 @@ html[data-theme="dark"] .g-btn.f.on{background:#4A254D!important;border-color:#D
 html[data-theme="dark"] .g-btn.ab.on{background:#4A2028!important;border-color:#E87986!important;color:#FFB3BC!important;}
 html[data-theme="dark"] .role-btn.president{background:#4D3610!important;border-color:#DFAF42!important;color:#FFE08A!important;}
 html[data-theme="dark"] .role-btn.vice{background:#123D5C!important;border-color:#4FA4D7!important;color:#A9DEFF!important;}
+/* 미설정 좌석은 빈자리보다 한 단계 밝게 보여, 클릭 전·후 상태를 즉시 구분할 수 있다. */
+html[data-theme="dark"] .pv-cell:not(.es){background:#34445F!important;border-color:#5C6D8B!important;color:#E5ECFA!important;}
+html[data-theme="dark"] .pv-cell.es{background:#1A2233!important;border-color:#37445B!important;color:#9CA3AF!important;}
 
 .print-comment{display:none;text-align:center;padding:16px 0 8px;font-size:14px;color:var(--theme-comment-color);font-family:var(--theme-font);}
 
@@ -1765,6 +1768,12 @@ var THEMES={
   cute:'아기자기',kinder:'유치원'
 };
 var OUTPUT_PALETTE_VARS=['--bg','--surface','--text','--muted','--border','--navy','--navy-dark','--navy-pale','--theme-bg','--theme-bg-color','--theme-surface','--theme-seat','--theme-border','--theme-male-bg','--theme-male','--theme-female-bg','--theme-female','--theme-empty','--theme-gap','--theme-text','--theme-num','--theme-card-top','--theme-board-bg','--theme-board-text','--theme-comment-color','--theme-font'];
+var OUTPUT_LIGHT_PALETTE={
+  '--bg':'#F2F4FB','--surface':'#FFFFFF','--text':'#1A1E2E','--muted':'#64748B','--border':'#E0E5F0','--navy':'#253E8A','--navy-dark':'#182B6A','--navy-pale':'#EEF2FB',
+  '--theme-bg':'#F8F9FA','--theme-bg-color':'#F8F9FA','--theme-surface':'#FFFFFF','--theme-seat':'#FFFFFF','--theme-border':'#DEE2E6',
+  '--theme-male-bg':'#EAF3FF','--theme-male':'#3B82F6','--theme-female-bg':'#FFF0F7','--theme-female':'#EC4899','--theme-empty':'#F1F3F5','--theme-gap':'#868E96',
+  '--theme-text':'#1A1E2E','--theme-num':'#64748B','--theme-card-top':'#DEE2E6','--theme-board-bg':'#253E8A','--theme-board-text':'#FFFFFF','--theme-comment-color':'#1A1E2E','--theme-font':'Noto Sans KR'
+};
 function refreshOutputPalette(){
   var output=document.getElementById('s4');
   if(!output)return;
@@ -1773,14 +1782,8 @@ function refreshOutputPalette(){
   var dark=root.dataset.theme==='dark';
   output.classList.toggle('seating-light-output',dark);
   if(!dark)return;
-  /* 다크 속성을 잠시 제거해 현재 선택된 배치 테마의 원래(밝은) 변수를 읽는다. */
-  var mode=root.dataset.theme;
-  delete root.dataset.theme;
-  var colors=getComputedStyle(document.body);
-  var values={};
-  OUTPUT_PALETTE_VARS.forEach(function(name){values[name]=colors.getPropertyValue(name).trim();});
-  root.dataset.theme=mode;
-  OUTPUT_PALETTE_VARS.forEach(function(name){if(values[name])output.style.setProperty(name,values[name],'important');});
+  /* 출력물은 화면 테마와 무관하게 항상 명확한 밝은 인쇄 팔레트를 사용한다. */
+  OUTPUT_PALETTE_VARS.forEach(function(name){output.style.setProperty(name,OUTPUT_LIGHT_PALETTE[name]||'', 'important');});
 }
 function applyTheme(t){
   curTheme=t;
