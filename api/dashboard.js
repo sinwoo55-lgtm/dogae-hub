@@ -4,6 +4,7 @@ import { allowJson, text } from '../lib/http.js';
 import { requireSchoolNetwork } from '../lib/school-access.js';
 
 const POSTS = db.collection('dashboard_posts');
+const POST_TRASH = db.collection('dashboard_post_trash');
 const LINKS = db.collection('dashboard_links');
 const DEPARTMENTS = db.collection('dashboard_meta').doc('departments');
 
@@ -63,13 +64,18 @@ function departmentList(value) {
 }
 
 async function snapshot(res) {
-  const [posts, links, departments] = await Promise.all([
+  const now = Date.now();
+  const expired = await POST_TRASH.where('expiresAt', '<=', now).get();
+  if (!expired.empty) { const batch = db.batch(); expired.docs.forEach((doc) => batch.delete(doc.ref)); await batch.commit(); }
+  const [posts, trash, links, departments] = await Promise.all([
     POSTS.orderBy('ts', 'desc').get(),
+    POST_TRASH.orderBy('deletedAt', 'desc').get(),
     LINKS.orderBy('ts', 'desc').get(),
     DEPARTMENTS.get(),
   ]);
   res.status(200).json({
     posts: posts.docs.map((doc) => ({ id: doc.id, ...asJson(doc.data()) })),
+    trash: trash.docs.map((doc) => ({ id: doc.id, ...asJson(doc.data()) })),
     links: links.docs.map((doc) => ({ id: doc.id, ...asJson(doc.data()) })),
     departments: departments.exists ? asJson(departments.data().list || []) : null,
   });
@@ -89,7 +95,22 @@ export default async function handler(req, res) {
       if (id && validId(id)) await POSTS.doc(id).update(next);
       else await POSTS.add({ ...next, createdAt: new Date().toLocaleDateString('ko-KR'), newUntil: Date.now() + (24 * 60 * 60 * 1000), ts: FieldValue.serverTimestamp() });
     } else if (action === 'post:delete' && validId(id)) {
-      await POSTS.doc(id).delete();
+      await db.runTransaction(async (tx) => {
+        const source = POSTS.doc(id); const snap = await tx.get(source);
+        if (!snap.exists) throw new Error('일정을 찾을 수 없습니다.');
+        const deletedAt = Date.now();
+        tx.set(POST_TRASH.doc(), { ...snap.data(), deletedAt, expiresAt: deletedAt + (14 * 24 * 60 * 60 * 1000), origId: id });
+        tx.delete(source);
+      });
+    } else if (action === 'post:trash-restore' && validId(id)) {
+      await db.runTransaction(async (tx) => {
+        const source = POST_TRASH.doc(id); const snap = await tx.get(source);
+        if (!snap.exists) throw new Error('휴지통에서 일정을 찾을 수 없습니다.');
+        const item = snap.data();
+        if (Number(item.expiresAt || 0) <= Date.now()) { tx.delete(source); throw new Error('보관 기간이 지나 복원할 수 없습니다.'); }
+        const restored = { ...item }; delete restored.deletedAt; delete restored.expiresAt; delete restored.origId;
+        tx.set(POSTS.doc(item.origId), { ...restored, ts: FieldValue.serverTimestamp() }); tx.delete(source);
+      });
     } else if (action === 'post:delete-many' && Array.isArray(ids) && ids.length <= 100 && ids.every(validId)) {
       const batch = db.batch();
       ids.forEach((postId) => batch.delete(POSTS.doc(postId)));
