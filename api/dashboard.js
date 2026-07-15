@@ -21,6 +21,10 @@ function validId(value) {
   return typeof value === 'string' && /^[A-Za-z0-9_-]{1,150}$/.test(value);
 }
 
+function validParticipantId(value) {
+  return typeof value === 'string' && value.length > 0 && value.length <= 150 && !value.includes('/');
+}
+
 function date(value) {
   return value === '' || (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) ? value : null;
 }
@@ -36,7 +40,7 @@ function postData(value) {
   const isNotice = value.isNotice === true;
   const rawParticipants = value.participants === undefined ? [] : value.participants;
   if (!Array.isArray(rawParticipants) || rawParticipants.length > 500) return null;
-  const participants = [...new Set(rawParticipants.filter(validId))];
+  const participants = [...new Set(rawParticipants.filter(validParticipantId))];
   if (!author || !title || content === null || link === null || dept === null || start === null || end === null) return null;
   if (link && !/^https?:\/\//i.test(link)) return null;
   if (start && end && start > end) return null;
