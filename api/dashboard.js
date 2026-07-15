@@ -34,10 +34,13 @@ function postData(value) {
   const start = date(value.start ?? '');
   const end = date(value.end ?? '');
   const isNotice = value.isNotice === true;
+  const rawParticipants = value.participants === undefined ? [] : value.participants;
+  if (!Array.isArray(rawParticipants) || rawParticipants.length > 500) return null;
+  const participants = [...new Set(rawParticipants.filter(validId))];
   if (!author || !title || content === null || link === null || dept === null || start === null || end === null) return null;
   if (link && !/^https?:\/\//i.test(link)) return null;
   if (start && end && start > end) return null;
-  return { author, title, content, link, dept, isNotice, start, end, deadline: end || start || '' };
+  return { author, title, content, link, dept, isNotice, start, end, participants, deadline: end || start || '' };
 }
 
 function linkData(value) {
