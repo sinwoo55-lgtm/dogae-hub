@@ -626,12 +626,12 @@ mark{background:#FFF3CD;border-radius:2px;padding:0 1px;}
 /* 학교망 서버 API */
 var ADMIN_ID='admin', ADMIN_PW='admin';
 function careerRequest(method,body){return fetch('/api/career',{method:method,headers:{'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined}).then(function(r){return r.json().then(function(data){if(!r.ok)throw new Error(data.error||'요청에 실패했습니다.');return data;});});}
-function applyCareer(data){acts=data.acts||[];trashedActs=data.trash||[];render();updateTrashBadge();if(document.getElementById('trashOverlay').classList.contains('active'))renderTrash();}
+function applyCareer(data){acts=data.acts||[];trashedActs=data.trash||[];careerLoaded=true;render();updateTrashBadge();if(document.getElementById('trashOverlay').classList.contains('active'))renderTrash();}
 function loadCareer(){return careerRequest('GET').then(applyCareer).catch(function(err){console.error(err);alert(err.message||'진로 활동을 불러오지 못했습니다.');});}
 function careerAction(action,payload){return careerRequest('POST',Object.assign({action:action},payload||{})).then(applyCareer).catch(function(err){alert(err.message||'저장하지 못했습니다.');throw err;});}
 
 /* ── 상태 ── */
-var acts=[],trashedActs=[];
+var acts=[],trashedActs=[],careerLoaded=false;
 var isAdmin=sessionStorage.getItem('isAdmin')==='true';
 var filterGrade='전체',filterStream='전체',filterSem='전체',searchQ='';
 var editingId=null,popupId=null,deletePendingId=null;
@@ -687,6 +687,14 @@ function updateAutocomplete(q){
 function render(){
   var grid=document.getElementById('mainGrid');
   grid.querySelectorAll('.act-card').forEach(function(el){el.remove();});
+  var empty=document.getElementById('emptyState');
+  if(!careerLoaded){
+    empty.classList.add('show');
+    empty.querySelector('h3').textContent='정보를 불러오는 중입니다';
+    document.getElementById('emptyMsg').textContent='잠시만 기다려주세요';
+    document.getElementById('actCount').textContent='';
+    return;
+  }
   var q=searchQ.trim();
   var filtered=acts.filter(function(a){
     var gOk=filterGrade==='전체'||a.grade===filterGrade;
@@ -700,9 +708,9 @@ function render(){
            (a.tags||[]).some(function(t){return t.toLowerCase().includes(lq);});
   });
   document.getElementById('actCount').textContent=filtered.length+'개 활동';
-  var empty=document.getElementById('emptyState');
   if(!filtered.length){
     empty.classList.add('show');
+    empty.querySelector('h3').textContent=q?'검색 결과가 없습니다':'등록된 활동이 없습니다';
     document.getElementById('emptyMsg').textContent=q?'"'+q+'" 검색 결과가 없습니다':'등록된 활동이 없습니다';
     return;
   }
