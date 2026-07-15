@@ -60,6 +60,7 @@
     .week{border-bottom:0!important;padding-bottom:6px}.calendar{border-bottom:1px solid #C7D2E5}.calendar .day.blank{visibility:visible!important;pointer-events:none;background:#fff}.calendar .day.blank:hover{background:#fff}
     .calendar-suggestion em{display:inline-block;margin-right:5px;padding:1px 4px;border-radius:4px;background:#EAF0FF;color:#253E8A;font-style:normal;font-size:9px}.calendar-search-badge{display:inline-block;margin-right:6px;padding:2px 6px;border-radius:5px;background:#EAF0FF;color:#253E8A;font:700 9px/1 'Noto Sans KR',sans-serif}.calendar-search-badge.holiday{background:#FFF0F0;color:#B4232D}.calendar-search-result{cursor:default}.calendar-search-result:hover{background:transparent}
     .month-nav .today-month{min-width:46px;padding:0 8px;font-size:11px;font-weight:700;background:#F7F9FE}
+    html[data-theme="dark"] .today-label{color:#fff!important}
   </style>
   <script src="theme.js"></script>
 </head>
@@ -77,7 +78,7 @@
     </section>
   </main>
   <div class="drawer-back" id="drawerBack"></div>
-  <aside class="drawer" id="drawer"><div class="drawer-head"><b>메뉴</b><button class="close" id="closeDrawer">×</button></div><a class="nav-link" href="links.html"><span class="nav-icon">🔗</span>링크 모음</a><a class="nav-link" href="mindmap.html"><span class="nav-icon">🗂️</span>업무분장</a><a class="nav-link" href="career.html"><span class="nav-icon">🌱</span>진로 활동 탐색기</a><a class="nav-link" href="seating.html"><span class="nav-icon">🪑</span>학급 자리 배치</a><div id="themeToggle"></div></aside>
+  <aside class="drawer" id="drawer"><div class="drawer-head"><b>메뉴</b><button class="close" id="closeDrawer">×</button></div><a class="nav-link" href="links.html"><span class="nav-icon">🔗</span>링크 모음</a><a class="nav-link" href="mindmap.html"><span class="nav-icon">🗂️</span>업무분장</a><a class="nav-link" href="students.html"><span class="nav-icon">👥</span>학생관리</a><a class="nav-link" href="career.html"><span class="nav-icon">🌱</span>진로 활동 탐색기</a><a class="nav-link" href="seating.html"><span class="nav-icon">🪑</span>학급 자리 배치</a><a class="nav-link" href="forms.html"><span class="nav-icon">📄</span>양식 자료실</a><div id="themeToggle"></div></aside>
   <div class="modal-back" id="adminModal"><div class="modal"><h2>관리자 확인</h2><p>관리자 모드에서 공지와 링크를 수정할 수 있습니다.</p><label for="adminId">아이디</label><input id="adminId" autocomplete="username"><label for="adminPw">비밀번호</label><input id="adminPw" type="password" autocomplete="current-password"><div class="error" id="adminError">아이디 또는 비밀번호가 올바르지 않습니다.</div><button id="adminLogin">로그인</button><button class="cancel" id="adminCancel">취소</button></div></div>
   <script>
     const ADMIN_ID='admin', ADMIN_PW='admin';
