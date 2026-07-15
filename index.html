@@ -120,8 +120,10 @@
     $('logoWrap').onclick=()=>{location.href='index.html'};$('todayText').onclick=()=>{if(sessionStorage.getItem('isAdmin')==='true')return;clicks++;clearTimeout(clickTimer);if(clicks>=5){clicks=0;$('adminModal').classList.add('show');$('adminId').focus()}else clickTimer=setTimeout(()=>clicks=0,2000)};
     $('adminLogin').onclick=()=>{if($('adminId').value.trim()===ADMIN_ID&&$('adminPw').value===ADMIN_PW){sessionStorage.setItem('isAdmin','true');$('adminModal').classList.remove('show');updateAdmin()}else $('adminError').style.display='block'};$('adminLogout').onclick=()=>{sessionStorage.removeItem('isAdmin');updateAdmin()};$('adminCancel').onclick=()=>$('adminModal').classList.remove('show');$('adminModal').onclick=e=>{if(e.target===$('adminModal'))$('adminModal').classList.remove('show')};
     document.addEventListener('keydown',e=>{if(e.key==='Escape'){drawer(false);$('adminModal').classList.remove('show')}if(e.key==='Enter'&&$('adminModal').classList.contains('show'))$('adminLogin').click()});
-    updateAdmin();sync();setInterval(sync,30000);
+    window.addEventListener('dogae-realtime-posts',event=>{posts=event.detail||[];lastSignature=JSON.stringify({posts,trash:trashPosts,departments});render();});
+    updateAdmin();sync();
   </script>
   <script src="home.js"></script>
+  <script src="realtime.js"></script>
 </body>
 </html>
