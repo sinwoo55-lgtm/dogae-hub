@@ -13,7 +13,6 @@
     var topbar=document.createElement('div');topbar.className='hub-topbar';topbar.innerHTML='<div class="hub-brand"><img src="logo.png" alt="도개중고등학교 로고"><div><b>'+info.ko+'</b><small>'+info.en+'</small></div></div><div class="hub-topbar-right"><span class="hub-date"></span></div>';
     topbar.querySelector('.hub-date').textContent=new Date().toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric',weekday:'short'});
     var right=topbar.querySelector('.hub-topbar-right'),sourceLogo=header.querySelector('#logoWrap'),linkAdminPage=!sourceLogo&&location.pathname.split('/').pop()==='links.html',linkAdminControls;
-    if(sourceLogo||linkAdminPage){topbar.querySelector('.hub-date').style.cursor='pointer';topbar.querySelector('.hub-date').title='관리자 로그인'}
     var tools=header.querySelector('.header-right');
     if(tools){Array.from(tools.children).forEach(function(el){if(!el.matches('.logo-wrap,.header-logo'))right.appendChild(el)})}
     var deptTotal=header.querySelector('.dept-total');
