@@ -51,6 +51,7 @@
 | `DISCIPLINE_SYNC_SECRET` | 선도부 앱과 동일하게 설정할 긴 공유 비밀 문자열 | Production |
 | `SCHOOL_GUARD_ROSTER_URL` | 선도부 앱 Vercel의 `/api/roster-import` 전체 주소 | Production |
 | `SCHOOL_GUARD_ROSTER_SECRET` | 선도부 앱과 동일하게 설정할 명단 동기화 비밀 문자열 | Production |
+| `SCHOOL_GUARD_VERCEL_BYPASS_SECRET` | 선도부 Vercel Preview의 Deployment Protection 자동화 우회 비밀키 | Preview |
 
 환경변수 변경 뒤에는 새 Vercel 배포가 필요합니다.
 
@@ -62,6 +63,7 @@
 - 최초 테스트는 교내망에서 `/api/calendar-refresh?span=0`를 열어 현재 연도만 빠르게 저장한 뒤 확인합니다.
 - 지적사항은 브라우저에 저장하지 않으며, 학생관리의 `지적사항 조회`에서 학급을 선택할 때만 서버에서 읽습니다. 첫 동기화는 환경변수 설정 뒤 교내망에서 `/api/discipline-sync`를 열어 실행할 수 있습니다.
 - 학생 명단의 원본은 정보 허브입니다. 관리자 명단 업로드·학생 추가·수정·삭제가 완료될 때만 선도부 앱으로 전체 명단을 전송합니다. 선도부에서 누락된 학생은 비활성 처리되어 과거 지적 기록은 남습니다.
+- 선도부 Preview가 Vercel Authentication으로 보호되는 경우, 선도부 프로젝트의 `Deployment Protection → Protection Bypass for Automation`에서 생성한 비밀키를 정보 허브 Preview의 `SCHOOL_GUARD_VERCEL_BYPASS_SECRET`에 저장합니다.
 
 ## Firestore Rules
 
