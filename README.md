@@ -20,10 +20,14 @@
   → Vercel Middleware: 학교 IP 확인
   → Vercel API: 입력값 처리 및 Firebase Admin SDK 호출
   → Cloud Firestore
+
+메인 일정 실시간 수신
+  → Vercel `/api/realtime-token`: 학교 IP 확인 후 짧은 읽기 전용 토큰 발급
+  → 브라우저 Firestore 리스너: `dashboard_posts`만 실시간 읽기
 ```
 
-- 브라우저는 Firestore에 직접 연결하지 않습니다.
-- Firestore Rules는 모든 브라우저 요청을 차단합니다.
+- 일반 데이터와 모든 쓰기는 브라우저가 Firestore에 직접 연결하지 않습니다.
+- 메인 일정만 학교망 자동 인증 토큰으로 실시간 읽습니다. 학생 명렬은 계속 서버 API로만 접근합니다.
 - 서버 API는 Firebase 서비스 계정으로 Firestore에 접근합니다.
 - 현재 학교 IP 허용 목록은 유선망 `117.110.113.*`와 무선망 `117.111.141.213`입니다. 학교 공인 IP가 바뀌면 `middleware.js`와 `lib/school-access.js`를 함께 갱신해야 합니다.
 
@@ -34,6 +38,7 @@
 | 이름 | 용도 | 적용 환경 |
 | --- | --- | --- |
 | `FIREBASE_SERVICE_ACCOUNT_JSON` | Firebase Admin SDK 서비스 계정 JSON 전체 | Production, Preview |
+| `FIREBASE_WEB_API_KEY` | Firebase 웹 앱 설정의 API 키. 브라우저 실시간 일정 인증용 공개 키 | Production, Preview |
 | `GROQ_API_KEY` | 진로 활동 전공 추천 API 키 | Production, Preview |
 | `SCHOOL_ALLOWED_CIDRS` | 서버 API의 추가 학교 IP CIDR 대역 | Production, Preview |
 | `NEIS_API_KEY` | 나이스 교육정보 개방 포털 학사일정 인증키 | Production, Preview |
@@ -47,21 +52,25 @@
 ## 캘린더 외부 일정 캐시
 
 - 매일 한국 시간 01:00에 나이스 학사일정과 공공데이터포털 공휴일 정보를 갱신하고, 같은 날짜의 중복 공휴일은 서버에서 하나로 정리합니다.
-- 현재 연도 기준 앞뒤 2년(총 5년)의 정보를 Firestore `calendar_cache`에 연도별로 저장합니다.
-- 교사가 캘린더를 열 때는 외부 API가 아닌 저장된 캐시만 읽습니다.
-- 최초 테스트는 교내망에서 `/api/calendar-refresh?span=0`를 열어 현재 연도만 빠르게 저장한 뒤 확인합니다. 5년 범위는 `/api/calendar-refresh` 또는 다음 새벽 자동 갱신으로 처리합니다.
+- 서버는 학사일정을 Firestore `calendar_cache`에 연도별로 저장합니다.
+- 교사가 캘린더를 열 때는 현재 연도 캐시만 사용하며, 브라우저가 전후 연도를 선조회하지 않습니다.
+- 최초 테스트는 교내망에서 `/api/calendar-refresh?span=0`를 열어 현재 연도만 빠르게 저장한 뒤 확인합니다.
 
 ## Firestore Rules
 
 현재 규칙은 [firestore.rules](./firestore.rules)에 있습니다. Firebase Console의 Firestore Database → Rules에도 같은 규칙을 적용해야 합니다.
 
 ```js
+match /dashboard_posts/{postId} {
+  allow read: if 학교망 자동 인증 토큰;
+  allow write: if false;
+}
 match /{document=**} {
   allow read, write: if false;
 }
 ```
 
-새 컬렉션을 추가해도 브라우저에서 직접 Firestore를 호출하지 말고, 학교 IP 확인을 하는 Vercel API를 추가해야 합니다.
+`dashboard_posts` 외 컬렉션은 브라우저에서 직접 Firestore를 호출하지 말고, 학교 IP 확인을 하는 Vercel API를 추가해야 합니다. 규칙을 콘솔에 적용하기 전에는 실시간 일정 기능이 연결되지 않습니다.
 
 ## 관리자 모드
 
