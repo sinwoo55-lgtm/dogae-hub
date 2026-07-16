@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" data-realtime="on">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -120,7 +120,7 @@
     $('logoWrap').onclick=()=>{location.href='index.html'};$('todayText').onclick=()=>{if(sessionStorage.getItem('isAdmin')==='true')return;clicks++;clearTimeout(clickTimer);if(clicks>=5){clicks=0;$('adminModal').classList.add('show');$('adminId').focus()}else clickTimer=setTimeout(()=>clicks=0,2000)};
     $('adminLogin').onclick=()=>{if($('adminId').value.trim()===ADMIN_ID&&$('adminPw').value===ADMIN_PW){sessionStorage.setItem('isAdmin','true');$('adminModal').classList.remove('show');updateAdmin()}else $('adminError').style.display='block'};$('adminLogout').onclick=()=>{sessionStorage.removeItem('isAdmin');updateAdmin()};$('adminCancel').onclick=()=>$('adminModal').classList.remove('show');$('adminModal').onclick=e=>{if(e.target===$('adminModal'))$('adminModal').classList.remove('show')};
     document.addEventListener('keydown',e=>{if(e.key==='Escape'){drawer(false);$('adminModal').classList.remove('show')}if(e.key==='Enter'&&$('adminModal').classList.contains('show'))$('adminLogin').click()});
-    window.addEventListener('dogae-realtime-posts',event=>{posts=event.detail||[];lastSignature=JSON.stringify({posts,trash:trashPosts,departments});render();});
+    window.addEventListener('dogae-realtime-posts',event=>{const today=localDateKey(),history=posts.filter(post=>{const until=post.realtimeUntil||(post.isNotice?'9999-12-31':post.end||post.deadline||post.start||'');return until&&until<today});posts=history.concat(event.detail||[]);lastSignature=JSON.stringify({posts,trash:trashPosts,departments});render();});
     updateAdmin();sync();
   </script>
   <script src="home.js"></script>

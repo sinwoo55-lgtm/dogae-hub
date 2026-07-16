@@ -27,10 +27,16 @@
       await authModule.signInWithCustomToken(auth, setup.token);
 
       var store = firestoreModule.getFirestore(firebaseApp);
+      var today = new Date();
+      var todayKey = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
       unsubscribe = firestoreModule.onSnapshot(
-        firestoreModule.query(firestoreModule.collection(store, 'dashboard_posts'), firestoreModule.orderBy('ts', 'desc')),
+        firestoreModule.query(firestoreModule.collection(store, 'dashboard_posts'), firestoreModule.where('realtimeUntil', '>=', todayKey)),
         function (snapshot) {
-          announce('dogae-realtime-posts', snapshot.docs.map(function (doc) { return Object.assign({ id: doc.id }, doc.data()); }));
+          announce('dogae-realtime-posts', snapshot.docs.map(function (doc) { return Object.assign({ id: doc.id }, doc.data()); }).sort(function (a, b) {
+            var aTime = a.ts && typeof a.ts.toMillis === 'function' ? a.ts.toMillis() : 0;
+            var bTime = b.ts && typeof b.ts.toMillis === 'function' ? b.ts.toMillis() : 0;
+            return bTime - aTime;
+          }));
           announce('dogae-realtime-status', { connected: true });
         },
         function (error) {
@@ -53,5 +59,10 @@
     }
   }
 
-  start();
+  // 학생 관리에서는 실제 학급을 선택한 뒤에만 일정 리스너를 연다.
+  document.addEventListener('change', function (event) {
+    if (event.target && event.target.id === 'classSelect' && event.target.value) start();
+  });
+  window.DogaeRealtime = { start: start };
+  if (document.documentElement.dataset.realtime === 'on') start();
 })();

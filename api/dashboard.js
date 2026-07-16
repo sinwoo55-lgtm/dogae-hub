@@ -44,7 +44,7 @@ function postData(value) {
   if (!author || !title || content === null || link === null || dept === null || start === null || end === null) return null;
   if (link && !/^https?:\/\//i.test(link)) return null;
   if (start && end && start > end) return null;
-  return { author, title, content, link, dept, isNotice, start, end, participants, deadline: end || start || '' };
+  return { author, title, content, link, dept, isNotice, start, end, participants, deadline: end || start || '', realtimeUntil: isNotice ? '9999-12-31' : (end || start || '') };
 }
 
 function linkData(value) {
