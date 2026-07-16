@@ -47,15 +47,18 @@
 | `NEIS_SCHOOL_CODE` | 나이스 학교 코드. 병설 학교는 중·고 코드를 쉼표로 연결 | Production, Preview |
 | `HOLIDAY_API_KEY` | 공공데이터포털 특일 정보 API 서비스키 | Production, Preview |
 | `CRON_SECRET` | 새벽 자동 캘린더 캐시 갱신용 임의의 긴 비밀 문자열 | Production |
+| `DISCIPLINE_EXPORT_URL` | 선도부 앱 Vercel의 `/api/discipline-export` 전체 주소 | Production |
+| `DISCIPLINE_SYNC_SECRET` | 선도부 앱과 동일하게 설정할 긴 공유 비밀 문자열 | Production |
 
 환경변수 변경 뒤에는 새 Vercel 배포가 필요합니다.
 
 ## 캘린더 외부 일정 캐시
 
-- 매일 한국 시간 01:00에 나이스 학사일정과 공공데이터포털 공휴일 정보를 갱신하고, 같은 날짜의 중복 공휴일은 서버에서 하나로 정리합니다.
+- 매일 한국 시간 22시경에 나이스 학사일정·공휴일을 갱신하고, 이어서 선도부 앱의 지적사항을 동기화합니다. Vercel Hobby 플랜은 정확한 시각 대신 해당 시간대에 실행될 수 있습니다.
 - 서버는 학사일정을 Firestore `calendar_cache`에 연도별로 저장합니다.
 - 교사가 캘린더를 열 때는 현재 연도 캐시만 사용하며, 브라우저가 전후 연도를 선조회하지 않습니다.
 - 최초 테스트는 교내망에서 `/api/calendar-refresh?span=0`를 열어 현재 연도만 빠르게 저장한 뒤 확인합니다.
+- 지적사항은 브라우저에 저장하지 않으며, 학생관리의 `지적사항 조회`에서 학급을 선택할 때만 서버에서 읽습니다. 첫 동기화는 환경변수 설정 뒤 교내망에서 `/api/discipline-sync`를 열어 실행할 수 있습니다.
 
 ## Firestore Rules
 
