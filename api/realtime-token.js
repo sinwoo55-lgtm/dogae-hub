@@ -6,24 +6,27 @@ import { requireSchoolNetwork } from '../lib/school-access.js';
 
 const SESSION_MS = 8 * 60 * 60 * 1000;
 const REALTIME_META = db.collection('dashboard_meta').doc('realtime_schema');
+const SCHEDULE_VERSION = db.collection('dashboard_meta').doc('schedule_version');
 
 async function ensureRealtimeFields() {
   const schema = await REALTIME_META.get();
-  if (schema.exists && schema.data().version === 1) return;
-
-  // 기존 일정은 한 번만 보완한다. 이후에는 저장 시 realtimeUntil이 함께 기록된다.
-  const posts = await db.collection('dashboard_posts').get();
-  for (let offset = 0; offset < posts.docs.length; offset += 450) {
-    const batch = db.batch();
-    posts.docs.slice(offset, offset + 450).forEach((doc) => {
-      const post = doc.data();
-      const isNotice = post.isNotice === true || (!(post.start || post.deadline) && !(post.end || post.deadline));
-      const realtimeUntil = isNotice ? '9999-12-31' : (post.end || post.deadline || post.start || '');
-      batch.set(doc.ref, { isNotice, realtimeUntil }, { merge: true });
-    });
-    await batch.commit();
+  if (!schema.exists || schema.data().version !== 1) {
+    // 기존 일정은 한 번만 보완한다. 이후에는 저장 시 realtimeUntil이 함께 기록된다.
+    const posts = await db.collection('dashboard_posts').get();
+    for (let offset = 0; offset < posts.docs.length; offset += 450) {
+      const batch = db.batch();
+      posts.docs.slice(offset, offset + 450).forEach((doc) => {
+        const post = doc.data();
+        const isNotice = post.isNotice === true || (!(post.start || post.deadline) && !(post.end || post.deadline));
+        const realtimeUntil = isNotice ? '9999-12-31' : (post.end || post.deadline || post.start || '');
+        batch.set(doc.ref, { isNotice, realtimeUntil }, { merge: true });
+      });
+      await batch.commit();
+    }
+    await REALTIME_META.set({ version: 1, updatedAt: FieldValue.serverTimestamp() });
   }
-  await REALTIME_META.set({ version: 1, updatedAt: FieldValue.serverTimestamp() });
+  const scheduleVersion = await SCHEDULE_VERSION.get();
+  if (!scheduleVersion.exists) await SCHEDULE_VERSION.set({ version: 1, updatedAt: FieldValue.serverTimestamp() });
 }
 
 export default async function handler(req, res) {

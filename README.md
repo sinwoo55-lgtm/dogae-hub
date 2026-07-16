@@ -23,11 +23,12 @@
 
 메인 일정 실시간 수신
   → Vercel `/api/realtime-token`: 학교 IP 확인 후 짧은 읽기 전용 토큰 발급
-  → 브라우저 Firestore 리스너: `dashboard_posts`만 실시간 읽기
+  → 브라우저 Firestore 리스너: `schedule_version` 1개만 감시
+  → 버전이 바뀔 때만 서버 변경분을 받아 로컬 일정 캐시 갱신
 ```
 
 - 일반 데이터와 모든 쓰기는 브라우저가 Firestore에 직접 연결하지 않습니다.
-- 메인 일정만 학교망 자동 인증 토큰으로 실시간 읽습니다. 학생 명렬은 계속 서버 API로만 접근합니다.
+- 메인 일정은 학교망 자동 인증 토큰으로 버전 문서만 실시간 읽고, 변경된 일정만 로컬 캐시에 반영합니다. 학생 명렬은 계속 서버 API로만 접근합니다.
 - 서버 API는 Firebase 서비스 계정으로 Firestore에 접근합니다.
 - 현재 학교 IP 허용 목록은 유선망 `117.110.113.*`와 무선망 `117.111.141.213`입니다. 학교 공인 IP가 바뀌면 `middleware.js`와 `lib/school-access.js`를 함께 갱신해야 합니다.
 
@@ -61,7 +62,7 @@
 현재 규칙은 [firestore.rules](./firestore.rules)에 있습니다. Firebase Console의 Firestore Database → Rules에도 같은 규칙을 적용해야 합니다.
 
 ```js
-match /dashboard_posts/{postId} {
+match /dashboard_meta/schedule_version {
   allow read: if 학교망 자동 인증 토큰;
   allow write: if false;
 }
@@ -70,7 +71,7 @@ match /{document=**} {
 }
 ```
 
-`dashboard_posts` 외 컬렉션은 브라우저에서 직접 Firestore를 호출하지 말고, 학교 IP 확인을 하는 Vercel API를 추가해야 합니다. 규칙을 콘솔에 적용하기 전에는 실시간 일정 기능이 연결되지 않습니다.
+`schedule_version` 외 컬렉션은 브라우저에서 직접 Firestore를 호출하지 말고, 학교 IP 확인을 하는 Vercel API를 추가해야 합니다. 규칙을 콘솔에 적용하기 전에는 실시간 일정 기능이 연결되지 않습니다.
 
 ## 관리자 모드
 

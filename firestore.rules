@@ -11,7 +11,7 @@ service cloud.firestore {
         && request.time.toMillis() < request.auth.token.scheduleAccessUntil;
     }
 
-    match /dashboard_posts/{postId} {
+    match /dashboard_meta/schedule_version {
       allow read: if scheduleReader();
       allow write: if false;
     }
