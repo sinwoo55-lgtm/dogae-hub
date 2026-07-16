@@ -8,6 +8,7 @@ const STUDENTS = db.collection('student_roster');
 const ACTIVITIES = db.collection('student_activities');
 const ROSTER_META = db.collection('student_meta').doc('roster');
 const idOk = (value) => typeof value === 'string' && /^[A-Za-z0-9_-]{1,150}$/.test(value);
+const studentIdOk = (value) => typeof value === 'string' && value.trim().length > 0 && value.length <= 150 && !value.includes('/');
 const dateOk = (value) => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value);
 
 function studentKey(student) { return `${student.grade}-${student.classNo}-${student.number}-${student.name}`; }
@@ -91,9 +92,9 @@ export default async function handler(req, res) {
       await mergeRosterMeta(rows);
     } else if (action === 'roster:save') {
       const row = normalizeStudent(data); if (!row) return res.status(400).json({ error: '학생 정보를 확인해주세요.' });
-      const ref = idOk(id) ? STUDENTS.doc(id) : STUDENTS.doc(row.key); await ref.set({ ...row, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+      const ref = studentIdOk(id) ? STUDENTS.doc(id) : STUDENTS.doc(row.key); await ref.set({ ...row, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
       await mergeRosterMeta([row]);
-    } else if (action === 'roster:delete' && idOk(id)) {
+    } else if (action === 'roster:delete' && studentIdOk(id)) {
       await STUDENTS.doc(id).delete();
     } else if (action === 'activity:save') {
       const activity = normalizeActivity(data); if (!activity) return res.status(400).json({ error: '활동 정보를 확인해주세요.' });
