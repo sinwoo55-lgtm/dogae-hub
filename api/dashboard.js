@@ -7,6 +7,8 @@ const POSTS = db.collection('dashboard_posts');
 const POST_TRASH = db.collection('dashboard_post_trash');
 const LINKS = db.collection('dashboard_links');
 const DEPARTMENTS = db.collection('dashboard_meta').doc('departments');
+const SCHEDULE_VERSION = db.collection('dashboard_meta').doc('schedule_version');
+const SCHEDULE_CHANGES = db.collection('schedule_changes');
 
 function asJson(value) {
   if (Array.isArray(value)) return value.map(asJson);
@@ -44,7 +46,7 @@ function postData(value) {
   if (!author || !title || content === null || link === null || dept === null || start === null || end === null) return null;
   if (link && !/^https?:\/\//i.test(link)) return null;
   if (start && end && start > end) return null;
-  return { author, title, content, link, dept, isNotice, start, end, participants, deadline: end || start || '' };
+  return { author, title, content, link, dept, isNotice, start, end, participants, deadline: end || start || '', realtimeUntil: isNotice ? '9999-12-31' : (end || start || '') };
 }
 
 function linkData(value) {
@@ -68,6 +70,16 @@ function departmentList(value) {
   }));
   if (list.some((item) => !item.id || !item.name || !/^#[0-9A-Fa-f]{6}$/.test(item.color))) return null;
   return list;
+}
+
+function recordScheduleChanges(tx, versionSnap, changes) {
+  const version = Number(versionSnap.exists ? versionSnap.data().version : 0) + 1;
+  tx.set(SCHEDULE_VERSION, { version, updatedAt: FieldValue.serverTimestamp() });
+  changes.forEach((change) => tx.set(SCHEDULE_CHANGES.doc(), { version, ...change, changedAt: Date.now() }));
+}
+
+function changedPost(id, post) {
+  return { type: 'upsert', post: { id, ...asJson(post) } };
 }
 
 async function snapshot(res) {
@@ -99,29 +111,39 @@ export default async function handler(req, res) {
     if (action === 'post:save') {
       const next = postData(data || {});
       if (!next) return res.status(400).json({ error: '게시물 입력값이 올바르지 않습니다.' });
-      if (id && validId(id)) await POSTS.doc(id).update(next);
-      else await POSTS.add({ ...next, createdAt: new Date().toLocaleDateString('ko-KR'), newUntil: Date.now() + (24 * 60 * 60 * 1000), ts: FieldValue.serverTimestamp() });
+      const ref = id && validId(id) ? POSTS.doc(id) : POSTS.doc();
+      await db.runTransaction(async (tx) => {
+        const [existing, version] = await Promise.all([id && validId(id) ? tx.get(ref) : Promise.resolve(null), tx.get(SCHEDULE_VERSION)]);
+        if (existing && !existing.exists) throw new Error('일정을 찾을 수 없습니다.');
+        const stored = existing ? { ...existing.data(), ...next } : { ...next, createdAt: new Date().toLocaleDateString('ko-KR'), newUntil: Date.now() + (24 * 60 * 60 * 1000), ts: new Date().toISOString() };
+        tx.set(ref, { ...stored, ts: FieldValue.serverTimestamp() });
+        recordScheduleChanges(tx, version, [changedPost(ref.id, stored)]);
+      });
     } else if (action === 'post:delete' && validId(id)) {
       await db.runTransaction(async (tx) => {
-        const source = POSTS.doc(id); const snap = await tx.get(source);
+        const source = POSTS.doc(id); const [snap, version] = await Promise.all([tx.get(source), tx.get(SCHEDULE_VERSION)]);
         if (!snap.exists) throw new Error('일정을 찾을 수 없습니다.');
         const deletedAt = Date.now();
         tx.set(POST_TRASH.doc(), { ...snap.data(), deletedAt, expiresAt: deletedAt + (14 * 24 * 60 * 60 * 1000), origId: id });
         tx.delete(source);
+        recordScheduleChanges(tx, version, [{ type: 'delete', id }]);
       });
     } else if (action === 'post:trash-restore' && validId(id)) {
       await db.runTransaction(async (tx) => {
-        const source = POST_TRASH.doc(id); const snap = await tx.get(source);
+        const source = POST_TRASH.doc(id); const [snap, version] = await Promise.all([tx.get(source), tx.get(SCHEDULE_VERSION)]);
         if (!snap.exists) throw new Error('휴지통에서 일정을 찾을 수 없습니다.');
         const item = snap.data();
         if (Number(item.expiresAt || 0) <= Date.now()) { tx.delete(source); throw new Error('보관 기간이 지나 복원할 수 없습니다.'); }
         const restored = { ...item }; delete restored.deletedAt; delete restored.expiresAt; delete restored.origId;
         tx.set(POSTS.doc(item.origId), { ...restored, ts: FieldValue.serverTimestamp() }); tx.delete(source);
+        recordScheduleChanges(tx, version, [changedPost(item.origId, restored)]);
       });
     } else if (action === 'post:delete-many' && Array.isArray(ids) && ids.length <= 100 && ids.every(validId)) {
-      const batch = db.batch();
-      ids.forEach((postId) => batch.delete(POSTS.doc(postId)));
-      await batch.commit();
+      await db.runTransaction(async (tx) => {
+        const version = await tx.get(SCHEDULE_VERSION);
+        ids.forEach((postId) => tx.delete(POSTS.doc(postId)));
+        recordScheduleChanges(tx, version, ids.map((postId) => ({ type: 'delete', id: postId })));
+      });
     } else if (action === 'link:save') {
       const next = linkData(data || {});
       if (!next) return res.status(400).json({ error: '링크 입력값이 올바르지 않습니다.' });

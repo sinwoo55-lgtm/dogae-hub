@@ -23,11 +23,12 @@
 
 메인 일정 실시간 수신
   → Vercel `/api/realtime-token`: 학교 IP 확인 후 짧은 읽기 전용 토큰 발급
-  → 브라우저 Firestore 리스너: `dashboard_posts`만 실시간 읽기
+  → 브라우저 Firestore 리스너: `schedule_version` 1개만 감시
+  → 버전이 바뀔 때만 서버 변경분을 받아 로컬 일정 캐시 갱신
 ```
 
 - 일반 데이터와 모든 쓰기는 브라우저가 Firestore에 직접 연결하지 않습니다.
-- 메인 일정만 학교망 자동 인증 토큰으로 실시간 읽습니다. 학생 명렬은 계속 서버 API로만 접근합니다.
+- 메인 일정은 학교망 자동 인증 토큰으로 버전 문서만 실시간 읽고, 변경된 일정만 로컬 캐시에 반영합니다. 학생 명렬은 계속 서버 API로만 접근합니다.
 - 서버 API는 Firebase 서비스 계정으로 Firestore에 접근합니다.
 - 현재 학교 IP 허용 목록은 유선망 `117.110.113.*`와 무선망 `117.111.141.213`입니다. 학교 공인 IP가 바뀌면 `middleware.js`와 `lib/school-access.js`를 함께 갱신해야 합니다.
 
@@ -46,22 +47,30 @@
 | `NEIS_SCHOOL_CODE` | 나이스 학교 코드. 병설 학교는 중·고 코드를 쉼표로 연결 | Production, Preview |
 | `HOLIDAY_API_KEY` | 공공데이터포털 특일 정보 API 서비스키 | Production, Preview |
 | `CRON_SECRET` | 새벽 자동 캘린더 캐시 갱신용 임의의 긴 비밀 문자열 | Production |
+| `DISCIPLINE_EXPORT_URL` | 선도부 앱 Vercel의 `/api/discipline-export` 전체 주소 | Production |
+| `DISCIPLINE_SYNC_SECRET` | 선도부 앱과 동일하게 설정할 긴 공유 비밀 문자열 | Production |
+| `SCHOOL_GUARD_ROSTER_URL` | 선도부 앱 Vercel의 `/api/roster-import` 전체 주소 | Production |
+| `SCHOOL_GUARD_ROSTER_SECRET` | 선도부 앱과 동일하게 설정할 명단 동기화 비밀 문자열 | Production |
+| `SCHOOL_GUARD_VERCEL_BYPASS_SECRET` | 선도부 Vercel Preview의 Deployment Protection 자동화 우회 비밀키 | Preview |
 
 환경변수 변경 뒤에는 새 Vercel 배포가 필요합니다.
 
 ## 캘린더 외부 일정 캐시
 
-- 매일 한국 시간 01:00에 나이스 학사일정과 공공데이터포털 공휴일 정보를 갱신하고, 같은 날짜의 중복 공휴일은 서버에서 하나로 정리합니다.
+- 매일 한국 시간 22시경에 나이스 학사일정·공휴일을 갱신하고, 이어서 선도부 앱의 지적사항을 동기화합니다. Vercel Hobby 플랜은 정확한 시각 대신 해당 시간대에 실행될 수 있습니다.
 - 서버는 학사일정을 Firestore `calendar_cache`에 연도별로 저장합니다.
 - 교사가 캘린더를 열 때는 현재 연도 캐시만 사용하며, 브라우저가 전후 연도를 선조회하지 않습니다.
 - 최초 테스트는 교내망에서 `/api/calendar-refresh?span=0`를 열어 현재 연도만 빠르게 저장한 뒤 확인합니다.
+- 지적사항은 브라우저에 저장하지 않으며, 학생관리의 `지적사항 조회`에서 학급을 선택할 때만 서버에서 읽습니다. 첫 동기화는 환경변수 설정 뒤 교내망에서 `/api/discipline-sync`를 열어 실행할 수 있습니다.
+- 학생 명단의 원본은 정보 허브입니다. 관리자 명단 업로드·학생 추가·수정·삭제가 완료될 때만 선도부 앱으로 전체 명단을 전송합니다. 선도부에서 누락된 학생은 비활성 처리되어 과거 지적 기록은 남습니다.
+- 선도부 Preview가 Vercel Authentication으로 보호되는 경우, 선도부 프로젝트의 `Deployment Protection → Protection Bypass for Automation`에서 생성한 비밀키를 정보 허브 Preview의 `SCHOOL_GUARD_VERCEL_BYPASS_SECRET`에 저장합니다.
 
 ## Firestore Rules
 
 현재 규칙은 [firestore.rules](./firestore.rules)에 있습니다. Firebase Console의 Firestore Database → Rules에도 같은 규칙을 적용해야 합니다.
 
 ```js
-match /dashboard_posts/{postId} {
+match /dashboard_meta/schedule_version {
   allow read: if 학교망 자동 인증 토큰;
   allow write: if false;
 }
@@ -70,7 +79,7 @@ match /{document=**} {
 }
 ```
 
-`dashboard_posts` 외 컬렉션은 브라우저에서 직접 Firestore를 호출하지 말고, 학교 IP 확인을 하는 Vercel API를 추가해야 합니다. 규칙을 콘솔에 적용하기 전에는 실시간 일정 기능이 연결되지 않습니다.
+`schedule_version` 외 컬렉션은 브라우저에서 직접 Firestore를 호출하지 말고, 학교 IP 확인을 하는 Vercel API를 추가해야 합니다. 규칙을 콘솔에 적용하기 전에는 실시간 일정 기능이 연결되지 않습니다.
 
 ## 관리자 모드
 
