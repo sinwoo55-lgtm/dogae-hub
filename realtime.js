@@ -3,6 +3,8 @@
   var refreshTimer = null;
   var started = false;
   var syncingVersion = -1;
+  var initialLoad = null;
+  var queuedVersion = null;
   var CACHE_KEY = 'dogae-hub-schedule-cache-v1';
 
   function announce(type, detail) {
@@ -33,6 +35,17 @@
       else if (change.type === 'upsert' && change.post && change.post.id) byId.set(change.post.id, change.post);
     });
     return { version: version, posts: order(Array.from(byId.values())), savedAt: Date.now() };
+  }
+
+  function warmScheduleCache() {
+    var cache = readCache();
+    if (cache) announce('dogae-realtime-posts', cache.posts);
+    return cache;
+  }
+
+  function queueInitialVersion(version) {
+    if (!initialLoad) return sync(version);
+    queuedVersion = version;
   }
 
   async function sync(version) {
@@ -82,7 +95,7 @@
       await authModule.signInWithCustomToken(auth, setup.token);
       var store = firestoreModule.getFirestore(firebaseApp);
       unsubscribe = firestoreModule.onSnapshot(firestoreModule.doc(store, 'dashboard_meta', 'schedule_version'), function (snapshot) {
-        sync(Number(snapshot.exists() ? snapshot.data().version : 0));
+        queueInitialVersion(Number(snapshot.exists() ? snapshot.data().version : 0));
       }, function (error) {
         console.warn('실시간 버전 연결 오류', error);
         announce('dogae-realtime-status', { connected: false, error: error.message });
@@ -105,5 +118,17 @@
     if (event.target && event.target.id === 'classSelect' && event.target.value) start();
   });
   window.DogaeRealtime = { start: start };
-  if (document.documentElement.dataset.realtime === 'on') start();
+  if (document.documentElement.dataset.realtime === 'on') {
+    if (!warmScheduleCache()) {
+      initialLoad = sync(-1).finally(function () {
+        initialLoad = null;
+        if (queuedVersion !== null) {
+          var version = queuedVersion;
+          queuedVersion = null;
+          sync(version);
+        }
+      });
+    }
+    start();
+  }
 })();
