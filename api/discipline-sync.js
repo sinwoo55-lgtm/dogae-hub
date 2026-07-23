@@ -61,7 +61,9 @@ function summary(row) {
 
 export async function syncDisciplineRecords() {
   if (!configured()) return { skipped: true, reason: 'discipline sync is not configured' };
-  const response = await fetch(process.env.DISCIPLINE_EXPORT_URL, { headers: { Authorization: `Bearer ${process.env.DISCIPLINE_SYNC_SECRET}` } });
+  const headers = { Authorization: `Bearer ${process.env.DISCIPLINE_SYNC_SECRET}` };
+  if (process.env.SCHOOL_GUARD_VERCEL_BYPASS_SECRET) headers['x-vercel-protection-bypass'] = process.env.SCHOOL_GUARD_VERCEL_BYPASS_SECRET;
+  const response = await fetch(process.env.DISCIPLINE_EXPORT_URL, { headers });
   const payload = await response.json().catch(() => null);
   if (!response.ok || !payload) throw new Error(payload?.error || `discipline export failed (${response.status})`);
   const records = (Array.isArray(payload.records) ? payload.records : []).map(record).filter(Boolean);
@@ -76,5 +78,5 @@ export default async function handler(req, res) {
   if (!allowJson(req, res, ['GET'])) return;
   if (!cronAuthorized(req) && !requireSchoolNetwork(req, res)) return;
   try { return res.status(200).json(await syncDisciplineRecords()); }
-  catch (error) { console.error('discipline sync error', error); return res.status(502).json({ error: '지적사항 동기화에 실패했습니다.' }); }
+  catch (error) { console.error('discipline sync error', error); return res.status(502).json({ error: '지적사항 동기화에 실패했습니다.', detail: error.message || '원격 선도부 API 응답을 확인하세요.' }); }
 }
