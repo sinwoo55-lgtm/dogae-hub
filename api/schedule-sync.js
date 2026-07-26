@@ -20,8 +20,14 @@ function todayKey() {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
 }
 
+function recentHistoryKey() {
+  const date = new Date();
+  date.setMonth(date.getMonth() - 3);
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit' }).format(date);
+}
+
 async function fullSnapshot(version) {
-  const posts = await POSTS.where('realtimeUntil', '>=', todayKey()).get();
+  const posts = await POSTS.where('realtimeUntil', '>=', recentHistoryKey()).get();
   return { version, mode: 'full', posts: posts.docs.map((doc) => ({ id: doc.id, ...asJson(doc.data()) })) };
 }
 

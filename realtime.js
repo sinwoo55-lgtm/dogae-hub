@@ -5,7 +5,7 @@
   var syncingVersion = -1;
   var initialLoad = null;
   var queuedVersion = null;
-  var CACHE_KEY = 'dogae-hub-schedule-cache-v1';
+  var CACHE_KEY = 'dogae-hub-schedule-cache-v2';
 
   function announce(type, detail) {
     window.dispatchEvent(new CustomEvent(type, { detail: detail }));
@@ -25,7 +25,20 @@
   }
 
   function order(posts) {
-    return posts.slice().sort(function (a, b) { return String(b.ts || '').localeCompare(String(a.ts || '')); });
+    var byId = new Map();
+    posts.forEach(function (post, index) {
+      if (!post) return;
+      byId.set(post.id ? 'id:' + post.id : 'item:' + index, post);
+    });
+    return Array.from(byId.values()).sort(function (a, b) { return String(b.ts || '').localeCompare(String(a.ts || '')); });
+  }
+
+  function historicalPosts(cache) {
+    var today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+    return (cache && cache.posts ? cache.posts : []).filter(function (post) {
+      var until = post.realtimeUntil || (post.isNotice ? '9999-12-31' : post.end || post.deadline || post.start || '');
+      return until && until < today;
+    });
   }
 
   function applyChanges(cache, changes, version) {
@@ -64,7 +77,7 @@
       var next;
       if (payload.mode === 'unchanged') next = cache || { version: payload.version, posts: [], savedAt: Date.now() };
       else if (payload.mode === 'delta') next = applyChanges(cache, payload.changes || [], payload.version);
-      else next = { version: payload.version, posts: order(payload.posts || []), savedAt: Date.now() };
+      else next = { version: payload.version, posts: order(historicalPosts(cache).concat(payload.posts || [])), savedAt: Date.now() };
       writeCache(next);
       announce('dogae-realtime-posts', next.posts);
       announce('dogae-realtime-status', { connected: true });
