@@ -127,6 +127,14 @@
     }
   }
 
+  function startWhenIdle() {
+    if (window.requestIdleCallback) {
+      window.requestIdleCallback(function () { start(); }, { timeout: 1500 });
+    } else {
+      window.setTimeout(start, 800);
+    }
+  }
+
   document.addEventListener('change', function (event) {
     if (event.target && event.target.id === 'classSelect' && event.target.value) start();
   });
@@ -142,6 +150,6 @@
         }
       });
     }
-    start();
+    startWhenIdle();
   }
 })();
