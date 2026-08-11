@@ -100,12 +100,29 @@ async function snapshot(res) {
   });
 }
 
+async function linksSnapshot(res) {
+  const links = await LINKS.orderBy('ts', 'desc').get();
+  return res.status(200).json({ links: links.docs.map((doc) => ({ id: doc.id, ...asJson(doc.data()) })) });
+}
+
+async function participantActivitiesSnapshot(res) {
+  const posts = await POSTS.orderBy('ts', 'desc').get();
+  const activities = posts.docs
+    .map((doc) => ({ id: doc.id, ...asJson(doc.data()) }))
+    .filter((post) => Array.isArray(post.participants) && post.participants.length && (post.start || post.deadline) && (post.end || post.deadline || post.start));
+  return res.status(200).json({ activities });
+}
+
 export default async function handler(req, res) {
   if (!allowJson(req, res, ['GET', 'POST'])) return;
   if (!requireSchoolNetwork(req, res)) return;
 
   try {
-    if (req.method === 'GET') return snapshot(res);
+    if (req.method === 'GET') {
+      if (req.query?.scope === 'links') return linksSnapshot(res);
+      if (req.query?.scope === 'participant-activities') return participantActivitiesSnapshot(res);
+      return snapshot(res);
+    }
 
     const { action, id, ids, data } = req.body || {};
     if (action === 'post:save') {
