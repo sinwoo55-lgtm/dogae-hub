@@ -24,6 +24,10 @@ function normalizeStudent(value) {
   if (!grade || !classNo || !number || !name) return null;
   return { grade, classNo, number, name, status, changedAt, key: studentKey({ grade, classNo, number, name }), classKey: classKey({ grade, classNo }) };
 }
+function uniqueRoster(rows) {
+  const keys = new Set();
+  return rows.every((row) => !keys.has(row.key) && (keys.add(row.key), true));
+}
 function normalizeActivity(value) {
   if (!value || typeof value !== 'object') return null;
   const teacher = text(value.teacher, 40), title = text(value.title, 100), description = text(value.description ?? '', 2000);
@@ -80,16 +84,27 @@ export default async function handler(req, res) {
       }
       return snapshot(res);
     }
-    const { action, id, data } = req.body || {};
+    const { action, id, data, replace } = req.body || {};
     if (action === 'roster:upload') {
       if (!Array.isArray(data) || !data.length || data.length > 2000) return res.status(400).json({ error: '업로드할 명단은 1~2000명이어야 합니다.' });
       const rows = data.map(normalizeStudent); if (rows.some(row => !row)) return res.status(400).json({ error: '명단 열(학년, 반, 번호, 이름)을 확인해주세요.' });
+      if (!uniqueRoster(rows)) return res.status(400).json({ error: '같은 학년·반·번호·이름의 학생이 중복되어 있습니다.' });
       for (let offset = 0; offset < rows.length; offset += 450) {
         const batch = db.batch();
         rows.slice(offset, offset + 450).forEach(row => batch.set(STUDENTS.doc(row.key), { ...row, updatedAt: FieldValue.serverTimestamp() }, { merge: true }));
         await batch.commit();
       }
-      await mergeRosterMeta(rows);
+      if (replace === true) {
+        const existing = await STUDENTS.get();
+        const incoming = new Set(rows.map((row) => row.key));
+        const removed = existing.docs.filter((doc) => !incoming.has(doc.id));
+        for (let offset = 0; offset < removed.length; offset += 450) {
+          const batch = db.batch();
+          removed.slice(offset, offset + 450).forEach((doc) => batch.delete(doc.ref));
+          await batch.commit();
+        }
+        await ROSTER_META.set({ classes: classList(rows), updatedAt: FieldValue.serverTimestamp() });
+      } else await mergeRosterMeta(rows);
     } else if (action === 'roster:save') {
       const row = normalizeStudent(data); if (!row) return res.status(400).json({ error: '학생 정보를 확인해주세요.' });
       const ref = studentIdOk(id) ? STUDENTS.doc(id) : STUDENTS.doc(row.key); await ref.set({ ...row, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
