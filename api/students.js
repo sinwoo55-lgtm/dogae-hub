@@ -1,5 +1,5 @@
 import { FieldValue } from 'firebase-admin/firestore';
-import { db } from '../lib/firebase-admin.js';
+import { db, firebaseProjectId } from '../lib/firebase-admin.js';
 import { allowJson, text } from '../lib/http.js';
 import { requireSchoolNetwork } from '../lib/school-access.js';
 import { markSchoolGuardSyncFailure, syncSchoolGuardRoster } from '../lib/school-guard-roster.js';
@@ -66,11 +66,26 @@ async function mergeRosterMeta(rows) {
   await ROSTER_META.set({ classes, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
 }
 
+async function diagnostics() {
+  const [roster, activities, meta] = await Promise.all([
+    STUDENTS.count().get(),
+    ACTIVITIES.count().get(),
+    ROSTER_META.get(),
+  ]);
+  return {
+    firebaseProjectId,
+    studentRosterCount: roster.data().count,
+    activityCount: activities.data().count,
+    classMetaExists: meta.exists,
+  };
+}
+
 export default async function handler(req, res) {
   if (!allowJson(req, res, ['GET', 'POST'])) return;
   if (!requireSchoolNetwork(req, res)) return;
   try {
     if (req.method === 'GET') {
+      if (req.query?.diagnostic === '1') return res.status(200).json(await diagnostics());
       if (req.query?.meta === '1') return res.status(200).json({ classes: await rosterMeta() });
       const selectedClass = typeof req.query?.classKey === 'string' ? req.query.classKey : '';
       if (selectedClass) {
