@@ -1,5 +1,5 @@
 import { FieldValue } from 'firebase-admin/firestore';
-import { db } from '../lib/firebase-admin.js';
+import { db, firebaseProjectId } from '../lib/firebase-admin.js';
 import { allowJson, text } from '../lib/http.js';
 import { requireSchoolNetwork } from '../lib/school-access.js';
 
@@ -90,6 +90,16 @@ async function menuSnapshot(res) {
   return res.status(200).json({ menu: Object.fromEntries(MENU_IDS.map((id) => [id, items[id] !== false])) });
 }
 
+async function connectionSnapshot(res) {
+  const version = await SCHEDULE_VERSION.get();
+  return res.status(200).json({
+    firebaseProjectId,
+    environment: process.env.VERCEL_ENV || 'development',
+    scheduleVersion: version.exists ? Number(version.data().version || 0) : 0,
+    scheduleUpdatedAt: version.exists && version.data().updatedAt?.toDate ? version.data().updatedAt.toDate().toISOString() : null,
+  });
+}
+
 function recordScheduleChanges(tx, versionSnap, changes) {
   const version = Number(versionSnap.exists ? versionSnap.data().version : 0) + 1;
   tx.set(SCHEDULE_VERSION, { version, updatedAt: FieldValue.serverTimestamp() });
@@ -125,6 +135,7 @@ export default async function handler(req, res) {
   try {
     if (req.method === 'GET') {
       if (req.query?.scope === 'menu') return menuSnapshot(res);
+      if (req.query?.scope === 'connection') return connectionSnapshot(res);
       return snapshot(res);
     }
 
