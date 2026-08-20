@@ -7,8 +7,10 @@ const POSTS = db.collection('dashboard_posts');
 const POST_TRASH = db.collection('dashboard_post_trash');
 const LINKS = db.collection('dashboard_links');
 const DEPARTMENTS = db.collection('dashboard_meta').doc('departments');
+const MENU_SETTINGS = db.collection('dashboard_meta').doc('menu_settings');
 const SCHEDULE_VERSION = db.collection('dashboard_meta').doc('schedule_version');
 const SCHEDULE_CHANGES = db.collection('schedule_changes');
+const MENU_IDS = ['calendar', 'links', 'organization', 'students', 'career', 'seating'];
 
 function asJson(value) {
   if (Array.isArray(value)) return value.map(asJson);
@@ -72,6 +74,22 @@ function departmentList(value) {
   return list;
 }
 
+function menuList(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const list = {};
+  for (const id of MENU_IDS) {
+    if (typeof value[id] !== 'boolean') return null;
+    list[id] = value[id];
+  }
+  return list;
+}
+
+async function menuSnapshot(res) {
+  const settings = await MENU_SETTINGS.get();
+  const items = settings.exists && settings.data().items && typeof settings.data().items === 'object' ? settings.data().items : {};
+  return res.status(200).json({ menu: Object.fromEntries(MENU_IDS.map((id) => [id, items[id] !== false])) });
+}
+
 function recordScheduleChanges(tx, versionSnap, changes) {
   const version = Number(versionSnap.exists ? versionSnap.data().version : 0) + 1;
   tx.set(SCHEDULE_VERSION, { version, updatedAt: FieldValue.serverTimestamp() });
@@ -105,7 +123,10 @@ export default async function handler(req, res) {
   if (!requireSchoolNetwork(req, res)) return;
 
   try {
-    if (req.method === 'GET') return snapshot(res);
+    if (req.method === 'GET') {
+      if (req.query?.scope === 'menu') return menuSnapshot(res);
+      return snapshot(res);
+    }
 
     const { action, id, ids, data } = req.body || {};
     if (action === 'post:save') {
@@ -155,6 +176,11 @@ export default async function handler(req, res) {
       const list = departmentList(data);
       if (!list) return res.status(400).json({ error: '부서 목록 입력값이 올바르지 않습니다.' });
       await DEPARTMENTS.set({ list });
+    } else if (action === 'menu:save') {
+      const items = menuList(data);
+      if (!items) return res.status(400).json({ error: '메뉴 표시 설정이 올바르지 않습니다.' });
+      await MENU_SETTINGS.set({ items, updatedAt: FieldValue.serverTimestamp() });
+      return res.status(200).json({ menu: items });
     } else {
       return res.status(400).json({ error: '알 수 없는 작업입니다.' });
     }
