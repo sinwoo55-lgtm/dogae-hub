@@ -1,7 +1,7 @@
 import { allowJson } from '../lib/http.js';
 import { requireSchoolNetwork } from '../lib/school-access.js';
 import { refreshCalendarYear } from './calendar-events.js';
-import { syncDisciplineRecords } from './discipline-sync.js';
+import { markDisciplineSyncFailure, syncDisciplineRecords } from './discipline-sync.js';
 import { createWeeklyBackup } from '../lib/weekly-backup.js';
 
 function koreaYear() {
@@ -42,7 +42,7 @@ export default async function handler(req, res) {
   let backup = { skipped: true, reason: 'not Sunday or manual refresh' };
   if (isCronRequest(req)) {
     try { discipline = await syncDisciplineRecords(); }
-    catch (error) { console.error('discipline cron sync error', error); discipline = { synced: false, error: '지적사항 동기화 실패' }; }
+    catch (error) { console.error('discipline cron sync error', error); await markDisciplineSyncFailure(error); discipline = { synced: false, error: '지적사항 동기화 실패' }; }
     if (isKoreaSunday()) {
       try { backup = { created: true, ...(await createWeeklyBackup()) }; }
       catch (error) { console.error('weekly backup cron error', error); backup = { created: false, error: '주간 백업 실패' }; }

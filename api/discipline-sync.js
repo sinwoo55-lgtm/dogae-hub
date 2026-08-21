@@ -70,13 +70,21 @@ export async function syncDisciplineRecords() {
   const summaries = (Array.isArray(payload.summaries) ? payload.summaries : []).map(summary).filter(Boolean);
   await writeSnapshot(RECORDS, records, ({ id, ...data }) => data);
   await writeSnapshot(SUMMARIES, summaries, ({ id, ...data }) => data);
-  await META.set({ source: 'school-guard', exportedAt: clean(payload.exportedAt, 40), recordCount: records.length, summaryCount: summaries.length, syncedAt: FieldValue.serverTimestamp() });
+  await META.set({ source: 'school-guard', exportedAt: clean(payload.exportedAt, 40), recordCount: records.length, summaryCount: summaries.length, syncedAt: FieldValue.serverTimestamp(), lastResult: 'success', lastError: null });
   return { synced: true, records: records.length, summaries: summaries.length };
+}
+
+export async function markDisciplineSyncFailure(error) {
+  await META.set({
+    lastResult: 'failed',
+    lastError: String(error?.message || error).slice(0, 400),
+    attemptedAt: FieldValue.serverTimestamp(),
+  }, { merge: true });
 }
 
 export default async function handler(req, res) {
   if (!allowJson(req, res, ['GET'])) return;
   if (!cronAuthorized(req) && !requireSchoolNetwork(req, res)) return;
   try { return res.status(200).json(await syncDisciplineRecords()); }
-  catch (error) { console.error('discipline sync error', error); return res.status(502).json({ error: '지적사항 동기화에 실패했습니다.', detail: error.message || '원격 선도부 API 응답을 확인하세요.' }); }
+  catch (error) { console.error('discipline sync error', error); await markDisciplineSyncFailure(error); return res.status(502).json({ error: '지적사항 동기화에 실패했습니다.', detail: error.message || '원격 선도부 API 응답을 확인하세요.' }); }
 }
