@@ -92,10 +92,11 @@ async function menuSnapshot(res) {
 }
 
 async function connectionSnapshot(res) {
-  const [version, roster, discipline] = await Promise.all([
+  const [version, roster, discipline, backups] = await Promise.all([
     SCHEDULE_VERSION.get(),
     db.collection('student_meta').doc('school_guard_sync').get(),
     db.collection('discipline_meta').doc('latest').get(),
+    db.collection('weekly_backups').orderBy('startedAt', 'desc').limit(8).get(),
   ]);
   const rosterData = roster.exists ? asJson(roster.data()) : null;
   const disciplineData = discipline.exists ? asJson(discipline.data()) : null;
@@ -106,6 +107,7 @@ async function connectionSnapshot(res) {
     scheduleUpdatedAt: version.exists && version.data().updatedAt?.toDate ? version.data().updatedAt.toDate().toISOString() : null,
     rosterSync: rosterData ? { result: rosterData.lastResult || 'unknown', at: rosterData.syncedAt || rosterData.attemptedAt || null, count: Number(rosterData.studentCount || 0), error: rosterData.lastError || null } : null,
     disciplineSync: disciplineData ? { result: disciplineData.lastResult || 'success', at: disciplineData.syncedAt || disciplineData.attemptedAt || null, count: Number(disciplineData.recordCount || 0), error: disciplineData.lastError || null } : null,
+    backups: backups.docs.map((doc) => ({ id: doc.id, ...asJson(doc.data()) })),
   });
 }
 
