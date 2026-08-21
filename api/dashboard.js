@@ -2,6 +2,7 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { db, firebaseProjectId } from '../lib/firebase-admin.js';
 import { allowJson, text } from '../lib/http.js';
 import { requireSchoolNetwork } from '../lib/school-access.js';
+import { versionedScheduleChanges } from '../lib/schedule-changes.js';
 
 const POSTS = db.collection('dashboard_posts');
 const POST_TRASH = db.collection('dashboard_post_trash');
@@ -109,9 +110,10 @@ async function connectionSnapshot(res) {
 }
 
 function recordScheduleChanges(tx, versionSnap, changes) {
-  const version = Number(versionSnap.exists ? versionSnap.data().version : 0) + 1;
+  const result = versionedScheduleChanges(versionSnap.exists ? versionSnap.data().version : 0, changes, Date.now());
+  const version = result.version;
   tx.set(SCHEDULE_VERSION, { version, updatedAt: FieldValue.serverTimestamp() });
-  changes.forEach((change) => tx.set(SCHEDULE_CHANGES.doc(), { version, ...change, changedAt: Date.now() }));
+  result.changes.forEach((change) => tx.set(SCHEDULE_CHANGES.doc(), change));
 }
 
 function changedPost(id, post) {
