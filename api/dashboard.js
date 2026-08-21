@@ -111,6 +111,14 @@ async function connectionSnapshot(res) {
   });
 }
 
+async function backupPreview(res, id) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(id || '')) return res.status(400).json({ error: '백업 날짜가 올바르지 않습니다.' });
+  const backup = await db.collection('weekly_backups').doc(id).get();
+  if (!backup.exists) return res.status(404).json({ error: '해당 백업을 찾을 수 없습니다.' });
+  const items = await backup.ref.collection('items').limit(20).get();
+  return res.status(200).json({ backup: { id: backup.id, ...asJson(backup.data()) }, samplePaths: items.docs.map((doc) => doc.data().sourcePath) });
+}
+
 function recordScheduleChanges(tx, versionSnap, changes) {
   const result = versionedScheduleChanges(versionSnap.exists ? versionSnap.data().version : 0, changes, Date.now());
   const version = result.version;
@@ -148,6 +156,7 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
       if (req.query?.scope === 'menu') return menuSnapshot(res);
       if (req.query?.scope === 'connection') return connectionSnapshot(res);
+      if (req.query?.scope === 'backup-preview') return backupPreview(res, req.query?.id);
       return snapshot(res);
     }
 
