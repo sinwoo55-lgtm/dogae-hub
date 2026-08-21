@@ -3,6 +3,7 @@ import { db, firebaseProjectId } from '../lib/firebase-admin.js';
 import { allowJson, text } from '../lib/http.js';
 import { requireSchoolNetwork } from '../lib/school-access.js';
 import { versionedScheduleChanges } from '../lib/schedule-changes.js';
+import { previewWeeklyBackup, restoreWeeklyBackup } from '../lib/weekly-backup.js';
 
 const POSTS = db.collection('dashboard_posts');
 const POST_TRASH = db.collection('dashboard_post_trash');
@@ -112,11 +113,9 @@ async function connectionSnapshot(res) {
 }
 
 async function backupPreview(res, id) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(id || '')) return res.status(400).json({ error: '백업 날짜가 올바르지 않습니다.' });
-  const backup = await db.collection('weekly_backups').doc(id).get();
-  if (!backup.exists) return res.status(404).json({ error: '해당 백업을 찾을 수 없습니다.' });
-  const items = await backup.ref.collection('items').limit(20).get();
-  return res.status(200).json({ backup: { id: backup.id, ...asJson(backup.data()) }, samplePaths: items.docs.map((doc) => doc.data().sourcePath) });
+  const preview = await previewWeeklyBackup(id);
+  const { plan, ...publicPreview } = preview;
+  return res.status(200).json({ preview: asJson(publicPreview) });
 }
 
 function recordScheduleChanges(tx, versionSnap, changes) {
@@ -160,8 +159,11 @@ export default async function handler(req, res) {
       return snapshot(res);
     }
 
-    const { action, id, ids, data } = req.body || {};
-    if (action === 'post:save') {
+    const { action, id, ids, data, confirmation } = req.body || {};
+    if (action === 'backup:restore') {
+      if (confirmation !== id) return res.status(400).json({ error: '대상 백업 ID를 다시 정확히 입력해야 합니다.' });
+      return res.status(200).json({ restore: asJson(await restoreWeeklyBackup(id)) });
+    } else if (action === 'post:save') {
       const next = postData(data || {});
       if (!next) return res.status(400).json({ error: '게시물 입력값이 올바르지 않습니다.' });
       const ref = id && validId(id) ? POSTS.doc(id) : POSTS.doc();
@@ -220,6 +222,7 @@ export default async function handler(req, res) {
     return snapshot(res);
   } catch (error) {
     console.error('dashboard API error', error);
+    if (req.method === 'POST' && req.body?.action === 'backup:restore') return res.status(500).json({ error: '복원 중 실패했습니다. 복원 직전 안전 백업을 확인하세요.', recoveryBackupId: error?.safetyBackupId || null });
     return res.status(500).json({ error: '대시보드 데이터를 처리하지 못했습니다.' });
   }
 }
