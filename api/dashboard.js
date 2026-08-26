@@ -227,6 +227,7 @@ export default async function handler(req, res) {
     return snapshot(res);
   } catch (error) {
     console.error('dashboard API error', error);
+    if (req.method === 'POST' && req.body?.action === 'backup:restore' && error?.code === 'restore-in-progress') return res.status(409).json({ error: error.message });
     if (req.method === 'POST' && req.body?.action === 'backup:restore') return res.status(500).json({ error: '복원 중 실패했습니다. 복원 직전 안전 백업을 확인하세요.', recoveryBackupId: error?.safetyBackupId || null });
     return res.status(500).json({ error: '대시보드 데이터를 처리하지 못했습니다.' });
   }

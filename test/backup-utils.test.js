@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { backupItemId, backupStateDifferences, isRestorableBackupId, koreaDateKey, recentRestoreResults, restorePlan } from '../lib/backup-utils.js';
+import { backupItemId, backupStateDifferences, isRestorableBackupId, isRestoreLockActive, koreaDateKey, recentRestoreResults, restorePlan } from '../lib/backup-utils.js';
 
 test('백업 날짜는 한국 시간 기준으로 생성한다', () => {
   assert.equal(koreaDateKey(new Date('2026-08-22T15:30:00Z')), '2026-08-23');
@@ -38,4 +38,9 @@ test('복원 검증은 누락·추가·변경 문서를 모두 실패로 감지�
   assert.deepEqual(differences.extraPaths, ['posts/extra']);
   assert.deepEqual(differences.missingPaths, ['posts/missing']);
   assert.deepEqual(differences.changedPaths, ['posts/a']);
+});
+
+test('복원 잠금은 만료 전에는 새 복원을 차단하고 만료 후에는 허용한다', () => {
+  assert.equal(isRestoreLockActive(2_000, 1_999), true);
+  assert.equal(isRestoreLockActive(2_000, 2_000), false);
 });
