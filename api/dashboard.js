@@ -3,7 +3,7 @@ import { db, firebaseProjectId } from '../lib/firebase-admin.js';
 import { allowJson, text } from '../lib/http.js';
 import { requireSchoolNetwork } from '../lib/school-access.js';
 import { versionedScheduleChanges } from '../lib/schedule-changes.js';
-import { previewWeeklyBackup, recentWeeklyRestoreResults, restoreWeeklyBackup } from '../lib/weekly-backup.js';
+import { assertNoRestoreInProgress, previewWeeklyBackup, recentWeeklyRestoreResults, restoreWeeklyBackup } from '../lib/weekly-backup.js';
 
 const POSTS = db.collection('dashboard_posts');
 const POST_TRASH = db.collection('dashboard_post_trash');
@@ -168,7 +168,9 @@ export default async function handler(req, res) {
     if (action === 'backup:restore') {
       if (confirmation !== id) return res.status(400).json({ error: '대상 백업 ID를 다시 정확히 입력해야 합니다.' });
       return res.status(200).json({ restore: asJson(await restoreWeeklyBackup(id)) });
-    } else if (action === 'post:save') {
+    }
+    await assertNoRestoreInProgress();
+    if (action === 'post:save') {
       const next = postData(data || {});
       if (!next) return res.status(400).json({ error: '게시물 입력값이 올바르지 않습니다.' });
       const ref = id && validId(id) ? POSTS.doc(id) : POSTS.doc();
@@ -227,7 +229,7 @@ export default async function handler(req, res) {
     return snapshot(res);
   } catch (error) {
     console.error('dashboard API error', error);
-    if (req.method === 'POST' && req.body?.action === 'backup:restore' && error?.code === 'restore-in-progress') return res.status(409).json({ error: error.message });
+    if (req.method === 'POST' && error?.code === 'restore-in-progress') return res.status(409).json({ error: error.message });
     if (req.method === 'POST' && req.body?.action === 'backup:restore') return res.status(500).json({ error: '복원 중 실패했습니다. 복원 직전 안전 백업을 확인하세요.', recoveryBackupId: error?.safetyBackupId || null });
     return res.status(500).json({ error: '대시보드 데이터를 처리하지 못했습니다.' });
   }
