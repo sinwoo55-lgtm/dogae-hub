@@ -3,7 +3,7 @@ import { db, firebaseProjectId } from '../lib/firebase-admin.js';
 import { allowJson, text } from '../lib/http.js';
 import { requireSchoolNetwork } from '../lib/school-access.js';
 import { versionedScheduleChanges } from '../lib/schedule-changes.js';
-import { previewWeeklyBackup, restoreWeeklyBackup } from '../lib/weekly-backup.js';
+import { previewWeeklyBackup, recentWeeklyRestoreResults, restoreWeeklyBackup } from '../lib/weekly-backup.js';
 
 const POSTS = db.collection('dashboard_posts');
 const POST_TRASH = db.collection('dashboard_post_trash');
@@ -118,6 +118,10 @@ async function backupPreview(res, id) {
   return res.status(200).json({ preview: asJson(publicPreview) });
 }
 
+async function restoreHistory(res) {
+  return res.status(200).json({ restores: asJson(await recentWeeklyRestoreResults()) });
+}
+
 function recordScheduleChanges(tx, versionSnap, changes) {
   const result = versionedScheduleChanges(versionSnap.exists ? versionSnap.data().version : 0, changes, Date.now());
   const version = result.version;
@@ -156,6 +160,7 @@ export default async function handler(req, res) {
       if (req.query?.scope === 'menu') return menuSnapshot(res);
       if (req.query?.scope === 'connection') return connectionSnapshot(res);
       if (req.query?.scope === 'backup-preview') return backupPreview(res, req.query?.id);
+      if (req.query?.scope === 'restore-history') return restoreHistory(res);
       return snapshot(res);
     }
 

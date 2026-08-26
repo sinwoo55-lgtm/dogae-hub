@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { backupItemId, isRestorableBackupId, koreaDateKey, restorePlan } from '../lib/backup-utils.js';
+import { backupItemId, isRestorableBackupId, koreaDateKey, recentRestoreResults, restorePlan } from '../lib/backup-utils.js';
 
 test('백업 날짜는 한국 시간 기준으로 생성한다', () => {
   assert.equal(koreaDateKey(new Date('2026-08-22T15:30:00Z')), '2026-08-23');
@@ -22,4 +22,9 @@ test('정기 백업과 복원 전 안전 백업 ID만 복원 대상으로 허용
   assert.equal(isRestorableBackupId('2026-08-20'), true);
   assert.equal(isRestorableBackupId('pre-restore-1787270400000'), true);
   assert.equal(isRestorableBackupId('weekly_backups'), false);
+});
+
+test('복원 이력은 최신 순으로 제한해 표시한다', () => {
+  const results = recentRestoreResults([{ id: 'old', startedAt: 1 }, { id: 'new', startedAt: 3 }, { id: 'middle', startedAt: 2 }], 2);
+  assert.deepEqual(results.map((result) => result.id), ['new', 'middle']);
 });
