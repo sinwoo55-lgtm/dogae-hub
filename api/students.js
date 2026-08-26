@@ -3,6 +3,7 @@ import { db } from '../lib/firebase-admin.js';
 import { allowJson, text } from '../lib/http.js';
 import { requireSchoolNetwork } from '../lib/school-access.js';
 import { markSchoolGuardSyncFailure, syncSchoolGuardRoster } from '../lib/school-guard-roster.js';
+import { hasRosterUploadData } from '../lib/roster-upload.js';
 
 const STUDENTS = db.collection('student_roster');
 const ACTIVITIES = db.collection('student_activities');
@@ -83,7 +84,9 @@ export default async function handler(req, res) {
     const { action, id, data } = req.body || {};
     if (action === 'roster:upload') {
       if (!Array.isArray(data) || !data.length || data.length > 2000) return res.status(400).json({ error: '업로드할 명단은 1~2000명이어야 합니다.' });
-      const rows = data.map(normalizeStudent); if (rows.some(row => !row)) return res.status(400).json({ error: '명단 열(학년, 반, 번호, 이름)을 확인해주세요.' });
+      const uploadedRows = data.filter(hasRosterUploadData);
+      if (!uploadedRows.length) return res.status(400).json({ error: '업로드할 학생 정보를 찾지 못했습니다.' });
+      const rows = uploadedRows.map(normalizeStudent); if (rows.some(row => !row)) return res.status(400).json({ error: '명단 열(학년, 반, 번호, 이름)을 확인해주세요.' });
       for (let offset = 0; offset < rows.length; offset += 450) {
         const batch = db.batch();
         rows.slice(offset, offset + 450).forEach(row => batch.set(STUDENTS.doc(row.key), { ...row, updatedAt: FieldValue.serverTimestamp() }, { merge: true }));
