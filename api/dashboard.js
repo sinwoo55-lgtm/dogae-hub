@@ -106,7 +106,7 @@ async function connectionSnapshot(res) {
     environment: process.env.VERCEL_ENV || 'development',
     scheduleVersion: version.exists ? Number(version.data().version || 0) : 0,
     scheduleUpdatedAt: version.exists && version.data().updatedAt?.toDate ? version.data().updatedAt.toDate().toISOString() : null,
-    rosterSync: rosterData ? { result: rosterData.lastResult || 'unknown', at: rosterData.syncedAt || rosterData.attemptedAt || null, count: Number(rosterData.studentCount || 0), error: rosterData.lastError || null } : null,
+    rosterSync: rosterData ? { result: rosterData.lastResult || 'unknown', at: rosterData.syncedAt || rosterData.attemptedAt || null, count: Number(rosterData.studentCount || 0), excludedMiddleSchoolCount: Number(rosterData.excludedMiddleSchoolCount || 0), error: rosterData.lastError || null } : null,
     disciplineSync: disciplineData ? { result: disciplineData.lastResult || 'success', at: disciplineData.syncedAt || disciplineData.attemptedAt || null, count: Number(disciplineData.recordCount || 0), error: disciplineData.lastError || null } : null,
     backups: backups.docs.map((doc) => ({ id: doc.id, ...asJson(doc.data()) })),
   });
