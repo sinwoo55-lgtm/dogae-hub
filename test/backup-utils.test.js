@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { backupItemId, isRestorableBackupId, koreaDateKey, recentRestoreResults, restorePlan } from '../lib/backup-utils.js';
+import { backupItemId, backupStateDifferences, isRestorableBackupId, koreaDateKey, recentRestoreResults, restorePlan } from '../lib/backup-utils.js';
 
 test('백업 날짜는 한국 시간 기준으로 생성한다', () => {
   assert.equal(koreaDateKey(new Date('2026-08-22T15:30:00Z')), '2026-08-23');
@@ -27,4 +27,15 @@ test('정기 백업과 복원 전 안전 백업 ID만 복원 대상으로 허용
 test('복원 이력은 최신 순으로 제한해 표시한다', () => {
   const results = recentRestoreResults([{ id: 'old', startedAt: 1 }, { id: 'new', startedAt: 3 }, { id: 'middle', startedAt: 2 }], 2);
   assert.deepEqual(results.map((result) => result.id), ['new', 'middle']);
+});
+
+test('복원 검증은 누락·추가·변경 문서를 모두 실패로 감지한다', () => {
+  const differences = backupStateDifferences(
+    [{ path: 'posts/a', data: { title: '변경됨' } }, { path: 'posts/extra', data: { title: '추가됨' } }],
+    [{ path: 'posts/a', data: { title: '원본' } }, { path: 'posts/missing', data: { title: '누락됨' } }],
+  );
+  assert.equal(differences.matches, false);
+  assert.deepEqual(differences.extraPaths, ['posts/extra']);
+  assert.deepEqual(differences.missingPaths, ['posts/missing']);
+  assert.deepEqual(differences.changedPaths, ['posts/a']);
 });
