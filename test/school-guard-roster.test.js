@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { deduplicateRoster } from '../lib/roster-dedup.js';
-import { isSchoolGuardEligible } from '../lib/school-guard-eligibility.js';
+import { isSchoolGuardClassEligible, isSchoolGuardEligible } from '../lib/school-guard-eligibility.js';
 
 test('같은 학번은 재학생을 우선해 선도부에 하나만 전송한다', () => {
   const result = deduplicateRoster([
@@ -24,4 +24,6 @@ test('중학생은 선도부 명단 동기화 대상에서 제외한다', () => 
   assert.equal(isSchoolGuardEligible({ grade: '중1' }), false);
   assert.equal(isSchoolGuardEligible({ grade: '중 2' }), false);
   assert.equal(isSchoolGuardEligible({ grade: '1' }), true);
+  assert.equal(isSchoolGuardClassEligible('중1-2'), false);
+  assert.equal(isSchoolGuardClassEligible('1-2'), true);
 });

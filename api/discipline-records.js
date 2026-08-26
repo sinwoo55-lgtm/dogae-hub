@@ -1,14 +1,15 @@
 import { db } from '../lib/firebase-admin.js';
 import { allowJson } from '../lib/http.js';
 import { requireSchoolNetwork } from '../lib/school-access.js';
+import { isSchoolGuardClassEligible } from '../lib/school-guard-eligibility.js';
 
-const validClass = (value) => typeof value === 'string' && /^\d{1,10}-\d{1,10}$/.test(value);
+const validClass = (value) => typeof value === 'string' && /^\d{1,10}-\d{1,10}$/.test(value) && isSchoolGuardClassEligible(value);
 
 export default async function handler(req, res) {
   if (!allowJson(req, res, ['GET'])) return;
   if (!requireSchoolNetwork(req, res)) return;
   const classKey = req.query?.classKey;
-  if (!validClass(classKey)) return res.status(400).json({ error: '학급 정보가 올바르지 않습니다.' });
+  if (!validClass(classKey)) return res.status(400).json({ error: '지적사항은 선도부 관리 대상인 고등 학급만 조회할 수 있습니다.' });
   try {
     const [records, summaries, meta] = await Promise.all([
       db.collection('discipline_records').where('classKey', '==', classKey).get(),
