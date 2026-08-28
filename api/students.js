@@ -84,14 +84,22 @@ export default async function handler(req, res) {
     }
     const { action, id, data } = req.body || {};
     if (action === 'roster:sync') {
-      try { return res.status(200).json({ rosterSync: await syncSchoolGuardRoster() }); }
+      try {
+        const rosterSync = await syncSchoolGuardRoster();
+        if (!rosterSync.synced) return res.status(503).json({ error: '선도부 명단 연동 설정이 완료되지 않았습니다.', detail: rosterSync.reason || null });
+        return res.status(200).json({ rosterSync });
+      }
       catch (error) {
         console.error('manual school guard roster sync error', error);
         await markSchoolGuardSyncFailure(error);
         return res.status(502).json({ error: '선도부 명단 최신화에 실패했습니다.' });
       }
     } else if (action === 'discipline:sync') {
-      try { return res.status(200).json({ disciplineSync: await syncDisciplineRecords() }); }
+      try {
+        const disciplineSync = await syncDisciplineRecords();
+        if (!disciplineSync.synced) return res.status(503).json({ error: '지적사항 연동 설정이 완료되지 않았습니다.', detail: disciplineSync.reason || null });
+        return res.status(200).json({ disciplineSync });
+      }
       catch (error) {
         console.error('manual discipline sync error', error);
         await markDisciplineSyncFailure(error);
