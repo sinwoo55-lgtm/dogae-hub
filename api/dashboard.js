@@ -174,13 +174,18 @@ export default async function handler(req, res) {
       const next = postData(data || {});
       if (!next) return res.status(400).json({ error: '게시물 입력값이 올바르지 않습니다.' });
       const ref = id && validId(id) ? POSTS.doc(id) : POSTS.doc();
+      let savedPost;
       await db.runTransaction(async (tx) => {
         const [existing, version] = await Promise.all([id && validId(id) ? tx.get(ref) : Promise.resolve(null), tx.get(SCHEDULE_VERSION)]);
         if (existing && !existing.exists) throw new Error('일정을 찾을 수 없습니다.');
         const stored = existing ? { ...existing.data(), ...next } : { ...next, createdAt: new Date().toLocaleDateString('ko-KR'), newUntil: Date.now() + (24 * 60 * 60 * 1000), ts: new Date().toISOString() };
         tx.set(ref, { ...stored, ts: FieldValue.serverTimestamp() });
         recordScheduleChanges(tx, version, [changedPost(ref.id, stored)]);
+        savedPost = { id: ref.id, ...asJson(stored) };
       });
+      // 저장 직후에는 전체 게시물·휴지통·링크를 다시 읽지 않는다.
+      // 실시간 변경 알림이 다른 화면도 같은 상태로 맞춘다.
+      return res.status(200).json({ post: savedPost });
     } else if (action === 'post:delete' && validId(id)) {
       await db.runTransaction(async (tx) => {
         const source = POSTS.doc(id); const [snap, version] = await Promise.all([tx.get(source), tx.get(SCHEDULE_VERSION)]);
