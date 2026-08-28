@@ -4,6 +4,7 @@ import { allowJson, text } from '../lib/http.js';
 import { requireSchoolNetwork } from '../lib/school-access.js';
 import { markSchoolGuardSyncFailure, syncSchoolGuardRoster } from '../lib/school-guard-roster.js';
 import { hasRosterUploadData } from '../lib/roster-upload.js';
+import { markDisciplineSyncFailure, syncDisciplineRecords } from './discipline-sync.js';
 
 const STUDENTS = db.collection('student_roster');
 const ACTIVITIES = db.collection('student_activities');
@@ -82,7 +83,21 @@ export default async function handler(req, res) {
       return snapshot(res);
     }
     const { action, id, data } = req.body || {};
-    if (action === 'roster:upload') {
+    if (action === 'roster:sync') {
+      try { return res.status(200).json({ rosterSync: await syncSchoolGuardRoster() }); }
+      catch (error) {
+        console.error('manual school guard roster sync error', error);
+        await markSchoolGuardSyncFailure(error);
+        return res.status(502).json({ error: '선도부 명단 최신화에 실패했습니다.' });
+      }
+    } else if (action === 'discipline:sync') {
+      try { return res.status(200).json({ disciplineSync: await syncDisciplineRecords() }); }
+      catch (error) {
+        console.error('manual discipline sync error', error);
+        await markDisciplineSyncFailure(error);
+        return res.status(502).json({ error: '지적사항 동기화에 실패했습니다.' });
+      }
+    } else if (action === 'roster:upload') {
       if (!Array.isArray(data) || !data.length || data.length > 2000) return res.status(400).json({ error: '업로드할 명단은 1~2000명이어야 합니다.' });
       const uploadedRows = data.filter(hasRosterUploadData);
       if (!uploadedRows.length) return res.status(400).json({ error: '업로드할 학생 정보를 찾지 못했습니다.' });
