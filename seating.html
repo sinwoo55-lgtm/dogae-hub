@@ -1060,6 +1060,24 @@ function closeAllMenus(){
 }
 document.addEventListener('click',closeAllMenus);
 
+function resetClassSettings(){
+  colGaps=new Set();rowGaps=new Set();emptySeats=new Set();fixedSeats={};
+  pairs=[];avoids=[];prefZones=[];layout=[];
+  document.getElementById('sCols').value=6;
+  document.getElementById('sRows').value=5;
+  document.getElementById('optGender').checked=false;
+}
+function hubRosterForClass(classKey){
+  return fetch('/api/students?classKey='+encodeURIComponent(classKey))
+    .then(function(response){return response.json().then(function(data){if(!response.ok)throw new Error(data.error||'학생 명단을 불러오지 못했습니다.');return data;});})
+    .then(function(data){
+      return (data.students||[])
+        .filter(function(student){return student.status!=='전출';})
+        .sort(function(a,b){return Number(a.number)-Number(b.number);})
+        .map(function(student){return {num:Number(student.number),name:student.name||'',gender:'',absent:false,role:''};});
+    });
+}
+
 /* ──────────── S1 학급 선택 ──────────── */
 function enterClass(){
   var v=document.getElementById('classInput').value.trim();
@@ -1098,16 +1116,29 @@ function enterClass(){
       showToast('📂 '+v+' 학급 데이터를 불러왔어요');
       updateLoadBtn();
     } else {
-      students=[];studentCount=30;
-      document.getElementById('countVal').value=30;
-      buildStudentRows(null,30);
+      resetClassSettings();
+      document.getElementById('studentsGrid').innerHTML='<div style="grid-column:1/-1;text-align:center;padding:34px;color:var(--muted);font-size:13px;">정보 허브 학생 명단을 불러오는 중...</div>';
       goScreen('s2');
-      showToast('새 학급입니다. 학생 명단을 입력해 주세요.');
-    updateLoadBtn();
+      hubRosterForClass(v).then(function(roster){
+        students=roster;
+        studentCount=roster.length||30;
+        document.getElementById('countVal').value=studentCount;
+        buildStudentRows(roster.length?roster:null,studentCount);
+        showToast(roster.length?'👥 정보 허브에서 '+roster.length+'명 명단을 불러왔어요':'등록된 학생 명단이 없습니다. 직접 입력해 주세요.');
+        updateLoadBtn();
+      }).catch(function(){
+        students=[];studentCount=30;
+        document.getElementById('countVal').value=30;
+        buildStudentRows(null,30);
+        showToast('학생 명단을 불러오지 못했습니다. 직접 입력해 주세요.');
+        updateLoadBtn();
+      });
     }
   }).catch(function(){
+    resetClassSettings();students=[];studentCount=30;
+    document.getElementById('countVal').value=30;
     buildStudentRows(null,30);goScreen('s2');
-    showToast('데이터가 없습니다. 학생 명단을 입력해 주세요.');
+    showToast('자리 배치 데이터를 불러오지 못했습니다. 학생 명단을 입력해 주세요.');
   });
 }
 function saveRecent(cls){
