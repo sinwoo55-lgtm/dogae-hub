@@ -88,10 +88,16 @@ function menuList(value) {
   return list;
 }
 
+function menuOrder(value) {
+  if (!Array.isArray(value) || value.length !== MENU_IDS.length || new Set(value).size !== MENU_IDS.length || value.some((id) => !MENU_IDS.includes(id))) return null;
+  return value;
+}
+
 async function menuSnapshot(res) {
   const settings = await MENU_SETTINGS.get();
   const items = settings.exists && settings.data().items && typeof settings.data().items === 'object' ? settings.data().items : {};
-  return res.status(200).json({ menu: Object.fromEntries(MENU_IDS.map((id) => [id, items[id] !== false])) });
+  const order = menuOrder(settings.exists ? settings.data().order : null) || MENU_IDS;
+  return res.status(200).json({ menu: Object.fromEntries(MENU_IDS.map((id) => [id, items[id] !== false])), menuOrder: order });
 }
 
 async function connectionSnapshot(res) {
@@ -233,10 +239,11 @@ export default async function handler(req, res) {
       if (!list) return res.status(400).json({ error: '부서 목록 입력값이 올바르지 않습니다.' });
       await DEPARTMENTS.set({ list });
     } else if (action === 'menu:save') {
-      const items = menuList(data);
-      if (!items) return res.status(400).json({ error: '메뉴 표시 설정이 올바르지 않습니다.' });
-      await MENU_SETTINGS.set({ items, updatedAt: FieldValue.serverTimestamp() });
-      return res.status(200).json({ menu: items });
+      const items = menuList(data?.items || data);
+      const order = data?.order === undefined ? MENU_IDS : menuOrder(data.order);
+      if (!items || !order) return res.status(400).json({ error: '메뉴 설정이 올바르지 않습니다.' });
+      await MENU_SETTINGS.set({ items, order, updatedAt: FieldValue.serverTimestamp() });
+      return res.status(200).json({ menu: items, menuOrder: order });
     } else if (action === 'timetable:save') {
       const fileName = text(data?.fileName, 120);
       const fileBase64 = typeof data?.fileBase64 === 'string' && data.fileBase64.length <= 4_000_000 ? data.fileBase64 : null;
