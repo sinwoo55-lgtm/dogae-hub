@@ -58,6 +58,10 @@ header{flex-shrink:0;background:var(--surface);border-bottom:1px solid var(--bor
 .class-input{width:100%;padding:13px 16px;background:var(--bg);border:1.5px solid var(--border);border-radius:11px;font-family:inherit;font-size:18px;color:var(--text);outline:none;text-align:center;letter-spacing:3px;margin-bottom:12px;transition:var(--tr);}
 .class-input:focus{border-color:var(--navy);background:#fff;}
 .class-input::placeholder{letter-spacing:0;font-size:14px;color:#B0BAC8;}
+.class-select-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+.class-select-row .class-input{margin:0;letter-spacing:0;font-size:15px;text-align:left;cursor:pointer;}
+.class-select-row .class-input:disabled{cursor:not-allowed;color:var(--muted);opacity:.7;}
+.class-select-note{min-height:18px;margin:-4px 0 12px;font-size:11.5px;color:var(--muted);}
 .recent-wrap{margin-top:18px;text-align:left;display:none;}
 .recent-label{font-size:11px;color:var(--muted);margin-bottom:7px;}
 .recent-chips{display:flex;flex-wrap:wrap;gap:6px;}
@@ -638,8 +642,12 @@ html[data-theme="dark"] .pv-cell.es{background:#1A2233!important;border-color:#3
 <div class="screen active" id="s1">
   <div class="class-card">
     <h2>📋 학급 자리 배치</h2>
-    <p>담당 학급을 입력하세요</p>
-    <input class="class-input" id="classInput" placeholder="예) 1-3" maxlength="6" onkeydown="if(event.key==='Enter')enterClass()"/>
+    <p>담당 학년과 반을 선택하세요</p>
+    <div class="class-select-row">
+      <select class="class-input" id="gradeSelect" onchange="updateClassOptions()" disabled><option value="">학년 선택</option></select>
+      <select class="class-input" id="classSelect" disabled><option value="">반 선택</option></select>
+    </div>
+    <div class="class-select-note" id="classSelectNote">학급 목록을 불러오는 중...</div>
     <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;" onclick="enterClass()">입장하기</button>
     <div class="recent-wrap" id="recentWrap">
       <div class="recent-label">최근 학급</div>
@@ -1023,6 +1031,7 @@ var db={collection:function(name){if(name!=='seating_classes')throw new Error('�
 /* ──────────── 상태 ──────────── */
 var curClass='', studentCount=30, curTheme='simple';
 var students=[];
+var availableClasses=[];
 var colGaps=new Set(), rowGaps=new Set(), emptySeats=new Set(), fixedSeats={};
 var pairs=[], avoids=[], prefZones=[];
 var layout=[], dragSrc=null, menuCell={r:0,c:0};
@@ -1080,8 +1089,13 @@ function hubRosterForClass(classKey){
 
 /* ──────────── S1 학급 선택 ──────────── */
 function enterClass(){
-  var v=document.getElementById('classInput').value.trim();
-  if(!v){alert('학급을 입력해주세요.');return;}
+  var grade=document.getElementById('gradeSelect').value;
+  var classNo=document.getElementById('classSelect').value;
+  if(!grade||!classNo){showToast('학년과 반을 선택해주세요.');return;}
+  openClass(grade+'-'+classNo);
+}
+function openClass(v){
+  if(!/^\d+-\d+$/.test(v)){showToast('학급 정보가 올바르지 않습니다.');return;}
   curClass=v;
   saveRecent(v);
   document.getElementById('s2title').textContent=v+' 학급 — 학생 명단';
@@ -1141,21 +1155,50 @@ function enterClass(){
     showToast('자리 배치 데이터를 불러오지 못했습니다. 학생 명단을 입력해 주세요.');
   });
 }
+function loadClassChoices(){
+  var gradeSelect=document.getElementById('gradeSelect');
+  var classSelect=document.getElementById('classSelect');
+  var note=document.getElementById('classSelectNote');
+  fetch('/api/students?meta=1').then(function(response){return response.json().then(function(data){if(!response.ok)throw new Error(data.error||'학급 목록을 불러오지 못했습니다.');return data;});})
+    .then(function(data){
+      availableClasses=(data.classes||[]).filter(function(classKey){return /^\d+-\d+$/.test(classKey);});
+      var grades=[...new Set(availableClasses.map(function(classKey){return classKey.split('-')[0];}))].sort(function(a,b){return Number(a)-Number(b);});
+      gradeSelect.innerHTML='<option value="">학년 선택</option>'+grades.map(function(grade){return '<option value="'+esc(grade)+'">'+esc(grade)+'학년</option>';}).join('');
+      gradeSelect.disabled=!grades.length;
+      classSelect.disabled=true;
+      note.textContent=grades.length?'학년과 반을 선택하면 학생 명단을 불러옵니다.':'선택할 학급이 없습니다.';
+      renderRecent();
+    }).catch(function(){
+      gradeSelect.disabled=true;classSelect.disabled=true;
+      note.textContent='학급 목록을 불러오지 못했습니다. 잠시 후 다시 접속해 주세요.';
+      renderRecent();
+    });
+}
+function updateClassOptions(){
+  var grade=document.getElementById('gradeSelect').value;
+  var classSelect=document.getElementById('classSelect');
+  var classes=availableClasses.filter(function(classKey){return classKey.split('-')[0]===grade;}).map(function(classKey){return classKey.split('-')[1];}).sort(function(a,b){return Number(a)-Number(b);});
+  classSelect.innerHTML='<option value="">반 선택</option>'+classes.map(function(classNo){return '<option value="'+esc(classNo)+'">'+esc(classNo)+'반</option>';}).join('');
+  classSelect.disabled=!classes.length;
+}
+function openRecentClass(classKey){
+  openClass(classKey);
+}
 function saveRecent(cls){
   var arr=JSON.parse(localStorage.getItem('seatRecent')||'[]');
   arr=arr.filter(function(c){return c!==cls;});arr.unshift(cls);arr=arr.slice(0,6);
   localStorage.setItem('seatRecent',JSON.stringify(arr));renderRecent();
 }
 function renderRecent(){
-  var arr=JSON.parse(localStorage.getItem('seatRecent')||'[]');
+  var arr=JSON.parse(localStorage.getItem('seatRecent')||'[]').filter(function(classKey){return /^\d+-\d+$/.test(classKey);});
   var wrap=document.getElementById('recentWrap'),chips=document.getElementById('recentChips');
   if(!arr.length){wrap.style.display='none';return;}
   wrap.style.display='block';
   chips.innerHTML=arr.map(function(c){
-    return '<span class="class-chip" onclick="document.getElementById(\'classInput\').value=\''+esc(c)+'\';enterClass()">'+esc(c)+'</span>';
+    return '<span class="class-chip" onclick="openRecentClass(\''+esc(c)+'\')">'+esc(c)+'</span>';
   }).join('');
 }
-renderRecent();
+renderRecent();loadClassChoices();
 
 /* ──────────── S2 학생 명단 ──────────── */
 function adjustCount(d){
