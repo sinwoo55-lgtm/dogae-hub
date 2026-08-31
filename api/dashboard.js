@@ -4,15 +4,17 @@ import { allowJson, text } from '../lib/http.js';
 import { requireSchoolNetwork } from '../lib/school-access.js';
 import { versionedScheduleChanges } from '../lib/schedule-changes.js';
 import { assertNoRestoreInProgress, previewWeeklyBackup, recentWeeklyRestoreResults, restoreWeeklyBackup } from '../lib/weekly-backup.js';
+import { parseTimetableWorkbook } from '../lib/timetable-swap.js';
 
 const POSTS = db.collection('dashboard_posts');
 const POST_TRASH = db.collection('dashboard_post_trash');
 const LINKS = db.collection('dashboard_links');
 const DEPARTMENTS = db.collection('dashboard_meta').doc('departments');
 const MENU_SETTINGS = db.collection('dashboard_meta').doc('menu_settings');
+const TIMETABLE = db.collection('dashboard_meta').doc('teacher_timetable');
 const SCHEDULE_VERSION = db.collection('dashboard_meta').doc('schedule_version');
 const SCHEDULE_CHANGES = db.collection('schedule_changes');
-const MENU_IDS = ['calendar', 'links', 'organization', 'students', 'career', 'seating'];
+const MENU_IDS = ['calendar', 'links', 'organization', 'students', 'career', 'seating', 'timetable'];
 
 function asJson(value) {
   if (Array.isArray(value)) return value.map(asJson);
@@ -122,6 +124,13 @@ async function restoreHistory(res) {
   return res.status(200).json({ restores: asJson(await recentWeeklyRestoreResults()) });
 }
 
+async function timetableSnapshot(res) {
+  const snapshot = await TIMETABLE.get();
+  if (!snapshot.exists) return res.status(200).json({ timetable: null });
+  const data = snapshot.data();
+  return res.status(200).json({ timetable: asJson(data.timetable || null), sourceFileName: data.sourceFileName || '', importedAt: data.importedAt?.toDate ? data.importedAt.toDate().toISOString() : null });
+}
+
 function recordScheduleChanges(tx, versionSnap, changes) {
   const result = versionedScheduleChanges(versionSnap.exists ? versionSnap.data().version : 0, changes, Date.now());
   const version = result.version;
@@ -161,6 +170,7 @@ export default async function handler(req, res) {
       if (req.query?.scope === 'connection') return connectionSnapshot(res);
       if (req.query?.scope === 'backup-preview') return backupPreview(res, req.query?.id);
       if (req.query?.scope === 'restore-history') return restoreHistory(res);
+      if (req.query?.scope === 'timetable') return timetableSnapshot(res);
       return snapshot(res);
     }
 
@@ -227,6 +237,13 @@ export default async function handler(req, res) {
       if (!items) return res.status(400).json({ error: '메뉴 표시 설정이 올바르지 않습니다.' });
       await MENU_SETTINGS.set({ items, updatedAt: FieldValue.serverTimestamp() });
       return res.status(200).json({ menu: items });
+    } else if (action === 'timetable:save') {
+      const fileName = text(data?.fileName, 120);
+      const fileBase64 = typeof data?.fileBase64 === 'string' && data.fileBase64.length <= 4_000_000 ? data.fileBase64 : null;
+      if (!fileName || !/\.xlsx$/i.test(fileName) || !fileBase64 || !/^[A-Za-z0-9+/=]+$/.test(fileBase64)) return res.status(400).json({ error: 'xlsx 시간표 파일을 다시 선택해주세요.' });
+      const timetable = parseTimetableWorkbook(Buffer.from(fileBase64, 'base64'));
+      await TIMETABLE.set({ timetable, sourceFileName: fileName, importedAt: FieldValue.serverTimestamp() });
+      return res.status(200).json({ timetable, sourceFileName: fileName });
     } else {
       return res.status(400).json({ error: '알 수 없는 작업입니다.' });
     }
