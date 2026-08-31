@@ -24,7 +24,7 @@
     var button=document.createElement('button');button.type='button';button.className='hub-menu-trigger';button.setAttribute('aria-label','메뉴 열기');button.textContent='☰ 메뉴';
     var topbar=document.createElement('div');topbar.className='hub-topbar';topbar.innerHTML='<div class="hub-brand"><img src="logo.png" alt="도개중고등학교 로고"><div><b>'+info.ko+'</b><small>'+info.en+'</small></div></div><div class="hub-topbar-right"><span class="hub-date"></span></div>';
     topbar.querySelector('.hub-date').textContent=new Date().toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric',weekday:'short'});
-    var right=topbar.querySelector('.hub-topbar-right'),sourceLogo=header.querySelector('#logoWrap'),linkAdminPage=!sourceLogo&&['links.html','students.html'].includes(location.pathname.split('/').pop()),linkAdminControls;
+    var right=topbar.querySelector('.hub-topbar-right'),sourceLogo=header.querySelector('#logoWrap'),linkAdminPage=!sourceLogo&&['links.html','students.html','timetable.html'].includes(location.pathname.split('/').pop()),linkAdminControls;
     var tools=header.querySelector('.header-right');
     if(tools){Array.from(tools.children).forEach(function(el){if(!el.matches('.logo-wrap,.header-logo'))right.appendChild(el)})}
     var deptTotal=header.querySelector('.dept-total');
