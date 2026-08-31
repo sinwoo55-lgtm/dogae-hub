@@ -1,5 +1,6 @@
 {
   "crons": [
-    { "path": "/api/calendar-refresh", "schedule": "0 13 * * *" }
+    { "path": "/api/discipline-sync", "schedule": "0 13 * * *" },
+    { "path": "/api/calendar-refresh", "schedule": "0 14 * * *" }
   ]
 }
