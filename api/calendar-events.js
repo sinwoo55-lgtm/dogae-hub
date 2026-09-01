@@ -81,7 +81,9 @@ export default async function handler(req, res) {
     const snapshot = await CACHE.doc(String(year)).get();
     const cached = snapshot.exists ? snapshot.data() : { events: {}, configured: { academic: false, holiday: false }, warnings: ['일정 캐시를 준비 중입니다.'] };
     const prefix = all ? `${year}-` : `${year}-${String(month).padStart(2, '0')}-`;
-    const events = Object.fromEntries(Object.entries(cached.events || {}).filter(([date]) => date.startsWith(prefix)));
+    const events = Object.fromEntries(Object.entries(cached.events || {})
+      .filter(([date]) => date.startsWith(prefix))
+      .map(([date, items]) => [date, mergeCalendarDayEvents(items)]));
     return res.status(200).json({ events, configured: cached.configured, warnings: cached.warnings || [], refreshedAt: cached.refreshedAt || null, cached: snapshot.exists });
   } catch (error) {
     console.error('calendar cache read error', error);
