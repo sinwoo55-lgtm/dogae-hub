@@ -3,6 +3,7 @@ import { requireSchoolNetwork } from '../lib/school-access.js';
 import { refreshCalendarYear } from './calendar-events.js';
 import { markDisciplineSyncFailure, syncDisciplineRecords } from './discipline-sync.js';
 import { createWeeklyBackup } from '../lib/weekly-backup.js';
+import { DEFAULT_CALENDAR_REFRESH_SPAN, calendarRefreshYears } from '../lib/calendar-refresh-window.js';
 
 function koreaYear() {
   return Number(new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Seoul', year: 'numeric' }).format(new Date()));
@@ -34,9 +35,9 @@ export default async function handler(req, res) {
   if (!allowJson(req, res, ['GET'])) return;
   if (!isCronRequest(req) && !requireSchoolNetwork(req, res)) return;
   const center = Number(req.query?.year) || koreaYear();
-  const span = req.query?.span === undefined ? 2 : Number(req.query.span);
+  const span = req.query?.span === undefined ? DEFAULT_CALENDAR_REFRESH_SPAN : Number(req.query.span);
   if (!Number.isInteger(center) || center < 2020 || center > 2100 || !Number.isInteger(span) || span < 0 || span > 10) return res.status(400).json({ error: '기준 연도 또는 저장 범위가 올바르지 않습니다.' });
-  const years = Array.from({ length: (span * 2) + 1 }, (_, index) => center - span + index).filter((year) => year >= 2020 && year <= 2100);
+  const years = calendarRefreshYears(center, span);
   let discipline = { skipped: true, reason: 'manual refresh' };
   let backup = { skipped: true, reason: 'not Sunday or manual refresh' };
   // Cron에서는 오래 걸릴 수 있는 학사일정 갱신보다 먼저 핵심 동기화를 끝낸다.
