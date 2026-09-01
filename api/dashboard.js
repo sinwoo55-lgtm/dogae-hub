@@ -192,12 +192,33 @@ async function snapshot(res) {
   });
 }
 
+async function homeSnapshot(res) {
+  const [posts, departments] = await Promise.all([
+    POSTS.orderBy('ts', 'desc').get(),
+    DEPARTMENTS.get(),
+  ]);
+  return res.status(200).json({
+    posts: posts.docs.map((doc) => ({ id: doc.id, ...asJson(doc.data()) })),
+    departments: departments.exists ? asJson(departments.data().list || []) : null,
+  });
+}
+
+async function trashSnapshot(res) {
+  const now = Date.now();
+  const expired = await POST_TRASH.where('expiresAt', '<=', now).get();
+  if (!expired.empty) { const batch = db.batch(); expired.docs.forEach((doc) => batch.delete(doc.ref)); await batch.commit(); }
+  const trash = await POST_TRASH.orderBy('deletedAt', 'desc').get();
+  return res.status(200).json({ trash: trash.docs.map((doc) => ({ id: doc.id, ...asJson(doc.data()) })) });
+}
+
 export default async function handler(req, res) {
   if (!allowJson(req, res, ['GET', 'POST'])) return;
   if (!requireSchoolNetwork(req, res)) return;
 
   try {
     if (req.method === 'GET') {
+      if (req.query?.scope === 'home') return homeSnapshot(res);
+      if (req.query?.scope === 'trash') return trashSnapshot(res);
       if (req.query?.scope === 'menu') return menuSnapshot(res);
       if (req.query?.scope === 'connection') return connectionSnapshot(res);
       if (req.query?.scope === 'backup-preview') return backupPreview(res, req.query?.id);

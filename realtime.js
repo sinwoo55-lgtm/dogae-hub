@@ -131,7 +131,7 @@
     if (event.target && event.target.id === 'classSelect' && event.target.value) start();
   });
   window.DogaeRealtime = { start: start };
-  if (document.documentElement.dataset.realtime === 'on') {
+  function startAfterFirstPaint() {
     if (!warmScheduleCache()) {
       initialLoad = sync(-1).finally(function () {
         initialLoad = null;
@@ -143,5 +143,11 @@
       });
     }
     start();
+  }
+  if (document.documentElement.dataset.realtime === 'on') {
+    window.addEventListener('load', function () {
+      if ('requestIdleCallback' in window) window.requestIdleCallback(startAfterFirstPaint, { timeout: 1500 });
+      else window.setTimeout(startAfterFirstPaint, 400);
+    }, { once: true });
   }
 })();
