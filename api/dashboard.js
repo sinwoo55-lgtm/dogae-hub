@@ -7,6 +7,7 @@ import { assertNoRestoreInProgress, previewWeeklyBackup, recentWeeklyRestoreResu
 import { parseTimetableWorkbook } from '../lib/timetable-swap.js';
 import { googleDriveDownloadUrl, isGoogleDriveFileLink } from '../lib/resource-library.js';
 import { timetableTerm } from '../lib/timetable-term.js';
+import { normalizedMenuOrder } from '../lib/menu-order.js';
 
 const POSTS = db.collection('dashboard_posts');
 const POST_TRASH = db.collection('dashboard_post_trash');
@@ -113,8 +114,7 @@ async function resourceDownload(res, id) {
 }
 
 function menuOrder(value) {
-  if (!Array.isArray(value) || value.length !== MENU_IDS.length || new Set(value).size !== MENU_IDS.length || value.some((id) => !MENU_IDS.includes(id))) return null;
-  return value;
+  return normalizedMenuOrder(MENU_IDS, value);
 }
 
 async function menuSnapshot(res) {
