@@ -41,6 +41,10 @@ function date(value) {
   return value === '' || (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) ? value : null;
 }
 
+function koreaYear() {
+  return Number(new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Seoul', year: 'numeric' }).format(new Date()));
+}
+
 function postData(value) {
   const author = text(value.author, 20);
   const title = text(value.title ?? value.content, 80);
@@ -125,11 +129,13 @@ async function menuSnapshot(res) {
 }
 
 async function connectionSnapshot(res) {
-  const [version, roster, discipline, backups] = await Promise.all([
+  const year = koreaYear();
+  const [version, roster, discipline, backups, calendar] = await Promise.all([
     SCHEDULE_VERSION.get(),
     db.collection('student_meta').doc('school_guard_sync').get(),
     db.collection('discipline_meta').doc('latest').get(),
     db.collection('weekly_backups').orderBy('startedAt', 'desc').limit(8).get(),
+    db.collection('calendar_cache').doc(String(year)).get(),
   ]);
   const rosterData = roster.exists ? asJson(roster.data()) : null;
   const disciplineData = discipline.exists ? asJson(discipline.data()) : null;
@@ -140,6 +146,7 @@ async function connectionSnapshot(res) {
     scheduleUpdatedAt: version.exists && version.data().updatedAt?.toDate ? version.data().updatedAt.toDate().toISOString() : null,
     rosterSync: rosterData ? { result: rosterData.lastResult || 'unknown', at: rosterData.syncedAt || rosterData.attemptedAt || null, count: Number(rosterData.studentCount || 0), excludedMiddleSchoolCount: Number(rosterData.excludedMiddleSchoolCount || 0), error: rosterData.lastError || null } : null,
     disciplineSync: disciplineData ? { result: disciplineData.lastResult || 'success', at: disciplineData.syncedAt || disciplineData.attemptedAt || null, count: Number(disciplineData.recordCount || 0), error: disciplineData.lastError || null } : null,
+    calendarRefresh: calendar.exists ? { year, refreshedAt: calendar.data().refreshedAt || null, configured: calendar.data().configured || {}, warnings: calendar.data().warnings || [] } : { year, refreshedAt: null, configured: {}, warnings: ['일정 캐시를 찾을 수 없습니다.'] },
     backups: backups.docs.map((doc) => ({ id: doc.id, ...asJson(doc.data()) })),
   });
 }
