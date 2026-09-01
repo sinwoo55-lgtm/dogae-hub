@@ -5,7 +5,8 @@ import { requireSchoolNetwork } from '../lib/school-access.js';
 import { versionedScheduleChanges } from '../lib/schedule-changes.js';
 import { assertNoRestoreInProgress, previewWeeklyBackup, recentWeeklyRestoreResults, restoreWeeklyBackup } from '../lib/weekly-backup.js';
 import { parseTimetableWorkbook } from '../lib/timetable-swap.js';
-import { RESOURCE_CHUNK_BYTES, isAllowedResourceFile, resourceContentType, resourceChunkCount } from '../lib/resource-library.js';
+import { googleDriveDownloadUrl, isGoogleDriveFileLink } from '../lib/resource-library.js';
+import { timetableTerm } from '../lib/timetable-term.js';
 
 const POSTS = db.collection('dashboard_posts');
 const POST_TRASH = db.collection('dashboard_post_trash');
@@ -16,7 +17,7 @@ const MENU_SETTINGS = db.collection('dashboard_meta').doc('menu_settings');
 const TIMETABLE = db.collection('dashboard_meta').doc('teacher_timetable');
 const SCHEDULE_VERSION = db.collection('dashboard_meta').doc('schedule_version');
 const SCHEDULE_CHANGES = db.collection('schedule_changes');
-const MENU_IDS = ['calendar', 'links', 'organization', 'students', 'career', 'seating', 'timetable'];
+const MENU_IDS = ['calendar', 'links', 'resources', 'organization', 'students', 'career', 'seating', 'timetable'];
 
 function asJson(value) {
   if (Array.isArray(value)) return value.map(asJson);
@@ -92,15 +93,13 @@ function menuList(value) {
 
 function resourceData(value) {
   const title = text(value.title, 80);
-  const fileName = text(value.fileName, 160);
+  const driveUrl = text(value.driveUrl, 1000);
   const desc = value.desc === '' || value.desc === undefined ? '' : text(value.desc, 240);
   const rawTags = value.tags === undefined ? [] : value.tags;
-  const fileBase64 = typeof value.fileBase64 === 'string' && value.fileBase64.length <= 4_200_000 && /^[A-Za-z0-9+/=]+$/.test(value.fileBase64) ? value.fileBase64 : null;
-  if (!title || !fileName || desc === null || !Array.isArray(rawTags) || rawTags.length > 10 || !fileBase64) return null;
+  if (!title || !driveUrl || desc === null || !Array.isArray(rawTags) || rawTags.length > 10 || !isGoogleDriveFileLink(driveUrl)) return null;
   const tags = [...new Set(rawTags.map((tag) => text(tag, 20)))];
-  const file = Buffer.from(fileBase64, 'base64');
-  if (tags.some((tag) => !tag) || !isAllowedResourceFile(fileName, file.length)) return null;
-  return { title, fileName, desc, tags, file, contentType: resourceContentType(fileName) };
+  if (tags.some((tag) => !tag)) return null;
+  return { title, driveUrl, desc, tags };
 }
 
 async function resourceDownload(res, id) {
@@ -108,14 +107,9 @@ async function resourceDownload(res, id) {
   const resource = await RESOURCES.doc(id).get();
   if (!resource.exists) return res.status(404).json({ error: '자료를 찾을 수 없습니다.' });
   const data = resource.data();
-  const chunks = await resource.ref.collection('chunks').orderBy('index').get();
-  if (!chunks.docs.length || chunks.docs.length !== Number(data.chunkCount || 0)) return res.status(404).json({ error: '자료 파일을 찾을 수 없습니다.' });
-  const buffer = Buffer.concat(chunks.docs.map((chunk) => Buffer.from(String(chunk.data().content || ''), 'base64')));
-  if (!isAllowedResourceFile(data.fileName, buffer.length)) return res.status(404).json({ error: '자료 파일을 확인할 수 없습니다.' });
-  res.setHeader('Content-Type', data.contentType || 'application/octet-stream');
-  res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(data.fileName || '자료')}`);
-  res.setHeader('Content-Length', buffer.length);
-  return res.status(200).end(buffer);
+  const downloadUrl = googleDriveDownloadUrl(data.driveUrl);
+  if (!downloadUrl) return res.status(404).json({ error: 'Google Drive 자료 링크를 찾을 수 없습니다.' });
+  return res.redirect(302, downloadUrl);
 }
 
 function menuOrder(value) {
@@ -164,7 +158,7 @@ async function timetableSnapshot(res) {
   const snapshot = await TIMETABLE.get();
   if (!snapshot.exists) return res.status(200).json({ timetable: null });
   const data = snapshot.data();
-  return res.status(200).json({ timetable: asJson(data.timetable || null), sourceFileName: data.sourceFileName || '', importedAt: data.importedAt?.toDate ? data.importedAt.toDate().toISOString() : null });
+  return res.status(200).json({ timetable: asJson(data.timetable || null), sourceFileName: data.sourceFileName || '', academicYear: Number(data.academicYear) || null, semester: data.semester || '', importedAt: data.importedAt?.toDate ? data.importedAt.toDate().toISOString() : null });
 }
 
 function recordScheduleChanges(tx, versionSnap, changes) {
@@ -267,18 +261,10 @@ export default async function handler(req, res) {
       else await LINKS.add({ ...next, createdAt: new Date().toLocaleDateString('ko-KR'), createdTs: Date.now(), ts: FieldValue.serverTimestamp() });
     } else if (action === 'link:delete' && validId(id)) {
       await LINKS.doc(id).delete();
-    } else if (action === 'resource:upload') {
+    } else if (action === 'resource:save') {
       const next = resourceData(data || {});
-      if (!next) return res.status(400).json({ error: '자료 제목, 파일 형식 또는 파일 크기를 확인해주세요. (3MB 이하 업무 문서)' });
-      const ref = RESOURCES.doc();
-      const chunkCount = resourceChunkCount(next.file.length);
-      const batch = db.batch();
-      batch.set(ref, { title: next.title, fileName: next.fileName, desc: next.desc, tags: next.tags, contentType: next.contentType, byteLength: next.file.length, chunkCount, createdAt: new Date().toLocaleDateString('ko-KR'), createdTs: Date.now(), ts: FieldValue.serverTimestamp() });
-      for (let index = 0; index < chunkCount; index++) {
-        const start = index * RESOURCE_CHUNK_BYTES;
-        batch.set(ref.collection('chunks').doc(String(index).padStart(3, '0')), { index, content: next.file.subarray(start, start + RESOURCE_CHUNK_BYTES).toString('base64') });
-      }
-      await batch.commit();
+      if (!next) return res.status(400).json({ error: '자료 제목과 Google Drive 파일 공유 링크를 확인해주세요.' });
+      await RESOURCES.add({ ...next, createdAt: new Date().toLocaleDateString('ko-KR'), createdTs: Date.now(), ts: FieldValue.serverTimestamp() });
     } else if (action === 'resource:delete' && validId(id)) {
       const ref = RESOURCES.doc(id);
       const chunks = await ref.collection('chunks').get();
@@ -299,10 +285,17 @@ export default async function handler(req, res) {
     } else if (action === 'timetable:save') {
       const fileName = text(data?.fileName, 120);
       const fileBase64 = typeof data?.fileBase64 === 'string' && data.fileBase64.length <= 4_000_000 ? data.fileBase64 : null;
-      if (!fileName || !/\.xlsx$/i.test(fileName) || !fileBase64 || !/^[A-Za-z0-9+/=]+$/.test(fileBase64)) return res.status(400).json({ error: 'xlsx 시간표 파일을 다시 선택해주세요.' });
+      const term = timetableTerm(data || {});
+      if (!fileName || !/\.xlsx$/i.test(fileName) || !fileBase64 || !/^[A-Za-z0-9+/=]+$/.test(fileBase64) || !term) return res.status(400).json({ error: 'xlsx 시간표 파일, 학년도, 학기를 모두 확인해주세요.' });
       const timetable = parseTimetableWorkbook(Buffer.from(fileBase64, 'base64'));
-      await TIMETABLE.set({ timetable, sourceFileName: fileName, importedAt: FieldValue.serverTimestamp() });
-      return res.status(200).json({ timetable, sourceFileName: fileName });
+      await TIMETABLE.set({ timetable, sourceFileName: fileName, ...term, importedAt: FieldValue.serverTimestamp() });
+      return res.status(200).json({ timetable, sourceFileName: fileName, ...term });
+    } else if (action === 'timetable:term-save') {
+      const term = timetableTerm(data || {});
+      const current = await TIMETABLE.get();
+      if (!term || !current.exists || !current.data().timetable) return res.status(400).json({ error: '저장된 시간표가 있는지와 학기 정보를 확인해주세요.' });
+      await TIMETABLE.set({ ...term, termUpdatedAt: FieldValue.serverTimestamp() }, { merge: true });
+      return res.status(200).json(term);
     } else {
       return res.status(400).json({ error: '알 수 없는 작업입니다.' });
     }
