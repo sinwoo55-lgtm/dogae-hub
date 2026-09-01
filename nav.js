@@ -1,5 +1,5 @@
 (function(){
-  var MENU_ITEMS=[['calendar','📅','캘린더'],['links','🔗','링크 모음'],['organization','🗂️','업무분장'],['students','👥','학생관리'],['career','🌱','진로 활동 탐색기'],['seating','🪑','학급 자리 배치'],['timetable','🔄','시간표 교체']],MENU_CACHE='dogae-hub-menu-settings-v1',menuState={},menuOrderState=MENU_ITEMS.map(function(item){return item[0]});
+  var MENU_ITEMS=[['calendar','📅','캘린더'],['links','📚','유용한 자료 모음'],['organization','🗂️','업무분장'],['students','👥','학생관리'],['career','🌱','진로 활동 탐색기'],['seating','🪑','학급 자리 배치'],['timetable','🔄','시간표 교체']],MENU_CACHE='dogae-hub-menu-settings-v1',menuState={},menuOrderState=MENU_ITEMS.map(function(item){return item[0]});
   function admin(){return sessionStorage.getItem('isAdmin')==='true'}
   function normalizeMenu(value){var next={},items=value&&value.items?value.items:value;MENU_ITEMS.forEach(function(item){next[item[0]]=!(items&&items[item[0]]===false)});return next}
   function normalizeOrder(value){var order=value&&value.order?value.order:value;return Array.isArray(order)&&order.length===MENU_ITEMS.length&&order.every(function(id){return MENU_ITEMS.some(function(item){return item[0]===id})})&&new Set(order).size===MENU_ITEMS.length?order.slice():MENU_ITEMS.map(function(item){return item[0]})}
@@ -15,7 +15,7 @@
     var trigger=document.querySelector('a.back-btn, a.back'),header=trigger&&trigger.closest('header');
     if(!trigger||!header){var existing=document.getElementById('drawer');if(existing)attachMenuSettings(existing);return;}
     var pageInfo={
-      'links.html':{ko:'도개중고등학교 링크 모음',en:'LINK DIRECTORY'},
+      'links.html':{ko:'도개중고등학교 유용한 자료 모음',en:'RESOURCE LIBRARY'},
       'mindmap.html':{ko:'도개중고등학교 업무분장',en:'SCHOOL ORGANIZATION'},
       'career.html':{ko:'도개중고등학교 진로 활동 탐색기',en:'CAREER EXPLORER'},
       'students.html':{ko:'도개중고등학교 학생관리',en:'STUDENT MANAGEMENT'},
