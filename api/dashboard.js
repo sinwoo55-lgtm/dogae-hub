@@ -264,7 +264,8 @@ export default async function handler(req, res) {
     } else if (action === 'resource:save') {
       const next = resourceData(data || {});
       if (!next) return res.status(400).json({ error: '자료 제목과 Google Drive 파일 공유 링크를 확인해주세요.' });
-      await RESOURCES.add({ ...next, createdAt: new Date().toLocaleDateString('ko-KR'), createdTs: Date.now(), ts: FieldValue.serverTimestamp() });
+      if (id && validId(id)) await RESOURCES.doc(id).update({ ...next, updatedAt: FieldValue.serverTimestamp() });
+      else await RESOURCES.add({ ...next, createdAt: new Date().toLocaleDateString('ko-KR'), createdTs: Date.now(), ts: FieldValue.serverTimestamp() });
     } else if (action === 'resource:delete' && validId(id)) {
       const ref = RESOURCES.doc(id);
       const chunks = await ref.collection('chunks').get();
