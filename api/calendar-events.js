@@ -1,24 +1,13 @@
 import { db } from '../lib/firebase-admin.js';
 import { allowJson } from '../lib/http.js';
 import { requireSchoolNetwork } from '../lib/school-access.js';
+import { comparableCalendarLabel, mergeCalendarDayEvents } from '../lib/calendar-event-merge.js';
 
 const CACHE = db.collection('calendar_cache');
-
-const HOLIDAY_ALIASES = {
-  '석가탄신일': '부처님오신날',
-  '부처님오신날': '부처님오신날',
-  '기독탄신일': '성탄절',
-  '성탄절': '성탄절'
-};
 
 function dayKey(value) {
   const digits = String(value || '').replace(/\D/g, '');
   return digits.length === 8 ? `${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6, 8)}` : '';
-}
-
-function comparableLabel(value) {
-  const label = String(value || '').replace(/\s+/g, '').trim();
-  return HOLIDAY_ALIASES[label] || label;
 }
 
 function addEvent(target, date, type, label) {
@@ -26,16 +15,8 @@ function addEvent(target, date, type, label) {
   const name = String(label || '').trim();
   if (!key || !name || (type === 'academic' && name.includes('토요휴업일'))) return;
   const list = target[key] || (target[key] = []);
-  const comparable = comparableLabel(name);
-  if (type === 'holiday') {
-    // 나이스 학사일정에 공휴일이 함께 들어오는 경우 같은 의미의 항목은 공휴일 하나만 남긴다.
-    for (let index = list.length - 1; index >= 0; index -= 1) {
-      if (comparableLabel(list[index].label) === comparable) list.splice(index, 1);
-    }
-  } else if (list.some((item) => item.type === 'holiday' && comparableLabel(item.label) === comparable)) {
-    return;
-  }
-  if (!list.some((item) => item.type === type && comparableLabel(item.label) === comparable)) list.push({ type, label: name });
+  const comparable = comparableCalendarLabel(name);
+  if (!list.some((item) => item.type === type && comparableCalendarLabel(item.label) === comparable)) list.push({ type, label: name });
 }
 
 async function getJson(url) {
@@ -85,7 +66,8 @@ export async function refreshCalendarYear(year) {
   let holidayConfigured = false;
   try { academicConfigured = await schoolSchedules(year, events); } catch (error) { warnings.push('학사일정을 불러오지 못했습니다.'); console.warn(error); }
   try { holidayConfigured = await holidays(year, events); } catch (error) { warnings.push('공휴일을 불러오지 못했습니다.'); console.warn(error); }
-  const value = { events, configured: { academic: academicConfigured, holiday: holidayConfigured }, warnings, refreshedAt: new Date().toISOString() };
+  const mergedEvents = Object.fromEntries(Object.entries(events).map(([date, items]) => [date, mergeCalendarDayEvents(items)]));
+  const value = { events: mergedEvents, configured: { academic: academicConfigured, holiday: holidayConfigured }, warnings, refreshedAt: new Date().toISOString() };
   await CACHE.doc(String(year)).set(value);
   return value;
 }
