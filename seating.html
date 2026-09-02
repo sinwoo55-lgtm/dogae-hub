@@ -1531,10 +1531,8 @@ function bindSpecialNameInputs(){
   document.querySelectorAll('[data-special-student]').forEach(function(input){
     if(input.dataset.specialNameBound)return;input.dataset.specialNameBound='1';
     function updateSuggestion(){var value=input.value.trim(),names=specialStudentNames(),exact=names.indexOf(value)>-1,matches=value&&!exact?names.filter(function(name){return name.indexOf(value)>-1;}):[];if(!value||exact)clearSpecialNameInput(input);showSpecialSuggestions(input,matches);}
-    input.addEventListener('compositionstart',function(){this.dataset.composing='1';hideSpecialSuggestions();});
-    input.addEventListener('compositionend',function(){delete this.dataset.composing;updateSuggestion();});
-    input.addEventListener('input',function(){if(this.dataset.composing==='1')return;updateSuggestion();});
-    input.addEventListener('blur',function(){setTimeout(function(){if(input.dataset.composing!=='1'&&input.value.trim())validateSpecialNameInput(input);if(activeSpecialSuggestionInput===input)hideSpecialSuggestions();},120);});
+    input.addEventListener('input',updateSuggestion);
+    input.addEventListener('blur',function(){setTimeout(function(){if(input.value.trim())validateSpecialNameInput(input);if(activeSpecialSuggestionInput===input)hideSpecialSuggestions();},120);});
   });
 }
 function switchSpecTab(name, btn){
