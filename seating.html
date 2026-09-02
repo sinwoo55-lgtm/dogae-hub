@@ -864,7 +864,7 @@ html[data-theme="dark"] .pv-cell.es{background:#1A2233!important;border-color:#3
     <!-- 기피 탭 -->
     <div id="specTab-avoid" class="spec-tab-content" style="display:none;">
       <div style="background:var(--navy-pale);border-radius:9px;padding:10px 13px;margin-bottom:12px;font-size:12px;color:var(--navy);line-height:1.7;">
-        두 학생 사이 <b>거리를 최대화</b>합니다. 강도가 높을수록 더 멀리 배치됩니다.
+        두 학생 사이에 <b>거리를 둡니다</b>. 강도가 높을수록 더 멀리 배치됩니다.
       </div>
       <div class="add-row">
         <input class="si" id="avoidA" placeholder="학생 A 이름" data-special-student="avoidNameError" autocomplete="off"/>
@@ -1497,10 +1497,18 @@ function setSpecialNameError(errorId,message){
   var error=document.getElementById(errorId);if(!error)return;
   error.textContent=message||'';error.classList.toggle('show',!!message);
 }
+function clearSpecialNameInput(input){
+  input.classList.remove('invalid');delete input.dataset.invalidName;
+  var errorId=input.dataset.specialStudent,fields=Array.from(document.querySelectorAll('[data-special-student="'+errorId+'"]')),hasInvalid=fields.some(function(field){return field.dataset.invalidName==='1';});
+  if(!hasInvalid)setSpecialNameError(errorId,'');
+}
+function invalidateSpecialNameInput(input){
+  input.classList.add('invalid');input.dataset.invalidName='1';setSpecialNameError(input.dataset.specialStudent,'학생이 존재하지 않습니다. 학생 명단에서 선택해주세요.');
+}
 function validateSpecialNameInput(input){
   var name=input.value.trim(),errorId=input.dataset.specialStudent;
-  if(!name||specialStudentNames().indexOf(name)>-1){input.classList.remove('invalid');setSpecialNameError(errorId,'');return true;}
-  input.classList.add('invalid');setSpecialNameError(errorId,'학생이 존재하지 않습니다. 학생 명단에서 선택해주세요.');return false;
+  if(!name||specialStudentNames().indexOf(name)>-1){clearSpecialNameInput(input);return true;}
+  invalidateSpecialNameInput(input);return false;
 }
 function validateSpecialNameInputs(ids,errorId){
   var valid=true;ids.forEach(function(id){if(!validateSpecialNameInput(document.getElementById(id)))valid=false;});
@@ -1510,8 +1518,11 @@ function validateSpecialNameInputs(ids,errorId){
 function bindSpecialNameInputs(){
   document.querySelectorAll('[data-special-student]').forEach(function(input){
     if(input.dataset.specialNameBound)return;input.dataset.specialNameBound='1';
-    input.addEventListener('input',function(){var value=this.value.trim(),hasCandidate=specialStudentNames().some(function(name){return name.indexOf(value)>-1;});if(value)this.setAttribute('list','specialStudentNames');else this.removeAttribute('list');if(!value||hasCandidate){this.classList.remove('invalid');setSpecialNameError(this.dataset.specialStudent,'');}else{this.classList.add('invalid');setSpecialNameError(this.dataset.specialStudent,'학생이 존재하지 않습니다. 학생 명단에서 선택해주세요.');}});
-    input.addEventListener('blur',function(){if(this.value.trim())validateSpecialNameInput(this);});
+    function updateSuggestion(){var value=input.value.trim();if(value)input.setAttribute('list','specialStudentNames');else input.removeAttribute('list');if(!value||specialStudentNames().indexOf(value)>-1)clearSpecialNameInput(input);}
+    input.addEventListener('compositionstart',function(){this.dataset.composing='1';});
+    input.addEventListener('compositionend',function(){delete this.dataset.composing;updateSuggestion();});
+    input.addEventListener('input',function(){if(this.dataset.composing==='1')return;updateSuggestion();});
+    input.addEventListener('blur',function(){if(this.dataset.composing!=='1'&&this.value.trim())validateSpecialNameInput(this);});
   });
 }
 function switchSpecTab(name, btn){
@@ -1662,8 +1673,7 @@ function validateLayout(grid,active,cfg,rows,cols){
   return {hard:hard.filter(function(problem,index){return hard.indexOf(problem)===index;}),strong:strong};
 }
 function showConstraintStatus(validation,retries){
-  var status=document.getElementById('constraintStatus'),strong=validation.strong.map(function(item){return esc(item.a)+'·'+esc(item.b)+' '+item.distance+'/'+item.maximum+'칸';});
-  status.innerHTML=strong.length?'강 기피 거리: '+strong.join(', ')+(retries?' · 자동 재탐색 '+retries+'회':''):'';
+  document.getElementById('constraintStatus').innerHTML='';
 }
 function generateLayout(){
   students=collectStudents();
