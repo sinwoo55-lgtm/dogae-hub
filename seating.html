@@ -259,6 +259,9 @@ input:checked+.tsl::before{transform:translateX(17px);}
 .add-row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:7px;}
 .si{flex:1;min-width:70px;padding:7px 10px;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:12.5px;color:var(--text);outline:none;}
 .si:focus{border-color:var(--navy);}
+.si.invalid{border-color:#C53030;background:#FFF5F5;}
+.special-name-error{display:none;flex-basis:100%;margin-top:1px;color:#C53030;font-size:11px;font-weight:700;}
+.special-name-error.show{display:block;}
 .sel{padding:7px 10px;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:12.5px;cursor:pointer;outline:none;color:var(--text);}
 .chip-item{display:flex;align-items:center;justify-content:space-between;background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:7px 11px;font-size:12px;margin-bottom:4px;}
 .chip-x{background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0;line-height:1;}
@@ -273,6 +276,7 @@ input:checked+.tsl::before{transform:translateX(17px);}
 .zone-cell{width:34px;height:26px;border-radius:5px;border:1.5px solid var(--border);background:var(--surface);cursor:pointer;font-size:9px;color:var(--muted);display:flex;align-items:center;justify-content:center;transition:var(--tr);user-select:none;}
 .zone-cell:hover{border-color:var(--navy);background:var(--navy-pale);}
 .zone-cell.on{background:var(--navy);color:#fff;border-color:var(--navy);}
+.zone-cell.preview{background:#FFF1C7;color:#8A5A00;border-color:#D99100;box-shadow:inset 0 0 0 1px #F6C453;}
 .zone-row-hdr,.zone-col-hdr{background:var(--bg);font-size:9px;color:var(--muted);display:flex;align-items:center;justify-content:center;cursor:pointer;border-radius:5px;font-weight:700;}
 .zone-row-hdr{width:22px;height:26px;}
 .zone-col-hdr{width:34px;height:20px;}
@@ -847,9 +851,10 @@ html[data-theme="dark"] .pv-cell.es{background:#1A2233!important;border-color:#3
         두 학생을 항상 같은 <b>옆자리</b>에 배치합니다
       </div>
       <div class="add-row">
-        <input class="si" id="pairA" placeholder="학생 A 이름"/>
-        <input class="si" id="pairB" placeholder="학생 B 이름"/>
+        <input class="si" id="pairA" placeholder="학생 A 이름" list="specialStudentNames" data-special-student="pairNameError" autocomplete="off"/>
+        <input class="si" id="pairB" placeholder="학생 B 이름" list="specialStudentNames" data-special-student="pairNameError" autocomplete="off"/>
         <button class="btn btn-secondary btn-sm" onclick="addPair()">추가</button>
+        <div class="special-name-error" id="pairNameError" role="alert"></div>
       </div>
       <div id="pairList"></div>
     </div>
@@ -859,14 +864,15 @@ html[data-theme="dark"] .pv-cell.es{background:#1A2233!important;border-color:#3
         두 학생 사이 <b>거리를 최대화</b>합니다. 강도가 높을수록 더 멀리 배치됩니다.
       </div>
       <div class="add-row">
-        <input class="si" id="avoidA" placeholder="학생 A 이름"/>
-        <input class="si" id="avoidB" placeholder="학생 B 이름"/>
+        <input class="si" id="avoidA" placeholder="학생 A 이름" list="specialStudentNames" data-special-student="avoidNameError" autocomplete="off"/>
+        <input class="si" id="avoidB" placeholder="학생 B 이름" list="specialStudentNames" data-special-student="avoidNameError" autocomplete="off"/>
         <select class="sel" id="avoidLv">
           <option value="1">약 (2칸 이상)</option>
           <option value="2" selected>중 (3칸 이상)</option>
           <option value="3">강 (최대한 멀리)</option>
         </select>
         <button class="btn btn-secondary btn-sm" onclick="addAvoid()">추가</button>
+        <div class="special-name-error" id="avoidNameError" role="alert"></div>
       </div>
       <div id="avoidList"></div>
     </div>
@@ -881,10 +887,11 @@ html[data-theme="dark"] .pv-cell.es{background:#1A2233!important;border-color:#3
         <b>③ 구역 추가</b> 버튼을 눌러 등록하세요
       </div>
       <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">
-        <input class="si" id="prefName" placeholder="① 학생 이름 입력" style="max-width:150px;"/>
+        <input class="si" id="prefName" placeholder="① 학생 이름 입력" style="max-width:150px;" list="specialStudentNames" data-special-student="prefNameError" autocomplete="off"/>
         <button class="btn btn-secondary btn-sm" onclick="selectAllZone()">전체 선택</button>
         <button class="btn btn-secondary btn-sm" onclick="clearAllZone()">초기화</button>
         <button class="btn btn-primary btn-sm" onclick="addPrefZone()">③ 구역 추가</button>
+        <div class="special-name-error" id="prefNameError" role="alert"></div>
       </div>
       <div class="zone-mini-wrap">
         <div style="padding:7px 12px;background:var(--bg);font-size:11.5px;color:var(--muted);border-bottom:1px solid var(--border);width:100%;text-align:center;">
@@ -904,6 +911,7 @@ html[data-theme="dark"] .pv-cell.es{background:#1A2233!important;border-color:#3
       <button class="btn btn-secondary" onclick="closeSpecialModal()">닫기</button>
       <button class="btn btn-primary" onclick="saveSpecialSettings()">💾 저장</button>
     </div>
+    <datalist id="specialStudentNames"></datalist>
   </div>
 </div>
 
@@ -1036,7 +1044,7 @@ var colGaps=new Set(), rowGaps=new Set(), emptySeats=new Set(), fixedSeats={};
 var pairs=[], avoids=[], prefZones=[];
 var layout=[], dragSrc=null, menuCell={r:0,c:0};
 var printComment='', printWithComment=false;
-var zoneSelCells=new Set(); // "col-row" 형태
+var zoneSelCells=new Set(), zonePreviewCells=new Set(); // "col-row" 형태
 
 /* ──────────── 유틸 ──────────── */
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
@@ -1471,10 +1479,38 @@ function cellAction(act){
 /* ──────────── 특수 설정 모달 ──────────── */
 function openSpecialModal(){
   renderPairList();renderAvoidList();renderPrefList();
+  refreshSpecialNameSuggestions();bindSpecialNameInputs();
   buildZoneMiniGrid();
   document.getElementById('specialModal').classList.add('active');
 }
 function closeSpecialModal(){document.getElementById('specialModal').classList.remove('active');}
+function specialStudentNames(){
+  return students.filter(function(student){return !student.absent&&student.name;}).map(function(student){return student.name.trim();}).filter(function(name,index,names){return names.indexOf(name)===index;});
+}
+function refreshSpecialNameSuggestions(){
+  document.getElementById('specialStudentNames').innerHTML=specialStudentNames().map(function(name){return '<option value="'+esc(name)+'"></option>';}).join('');
+}
+function setSpecialNameError(errorId,message){
+  var error=document.getElementById(errorId);if(!error)return;
+  error.textContent=message||'';error.classList.toggle('show',!!message);
+}
+function validateSpecialNameInput(input){
+  var name=input.value.trim(),errorId=input.dataset.specialStudent;
+  if(!name||specialStudentNames().indexOf(name)>-1){input.classList.remove('invalid');setSpecialNameError(errorId,'');return true;}
+  input.classList.add('invalid');setSpecialNameError(errorId,'학생이 존재하지 않습니다. 학생 명단에서 선택해주세요.');return false;
+}
+function validateSpecialNameInputs(ids,errorId){
+  var valid=true;ids.forEach(function(id){if(!validateSpecialNameInput(document.getElementById(id)))valid=false;});
+  if(!valid){var invalidId=ids.find(function(id){return document.getElementById(id).classList.contains('invalid');});if(invalidId)document.getElementById(invalidId).focus();}
+  return valid;
+}
+function bindSpecialNameInputs(){
+  document.querySelectorAll('[data-special-student]').forEach(function(input){
+    if(input.dataset.specialNameBound)return;input.dataset.specialNameBound='1';
+    input.addEventListener('input',function(){this.classList.remove('invalid');setSpecialNameError(this.dataset.specialStudent,'');});
+    input.addEventListener('blur',function(){if(this.value.trim())validateSpecialNameInput(this);});
+  });
+}
 function switchSpecTab(name, btn){
   document.querySelectorAll('.spec-tab-content').forEach(function(el){el.style.display='none';});
   document.getElementById('specTab-'+name).style.display='block';
@@ -1500,6 +1536,7 @@ function saveSpecialSettings(){
 function addPair(){
   var a=document.getElementById('pairA').value.trim(),b=document.getElementById('pairB').value.trim();
   if(!a||!b){alert('두 학생 이름을 입력하세요.');return;}
+  if(!validateSpecialNameInputs(['pairA','pairB'],'pairNameError'))return;
   pairs.push({a,b});document.getElementById('pairA').value='';document.getElementById('pairB').value='';
   renderPairList();
 }
@@ -1512,6 +1549,7 @@ function addAvoid(){
   var a=document.getElementById('avoidA').value.trim(),b=document.getElementById('avoidB').value.trim();
   var lv=parseInt(document.getElementById('avoidLv').value);
   if(!a||!b){alert('두 학생 이름을 입력하세요.');return;}
+  if(!validateSpecialNameInputs(['avoidA','avoidB'],'avoidNameError'))return;
   avoids.push({a,b,level:lv});document.getElementById('avoidA').value='';document.getElementById('avoidB').value='';
   renderAvoidList();
 }
@@ -1545,7 +1583,7 @@ function buildZoneMiniGrid(){
     for(var c2=1;c2<=cols;c2++){
       var key=c2+'-'+r;
       var cell=document.createElement('div');
-      cell.className='zone-cell'+(zoneSelCells.has(key)?' on':'');
+      cell.className='zone-cell'+(zoneSelCells.has(key)?' on':'')+(zonePreviewCells.has(key)?' preview':'');
       cell.dataset.k=key;
       (function(k){cell.addEventListener('click',function(){
         if(zoneSelCells.has(k)) zoneSelCells.delete(k); else zoneSelCells.add(k);
@@ -1574,19 +1612,22 @@ function selectAllZone(){
   for(var r=1;r<=rows;r++) for(var c=1;c<=cols;c++) zoneSelCells.add(c+'-'+r);
   buildZoneMiniGrid();
 }
-function clearAllZone(){zoneSelCells.clear();buildZoneMiniGrid();}
+function clearAllZone(){zoneSelCells.clear();zonePreviewCells.clear();buildZoneMiniGrid();}
 function addPrefZone(){
   var name=document.getElementById('prefName').value.trim();
   if(!name){alert('학생 이름을 입력하세요.');return;}
+  if(!validateSpecialNameInputs(['prefName'],'prefNameError'))return;
   if(!zoneSelCells.size){alert('구역을 하나 이상 선택하세요.');return;}
   prefZones.push({name,cells:Array.from(zoneSelCells)});
   document.getElementById('prefName').value='';
-  zoneSelCells.clear();
+  zoneSelCells.clear();zonePreviewCells.clear();
   renderPrefList();buildZoneMiniGrid();
 }
+function previewPrefZone(index){zonePreviewCells=new Set((prefZones[index]||{}).cells||[]);buildZoneMiniGrid();}
+function clearPrefZonePreview(){if(!zonePreviewCells.size)return;zonePreviewCells.clear();buildZoneMiniGrid();}
 function renderPrefList(){
   document.getElementById('prefList').innerHTML=prefZones.map(function(p,i){
-    return '<div class="chip-item">🎯 '+esc(p.name)+' → '+p.cells.length+'칸 지정<button class="chip-x" onclick="prefZones.splice('+i+',1);renderPrefList()">×</button></div>';
+    return '<div class="chip-item" onmouseenter="previewPrefZone('+i+')" onmouseleave="clearPrefZonePreview()">🎯 '+esc(p.name)+' → '+p.cells.length+'칸 지정<button class="chip-x" onclick="prefZones.splice('+i+',1);clearPrefZonePreview();renderPrefList()">×</button></div>';
   }).join('');
 }
 
