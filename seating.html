@@ -264,6 +264,10 @@ input:checked+.tsl::before{transform:translateX(17px);}
 .si.invalid{border-color:#C53030;background:#FFF5F5;}
 .special-name-error{display:none;flex-basis:100%;margin-top:1px;color:#C53030;font-size:11px;font-weight:700;}
 .special-name-error.show{display:block;}
+.special-suggestions{position:fixed;z-index:560;display:none;min-width:150px;max-height:180px;overflow:auto;padding:4px;background:var(--surface);border:1.5px solid var(--border);border-radius:9px;box-shadow:0 10px 24px rgba(15,28,72,.18);}
+.special-suggestions.show{display:block;}
+.special-suggestions button{display:block;width:100%;border:0;border-radius:6px;background:transparent;color:var(--text);padding:8px 9px;text-align:left;font:700 12px 'Noto Sans KR',sans-serif;cursor:pointer;}
+.special-suggestions button:hover{background:var(--navy-pale);color:var(--navy);}
 .sel{padding:7px 10px;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:12.5px;cursor:pointer;outline:none;color:var(--text);}
 .chip-item{display:flex;align-items:center;justify-content:space-between;background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:7px 11px;font-size:12px;margin-bottom:4px;}
 .chip-x{background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0;line-height:1;}
@@ -914,9 +918,9 @@ html[data-theme="dark"] .pv-cell.es{background:#1A2233!important;border-color:#3
       <button class="btn btn-secondary" onclick="closeSpecialModal()">닫기</button>
       <button class="btn btn-primary" onclick="saveSpecialSettings()">💾 저장</button>
     </div>
-    <datalist id="specialStudentNames"></datalist>
   </div>
 </div>
+<div class="special-suggestions" id="specialSuggestions" role="listbox"></div>
 
 <!-- 코멘트 입력 모달 -->
 <div class="modal-overlay" id="commentModal">
@@ -1482,16 +1486,24 @@ function cellAction(act){
 /* ──────────── 특수 설정 모달 ──────────── */
 function openSpecialModal(){
   renderPairList();renderAvoidList();renderPrefList();
-  refreshSpecialNameSuggestions();bindSpecialNameInputs();
+  bindSpecialNameInputs();
   buildZoneMiniGrid();
   document.getElementById('specialModal').classList.add('active');
 }
-function closeSpecialModal(){document.getElementById('specialModal').classList.remove('active');}
+function closeSpecialModal(){hideSpecialSuggestions();document.getElementById('specialModal').classList.remove('active');}
 function specialStudentNames(){
   return students.filter(function(student){return !student.absent&&student.name;}).map(function(student){return student.name.trim();}).filter(function(name,index,names){return names.indexOf(name)===index;});
 }
-function refreshSpecialNameSuggestions(){
-  document.getElementById('specialStudentNames').innerHTML=specialStudentNames().map(function(name){return '<option value="'+esc(name)+'"></option>';}).join('');
+var activeSpecialSuggestionInput=null;
+function hideSpecialSuggestions(){var box=document.getElementById('specialSuggestions');box.classList.remove('show');box.innerHTML='';activeSpecialSuggestionInput=null;}
+function showSpecialSuggestions(input,matches){
+  var box=document.getElementById('specialSuggestions');
+  if(!matches.length){hideSpecialSuggestions();return;}
+  var rect=input.getBoundingClientRect();activeSpecialSuggestionInput=input;
+  box.style.left=rect.left+'px';box.style.top=Math.min(rect.bottom+4,window.innerHeight-190)+'px';box.style.width=Math.max(150,rect.width)+'px';
+  box.innerHTML=matches.slice(0,8).map(function(name,index){return '<button type="button" data-special-suggestion="'+index+'" role="option">'+esc(name)+'</button>';}).join('');
+  box.querySelectorAll('[data-special-suggestion]').forEach(function(button){button.addEventListener('mousedown',function(event){event.preventDefault();});button.addEventListener('click',function(){var name=matches[Number(button.dataset.specialSuggestion)];if(!activeSpecialSuggestionInput)return;activeSpecialSuggestionInput.value=name;clearSpecialNameInput(activeSpecialSuggestionInput);activeSpecialSuggestionInput.focus();hideSpecialSuggestions();});});
+  box.classList.add('show');
 }
 function setSpecialNameError(errorId,message){
   var error=document.getElementById(errorId);if(!error)return;
@@ -1518,11 +1530,11 @@ function validateSpecialNameInputs(ids,errorId){
 function bindSpecialNameInputs(){
   document.querySelectorAll('[data-special-student]').forEach(function(input){
     if(input.dataset.specialNameBound)return;input.dataset.specialNameBound='1';
-    function updateSuggestion(){var value=input.value.trim();if(value)input.setAttribute('list','specialStudentNames');else input.removeAttribute('list');if(!value||specialStudentNames().indexOf(value)>-1)clearSpecialNameInput(input);}
-    input.addEventListener('compositionstart',function(){this.dataset.composing='1';});
+    function updateSuggestion(){var value=input.value.trim(),names=specialStudentNames(),exact=names.indexOf(value)>-1,matches=value&&!exact?names.filter(function(name){return name.indexOf(value)>-1;}):[];if(!value||exact)clearSpecialNameInput(input);showSpecialSuggestions(input,matches);}
+    input.addEventListener('compositionstart',function(){this.dataset.composing='1';hideSpecialSuggestions();});
     input.addEventListener('compositionend',function(){delete this.dataset.composing;updateSuggestion();});
     input.addEventListener('input',function(){if(this.dataset.composing==='1')return;updateSuggestion();});
-    input.addEventListener('blur',function(){if(this.dataset.composing!=='1'&&this.value.trim())validateSpecialNameInput(this);});
+    input.addEventListener('blur',function(){setTimeout(function(){if(input.dataset.composing!=='1'&&input.value.trim())validateSpecialNameInput(input);if(activeSpecialSuggestionInput===input)hideSpecialSuggestions();},120);});
   });
 }
 function switchSpecTab(name, btn){
