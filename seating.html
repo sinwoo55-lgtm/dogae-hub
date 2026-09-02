@@ -1507,7 +1507,7 @@ function validateSpecialNameInputs(ids,errorId){
 function bindSpecialNameInputs(){
   document.querySelectorAll('[data-special-student]').forEach(function(input){
     if(input.dataset.specialNameBound)return;input.dataset.specialNameBound='1';
-    input.addEventListener('input',function(){this.classList.remove('invalid');setSpecialNameError(this.dataset.specialStudent,'');});
+    input.addEventListener('input',function(){var value=this.value.trim(),hasCandidate=specialStudentNames().some(function(name){return name.indexOf(value)>-1;});if(!value||hasCandidate){this.classList.remove('invalid');setSpecialNameError(this.dataset.specialStudent,'');}else{this.classList.add('invalid');setSpecialNameError(this.dataset.specialStudent,'학생이 존재하지 않습니다. 학생 명단에서 선택해주세요.');}});
     input.addEventListener('blur',function(){if(this.value.trim())validateSpecialNameInput(this);});
   });
 }
