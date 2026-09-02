@@ -187,6 +187,8 @@ input:checked+.tsl::before{transform:translateX(17px);}
 
 /* ══ S4 배치표 ══ */
 #s4{overflow:hidden;}
+.constraint-status{margin:0 20px 10px;padding:8px 12px;border:1px solid #BCE1D0;border-radius:9px;background:#EFFAF5;color:#18734D;font-size:12px;font-weight:700;text-align:center;}
+.constraint-status:empty{display:none;}
 .s4-top{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;flex-shrink:0;}
 .s4-badge{font-family:'Noto Sans KR',sans-serif;font-size:14px;font-weight:700;color:var(--navy);}
 .s4-toolbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
@@ -774,6 +776,7 @@ html[data-theme="dark"] .pv-cell.es{background:#1A2233!important;border-color:#3
       </button>
     </div>
   </div>
+  <div class="constraint-status" id="constraintStatus" aria-live="polite"></div>
   <div class="s4-body">
     <div class="layout-area" style="display:flex;flex-direction:column;align-items:center;">
       <!-- 화면용 타이틀 헤더 -->
@@ -1632,6 +1635,36 @@ function renderPrefList(){
 }
 
 /* ──────────── 자동 배치 알고리즘 ──────────── */
+function maximumSeatDistance(rows,cols){return Math.max(0,rows+cols-2);}
+function avoidTarget(avoid,rows,cols){return avoid.level===1?2:avoid.level===2?3:maximumSeatDistance(rows,cols);}
+function specialSettingProblems(active,cfg){
+  var names=new Set(active.map(function(student){return student.name;})),problems=[];
+  function requireName(name,label){if(!names.has(name))problems.push(label+'의 '+name+' 학생이 현재 명단에 없습니다.');}
+  Object.keys(cfg.fixedSeats).forEach(function(key){requireName(cfg.fixedSeats[key],'고정 좌석');});
+  cfg.pairs.forEach(function(pair){requireName(pair.a,'짝 고정');requireName(pair.b,'짝 고정');});
+  cfg.avoids.forEach(function(avoid){requireName(avoid.a,'기피 설정');requireName(avoid.b,'기피 설정');});
+  cfg.prefZones.forEach(function(zone){requireName(zone.name,'선호 구역');});
+  return problems.filter(function(problem,index){return problems.indexOf(problem)===index;});
+}
+function validateLayout(grid,active,cfg,rows,cols){
+  var hard=[],activeNames=new Set(active.map(function(student){return student.name;})),positions={},counts={};
+  for(var r=0;r<rows;r++) for(var c=0;c<cols;c++){
+    var name=grid[r][c];if(!name||name==='EMPTY')continue;
+    counts[name]=(counts[name]||0)+1;positions[name]={r:r,c:c};
+    if(!activeNames.has(name))hard.push(name+' 학생이 현재 명단에 없습니다.');
+  }
+  active.forEach(function(student){if(counts[student.name]!==1)hard.push(student.name+' 학생이 '+(counts[student.name]||0)+'번 배치되었습니다.');});
+  Object.keys(cfg.fixedSeats).forEach(function(key){var point=key.split('-'),c=Number(point[0])-1,r=Number(point[1])-1,name=cfg.fixedSeats[key];if(!grid[r]||grid[r][c]!==name)hard.push(name+' 학생의 고정 좌석('+key+')을 지키지 못했습니다.');});
+  cfg.pairs.forEach(function(pair){var a=positions[pair.a],b=positions[pair.b];if(!a||!b||a.r!==b.r||Math.abs(a.c-b.c)!==1)hard.push(pair.a+'·'+pair.b+' 짝 고정을 지키지 못했습니다.');});
+  cfg.prefZones.forEach(function(zone){var point=positions[zone.name];if(!point||zone.cells.indexOf((point.c+1)+'-'+(point.r+1))<0)hard.push(zone.name+' 학생의 선호 구역을 지키지 못했습니다.');});
+  cfg.avoids.filter(function(avoid){return avoid.level<3;}).forEach(function(avoid){var a=positions[avoid.a],b=positions[avoid.b],distance=a&&b?Math.abs(a.r-b.r)+Math.abs(a.c-b.c):0,target=avoidTarget(avoid,rows,cols);if(distance<target)hard.push(avoid.a+'·'+avoid.b+' 기피 '+(avoid.level===1?'약':'중')+' 조건('+target+'칸 이상)을 지키지 못했습니다.');});
+  var strong=cfg.avoids.filter(function(avoid){return avoid.level===3;}).map(function(avoid){var a=positions[avoid.a],b=positions[avoid.b],distance=a&&b?Math.abs(a.r-b.r)+Math.abs(a.c-b.c):0;return {a:avoid.a,b:avoid.b,distance:distance,maximum:maximumSeatDistance(rows,cols)};});
+  return {hard:hard.filter(function(problem,index){return hard.indexOf(problem)===index;}),strong:strong};
+}
+function showConstraintStatus(validation,retries){
+  var status=document.getElementById('constraintStatus'),strong=validation.strong.map(function(item){return esc(item.a)+'·'+esc(item.b)+' '+item.distance+'/'+item.maximum+'칸';});
+  status.innerHTML='✓ 특수 설정 검증 완료'+(retries?' · 자동 재탐색 '+retries+'회':'')+(strong.length?' <span style="font-weight:500;">| 강 기피: '+strong.join(', ')+'</span>':'');
+}
 function generateLayout(){
   students=collectStudents();
   var rows=parseInt(document.getElementById('sRows').value)||5;
@@ -1654,20 +1687,27 @@ function generateLayout(){
   var valid=[];
   for(var r=1;r<=rows;r++) for(var c=1;c<=cols;c++) if(!emptySeats.has(c+'-'+r)) valid.push({r,c});
   if(active.length>valid.length){alert('학생('+active.length+'명) > 유효 자리('+valid.length+'개).\n행/열을 늘려주세요.');return;}
+  var settingProblems=specialSettingProblems(active,cfg);
+  if(settingProblems.length){alert('특수 설정을 적용할 수 없습니다.\n'+settingProblems.join('\n'));return;}
 
-  var best=null,bestScore=-Infinity;
-  for(var i=0;i<1500;i++){
-    var g=runSim(active,valid,rows,cols,cfg);
-    if(!g) continue;
-    var sc=evalScore(g,active,cfg,rows,cols);
-    if(sc>bestScore){bestScore=sc;best=JSON.parse(JSON.stringify(g));}
+  var best=null,bestScore=-Infinity,bestValidation=null,fallback=null,fallbackScore=-Infinity,retries=0;
+  for(var attempt=0;attempt<3&&!best;attempt++){
+    for(var i=0;i<1200;i++){
+      var g=runSim(active,valid,rows,cols,cfg);
+      if(!g) continue;
+      var sc=evalScore(g,active,cfg,rows,cols),validation=validateLayout(g,active,cfg,rows,cols);
+      if(validation.hard.length){if(sc>fallbackScore){fallbackScore=sc;fallback=validation;}continue;}
+      if(sc>bestScore){bestScore=sc;best=JSON.parse(JSON.stringify(g));bestValidation=validation;retries=attempt;}
+    }
   }
-  if(!best){alert('제약 조건이 너무 많아 배치가 불가능해요.\n조건을 줄여보세요.');return;}
+  if(!best){alert('특수 설정을 모두 만족하는 배치를 찾지 못했습니다.\n자동 재탐색을 3회 진행했지만 아래 조건이 충돌합니다.\n'+((fallback&&fallback.hard.length)?fallback.hard.slice(0,4).join('\n'):'조건을 줄이거나 좌석 구성을 바꿔주세요.'));return;}
   layout=best;
   document.getElementById('s4badge').textContent=classToLabel(curClass)+' 배치표';
   var cnEl=document.getElementById('layoutClassName');
   if(cnEl) cnEl.textContent=classToLabel(curClass);
   goScreen('s4');
+  showConstraintStatus(bestValidation,retries);
+  if(retries)showToast('특수 설정을 확인해 자동 재배치했습니다.');
   applyTheme(curTheme);
   requestAnimationFrame(function(){
     setTimeout(function(){
@@ -1780,7 +1820,7 @@ function evalScore(g,active,cfg,rows,cols){
     var pA=findPos(g,av.a,rows,cols),pB=findPos(g,av.b,rows,cols);
     if(!pA||!pB) return;
     var dist=Math.abs(pA.r-pB.r)+Math.abs(pA.c-pB.c);
-    var target=av.level===1?2:av.level===2?3:(rows+cols);
+    var target=avoidTarget(av,rows,cols);
     if(dist>=target) sc+=5*av.level;
     else            sc-=(target-dist)*3*av.level;
   });
