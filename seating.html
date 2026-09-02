@@ -854,8 +854,8 @@ html[data-theme="dark"] .pv-cell.es{background:#1A2233!important;border-color:#3
         두 학생을 항상 같은 <b>옆자리</b>에 배치합니다
       </div>
       <div class="add-row">
-        <input class="si" id="pairA" placeholder="학생 A 이름" list="specialStudentNames" data-special-student="pairNameError" autocomplete="off"/>
-        <input class="si" id="pairB" placeholder="학생 B 이름" list="specialStudentNames" data-special-student="pairNameError" autocomplete="off"/>
+        <input class="si" id="pairA" placeholder="학생 A 이름" data-special-student="pairNameError" autocomplete="off"/>
+        <input class="si" id="pairB" placeholder="학생 B 이름" data-special-student="pairNameError" autocomplete="off"/>
         <button class="btn btn-secondary btn-sm" onclick="addPair()">추가</button>
         <div class="special-name-error" id="pairNameError" role="alert"></div>
       </div>
@@ -867,8 +867,8 @@ html[data-theme="dark"] .pv-cell.es{background:#1A2233!important;border-color:#3
         두 학생 사이 <b>거리를 최대화</b>합니다. 강도가 높을수록 더 멀리 배치됩니다.
       </div>
       <div class="add-row">
-        <input class="si" id="avoidA" placeholder="학생 A 이름" list="specialStudentNames" data-special-student="avoidNameError" autocomplete="off"/>
-        <input class="si" id="avoidB" placeholder="학생 B 이름" list="specialStudentNames" data-special-student="avoidNameError" autocomplete="off"/>
+        <input class="si" id="avoidA" placeholder="학생 A 이름" data-special-student="avoidNameError" autocomplete="off"/>
+        <input class="si" id="avoidB" placeholder="학생 B 이름" data-special-student="avoidNameError" autocomplete="off"/>
         <select class="sel" id="avoidLv">
           <option value="1">약 (2칸 이상)</option>
           <option value="2" selected>중 (3칸 이상)</option>
@@ -890,7 +890,7 @@ html[data-theme="dark"] .pv-cell.es{background:#1A2233!important;border-color:#3
         <b>③ 구역 추가</b> 버튼을 눌러 등록하세요
       </div>
       <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">
-        <input class="si" id="prefName" placeholder="① 학생 이름 입력" style="max-width:150px;" list="specialStudentNames" data-special-student="prefNameError" autocomplete="off"/>
+        <input class="si" id="prefName" placeholder="① 학생 이름 입력" style="max-width:150px;" data-special-student="prefNameError" autocomplete="off"/>
         <button class="btn btn-secondary btn-sm" onclick="selectAllZone()">전체 선택</button>
         <button class="btn btn-secondary btn-sm" onclick="clearAllZone()">초기화</button>
         <button class="btn btn-primary btn-sm" onclick="addPrefZone()">③ 구역 추가</button>
@@ -1510,7 +1510,7 @@ function validateSpecialNameInputs(ids,errorId){
 function bindSpecialNameInputs(){
   document.querySelectorAll('[data-special-student]').forEach(function(input){
     if(input.dataset.specialNameBound)return;input.dataset.specialNameBound='1';
-    input.addEventListener('input',function(){var value=this.value.trim(),hasCandidate=specialStudentNames().some(function(name){return name.indexOf(value)>-1;});if(!value||hasCandidate){this.classList.remove('invalid');setSpecialNameError(this.dataset.specialStudent,'');}else{this.classList.add('invalid');setSpecialNameError(this.dataset.specialStudent,'학생이 존재하지 않습니다. 학생 명단에서 선택해주세요.');}});
+    input.addEventListener('input',function(){var value=this.value.trim(),hasCandidate=specialStudentNames().some(function(name){return name.indexOf(value)>-1;});if(value)this.setAttribute('list','specialStudentNames');else this.removeAttribute('list');if(!value||hasCandidate){this.classList.remove('invalid');setSpecialNameError(this.dataset.specialStudent,'');}else{this.classList.add('invalid');setSpecialNameError(this.dataset.specialStudent,'학생이 존재하지 않습니다. 학생 명단에서 선택해주세요.');}});
     input.addEventListener('blur',function(){if(this.value.trim())validateSpecialNameInput(this);});
   });
 }
@@ -1663,7 +1663,7 @@ function validateLayout(grid,active,cfg,rows,cols){
 }
 function showConstraintStatus(validation,retries){
   var status=document.getElementById('constraintStatus'),strong=validation.strong.map(function(item){return esc(item.a)+'·'+esc(item.b)+' '+item.distance+'/'+item.maximum+'칸';});
-  status.innerHTML='✓ 특수 설정 검증 완료'+(retries?' · 자동 재탐색 '+retries+'회':'')+(strong.length?' <span style="font-weight:500;">| 강 기피: '+strong.join(', ')+'</span>':'');
+  status.innerHTML=strong.length?'강 기피 거리: '+strong.join(', ')+(retries?' · 자동 재탐색 '+retries+'회':''):'';
 }
 function generateLayout(){
   students=collectStudents();
