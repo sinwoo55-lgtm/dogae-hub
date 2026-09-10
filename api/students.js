@@ -76,7 +76,7 @@ export default async function handler(req, res) {
       if (req.query?.meta === '1') return res.status(200).json({ classes: await rosterMeta() });
       const selectedClass = typeof req.query?.classKey === 'string' ? req.query.classKey : '';
       if (selectedClass) {
-        if (!/^\d{1,10}-\d{1,10}$/.test(selectedClass)) return res.status(400).json({ error: '학급 정보가 올바르지 않습니다.' });
+        if (!/^(?:\d{1,10}|중[1-3])-\d{1,10}$/.test(selectedClass)) return res.status(400).json({ error: '학급 정보가 올바르지 않습니다.' });
         const students = await STUDENTS.where('classKey', '==', selectedClass).get();
         return res.status(200).json({ students: students.docs.map(doc => ({ id: doc.id, ...doc.data() })) });
       }
