@@ -8,6 +8,7 @@ import { parseTimetableWorkbook } from '../lib/timetable-swap.js';
 import { googleDriveDownloadUrl, isGoogleDriveFileLink } from '../lib/resource-library.js';
 import { timetableTerm } from '../lib/timetable-term.js';
 import { normalizedMenuOrder } from '../lib/menu-order.js';
+import { classTimetableData } from '../lib/class-timetable.js';
 
 const POSTS = db.collection('dashboard_posts');
 const POST_TRASH = db.collection('dashboard_post_trash');
@@ -16,9 +17,10 @@ const RESOURCES = db.collection('dashboard_resources');
 const DEPARTMENTS = db.collection('dashboard_meta').doc('departments');
 const MENU_SETTINGS = db.collection('dashboard_meta').doc('menu_settings');
 const TIMETABLE = db.collection('dashboard_meta').doc('teacher_timetable');
+const CLASS_TIMETABLES = db.collection('class_timetables');
 const SCHEDULE_VERSION = db.collection('dashboard_meta').doc('schedule_version');
 const SCHEDULE_CHANGES = db.collection('schedule_changes');
-const MENU_IDS = ['calendar', 'links', 'resources', 'organization', 'students', 'career', 'seating', 'timetable'];
+const MENU_IDS = ['calendar', 'links', 'resources', 'organization', 'students', 'career', 'seating', 'timetable', 'classTimetable'];
 
 function asJson(value) {
   if (Array.isArray(value)) return value.map(asJson);
@@ -168,6 +170,19 @@ async function timetableSnapshot(res) {
   return res.status(200).json({ timetable: asJson(data.timetable || null), sourceFileName: data.sourceFileName || '', academicYear: Number(data.academicYear) || null, semester: data.semester || '', importedAt: data.importedAt?.toDate ? data.importedAt.toDate().toISOString() : null });
 }
 
+async function classTimetableSnapshot(res, id) {
+  if (id) {
+    if (!validId(id)) return res.status(400).json({ error: '학급 시간표를 찾을 수 없습니다.' });
+    const item = await CLASS_TIMETABLES.doc(id).get();
+    return res.status(200).json({ item: item.exists ? { id: item.id, ...asJson(item.data()) } : null });
+  }
+  const items = await CLASS_TIMETABLES.orderBy('updatedAt', 'desc').limit(50).get();
+  return res.status(200).json({ items: items.docs.map((doc) => {
+    const data = doc.data();
+    return { id: doc.id, title: data.title || '', theme: data.theme || 'blue', updatedAt: asJson(data.updatedAt || null) };
+  }) });
+}
+
 function recordScheduleChanges(tx, versionSnap, changes) {
   const result = versionedScheduleChanges(versionSnap.exists ? versionSnap.data().version : 0, changes, Date.now());
   const version = result.version;
@@ -231,6 +246,7 @@ export default async function handler(req, res) {
       if (req.query?.scope === 'backup-preview') return backupPreview(res, req.query?.id);
       if (req.query?.scope === 'restore-history') return restoreHistory(res);
       if (req.query?.scope === 'timetable') return timetableSnapshot(res);
+      if (req.query?.scope === 'class-timetables') return classTimetableSnapshot(res, req.query?.id);
       if (req.query?.scope === 'resource-download') return resourceDownload(res, req.query?.id);
       return snapshot(res);
     }
@@ -325,6 +341,16 @@ export default async function handler(req, res) {
       if (!term || !current.exists || !current.data().timetable) return res.status(400).json({ error: '저장된 시간표가 있는지와 학기 정보를 확인해주세요.' });
       await TIMETABLE.set({ ...term, termUpdatedAt: FieldValue.serverTimestamp() }, { merge: true });
       return res.status(200).json(term);
+    } else if (action === 'class-timetable:save') {
+      const next = classTimetableData(data);
+      if (!next) return res.status(400).json({ error: '시간표 이름, 수업 내용, 테마 또는 배경 이미지를 확인해주세요.' });
+      const ref = id && validId(id) ? CLASS_TIMETABLES.doc(id) : CLASS_TIMETABLES.doc();
+      const current = id && validId(id) ? await ref.get() : null;
+      await ref.set({ ...next, ...(current?.exists ? {} : { createdAt: FieldValue.serverTimestamp() }), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+      return res.status(200).json({ item: { id: ref.id, ...next } });
+    } else if (action === 'class-timetable:delete' && validId(id)) {
+      await CLASS_TIMETABLES.doc(id).delete();
+      return res.status(200).json({ deleted: true });
     } else {
       return res.status(400).json({ error: '알 수 없는 작업입니다.' });
     }
