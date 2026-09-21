@@ -32,6 +32,77 @@
   readabilityStyle.textContent='html[data-theme="dark"] .back,html[data-theme="dark"] .back-btn,html[data-theme="dark"] .eyebrow,html[data-theme="dark"] .page-title,html[data-theme="dark"] .header-title,html[data-theme="dark"] .go,html[data-theme="dark"] .file-htag,html[data-theme="dark"] .act-tag,html[data-theme="dark"] .cat-sel-count,html[data-theme="dark"] .form-label,html[data-theme="dark"] .s4-badge,html[data-theme="dark"] .theme-select,html[data-theme="dark"] .class-chip,html[data-theme="dark"] .s3-hint,html[data-theme="dark"] .count-btn,html[data-theme="dark"] .count-val,html[data-theme="dark"] .btn-secondary,html[data-theme="dark"] .btn-special,html[data-theme="dark"] .range-pop-head button,html[data-theme="dark"] .range-pop-label,html[data-theme="dark"] .quick-card #quickNoticeWrap,html[data-theme="dark"] .post-edit,html[data-theme="dark"] .day-popup-close,html[data-theme="dark"] .participant-card em{color:#DDE7FF!important}html[data-theme="dark"] .range-day.in-range,html[data-theme="dark"] .range-grid button.in-range{background:#2E4370!important;color:#F4F7FF!important}html[data-theme="dark"] .range-day.range-start,html[data-theme="dark"] .range-day.range-end,html[data-theme="dark"] .range-grid button.selected{background:#4059B8!important;color:#fff!important}html[data-theme="dark"] .day.range-selected{background:#263B67!important;border-color:#5F79D5!important;color:#F4F7FF!important}html[data-theme="dark"] .day.range-selected .day-num,html[data-theme="dark"] .day.range-selected .calendar-date-label{color:#F4F7FF!important}';
   readabilityStyle.textContent='html[data-theme="dark"] .back,html[data-theme="dark"] .back-btn,html[data-theme="dark"] .eyebrow,html[data-theme="dark"] .page-title,html[data-theme="dark"] .header-title,html[data-theme="dark"] .go,html[data-theme="dark"] .file-htag,html[data-theme="dark"] .act-tag,html[data-theme="dark"] .cat-sel-count,html[data-theme="dark"] .form-label,html[data-theme="dark"] .s4-badge,html[data-theme="dark"] .theme-select,html[data-theme="dark"] .class-chip,html[data-theme="dark"] .s3-hint,html[data-theme="dark"] .count-btn,html[data-theme="dark"] .count-val,html[data-theme="dark"] .btn-secondary,html[data-theme="dark"] .btn-special,html[data-theme="dark"] .range-pop-head button,html[data-theme="dark"] .range-pop-label,html[data-theme="dark"] .quick-card #quickNoticeWrap,html[data-theme="dark"] .post-edit,html[data-theme="dark"] .day-popup-close,html[data-theme="dark"] .participant-card em,html[data-theme="dark"] .day-detail-title,html[data-theme="dark"] .day-detail-item a,html[data-theme="dark"] .day-item-actions button,html[data-theme="dark"] .day-add,html[data-theme="dark"] .quick-actions .cancel,html[data-theme="dark"] .selected-tags-empty,html[data-theme="dark"] .tag-hint,html[data-theme="dark"] [style*="color:var(--navy)"]{color:#DDE7FF!important}html[data-theme="dark"] .range-day.in-range,html[data-theme="dark"] .range-grid button.in-range{background:#2E4370!important;color:#F4F7FF!important}html[data-theme="dark"] .range-day.range-start,html[data-theme="dark"] .range-day.range-end,html[data-theme="dark"] .range-grid button.selected{background:#4059B8!important;color:#fff!important}html[data-theme="dark"] .day.range-selected{background:#263B67!important;border-color:#5F79D5!important;color:#F4F7FF!important}html[data-theme="dark"] .day.range-selected .day-num,html[data-theme="dark"] .day.range-selected .calendar-date-label{color:#F4F7FF!important}';
   document.head.appendChild(readabilityStyle);
+  // Screen-only corrections: never recolor timetable/seating print artwork.
+  var auditedStyle=document.createElement('style');
+  auditedStyle.id='dark-ui-contrast';
+  auditedStyle.textContent=`@media screen {
+    html[data-theme="dark"] .menu-btn,
+    html[data-theme="dark"] .form-actions .cancel,
+    html[data-theme="dark"] .class-chip {
+      background:#202B40!important;border-color:#566985!important;color:#E7ECF7!important;
+    }
+    html[data-theme="dark"] .menu-btn:hover,
+    html[data-theme="dark"] .class-chip:hover,
+    html[data-theme="dark"] .form-actions .cancel:hover {
+      background:#30415F!important;border-color:#819CC8!important;
+    }
+    html[data-theme="dark"] .s3-hint,
+    html[data-theme="dark"] .special-hint {
+      background:#253553!important;color:#DDE7FF!important;
+    }
+    html[data-theme="dark"] .btn-special {
+      background:#392D53!important;border-color:#A389D4!important;color:#EBDDFF!important;
+    }
+    html[data-theme="dark"] .btn-special:hover {background:#49386B!important;}
+    html[data-theme="dark"] #specialModal .spec-tab {background:#202B40!important;color:#DDE7FF!important;}
+    html[data-theme="dark"] #specialModal .spec-tab.active,
+    html[data-theme="dark"] #specialModal .zone-cell.on {
+      background:#4059B8!important;border-color:#96B4FF!important;color:#fff!important;
+    }
+    html[data-theme="dark"] #specialModal .zone-cell.preview {
+      background:#594416!important;border-color:#E4B95C!important;color:#FFE7AA!important;
+      box-shadow:inset 0 0 0 1px #E4B95C;
+    }
+    html[data-theme="dark"] .special-name-error {color:#FFB3BC!important;}
+    html[data-theme="dark"] .si.invalid {border-color:#F08B9A!important;}
+    html[data-theme="dark"] .special-suggestions button:hover {background:#30415F!important;color:#fff!important;}
+    html[data-theme="dark"] .calendar-meta {color:#B8C6DF!important;}
+    html[data-theme="dark"] .calendar-meta.holiday,
+    html[data-theme="dark"] .calendar .day.sun .day-num,
+    html[data-theme="dark"] .week span:first-child {color:#FFACB5!important;}
+    html[data-theme="dark"] .calendar .day.sat .day-num,
+    html[data-theme="dark"] .week span:last-child {color:#A9CEFF!important;}
+    html[data-theme="dark"] .event-more,
+    html[data-theme="dark"] .quick-saving,
+    html[data-theme="dark"] .list-index {color:#B8D2FF!important;}
+    html[data-theme="dark"] .board-count {background:#263B67!important;color:#DDE7FF!important;}
+    html[data-theme="dark"] .post.notice {background:#302C21!important;border-color:#806A37!important;}
+    html[data-theme="dark"] .post-date.notice-date {color:#F5D58F!important;}
+    html[data-theme="dark"] .notice-add {background:#443719!important;border-color:#A88A48!important;color:#FFE29A!important;}
+    html[data-theme="dark"] .admin-controls {background:#193C32!important;color:#B9F0D0!important;}
+    html[data-theme="dark"] .admin-controls button {border-color:#538B75!important;color:#B9F0D0!important;}
+    html[data-theme="dark"] .item-tools .delete,
+    html[data-theme="dark"] .day-item-actions button:last-child {color:#FFB3BC!important;}
+    html[data-theme="dark"] .head-chip .name,
+    html[data-theme="dark"] .member-role {color:#B8D2FF!important;}
+    html[data-theme="dark"] .dept-card .card-icon,
+    html[data-theme="dark"] .dept-popup-icon,
+    html[data-theme="dark"] .member-avatar,
+    html[data-theme="dark"] .sri-icon,
+    html[data-theme="dark"] .sri-dept,
+    html[data-theme="dark"] .card-count {background:#263B67!important;color:#C8DCFF!important;}
+    html[data-theme="dark"] .dept-popup-close:hover {background:#4A2028!important;color:#FFB3BC!important;}
+    html[data-theme="dark"] .dept-popup mark,
+    html[data-theme="dark"] .search-result-view mark {background:#594416!important;color:#FFE7AA!important;}
+    html[data-theme="dark"] input::placeholder,
+    html[data-theme="dark"] textarea::placeholder {color:#9BAAC2!important;}
+    html[data-theme="dark"] button:focus-visible,
+    html[data-theme="dark"] a:focus-visible,
+    html[data-theme="dark"] [role="link"]:focus-visible {
+      outline:2px solid #A9CEFF;outline-offset:3px;
+    }
+  }`;
+  document.head.appendChild(auditedStyle);
   var minimumFontStyle=document.createElement('style');
   minimumFontStyle.textContent='@media screen{.day-detail-title,.day-detail-item,.day-detail-item b,.day-detail-item small,.day-detail-item a,.day-add,.day-item-actions button,.quick-actions button,.range-week span,.range-day,.range-hint,.range-actions button,.event-line,.calendar-note,.post-inline-meta,.post-edit,.admin-controls,.status,.meta,.form-label,.form-label small,.page-sub,.header-sub,.selected-tags-empty,.tag-hint,.file-htag,.act-tag,.htag-more,.htag-more-btn{font-size:12px!important}}';
   document.head.appendChild(minimumFontStyle);
