@@ -196,7 +196,10 @@ input:checked+.tsl::before{transform:translateX(17px);}
 .s4-body{flex:1;overflow:auto;display:flex;min-height:0;}
 
 /* 배치표 영역 - 창 크기 맞춤 */
-.layout-area{flex:1;padding:20px;display:flex;flex-direction:column;align-items:center;overflow:auto;min-height:0;}
+.layout-area{flex:1;padding:20px;display:flex;flex-direction:column;align-items:center;overflow:auto;min-height:0;
+  --bg:#F2F4FB;--surface:#fff;--text:#1A1E2E;--muted:#64748B;--border:#E0E5F0;
+  --navy:#253E8A;--navy-dark:#182B6A;--navy-pale:#EEF2FB;
+}
 .board-tag-area{
   font-size:14px;font-weight:800;color:var(--theme-board-text,#fff);
   background:var(--theme-board-bg,var(--navy));letter-spacing:3px;
@@ -430,7 +433,13 @@ input:checked+.tsl::before{transform:translateX(17px);}
 }
 
 /* 테마 배경 적용 */
-[class*="theme-"] .layout-area{background:var(--theme-bg) !important;}
+.layout-area[class*="theme-"]{background:var(--theme-bg) !important;color:var(--theme-text) !important;}
+.layout-area[class*="theme-"] #layoutTitleWrap{border-color:var(--theme-border)!important;}
+.layout-area[class*="theme-"] #layoutSchoolName,
+.layout-area[class*="theme-"] #layoutClassName,
+.layout-area[class*="theme-"] #layoutSubtitle{color:var(--theme-text)!important;}
+.layout-area[class*="theme-"] #layoutSchoolName,
+.layout-area[class*="theme-"] #layoutSubtitle{opacity:.72;}
 [class*="theme-"] .seat{background:var(--theme-seat) !important;border-color:var(--theme-border) !important;color:var(--theme-text) !important;}
 [class*="theme-"] .seat.male{background:var(--theme-male-bg) !important;border-color:var(--theme-male) !important;color:var(--theme-male) !important;}
 [class*="theme-"] .seat.female{background:var(--theme-female-bg) !important;border-color:var(--theme-female) !important;color:var(--theme-female) !important;}
@@ -447,17 +456,8 @@ input:checked+.tsl::before{transform:translateX(17px);}
 [class*="theme-"] .seat.female::before{background:var(--theme-female);}
 [class*="theme-"] .seat.ec::before{background:var(--theme-border);}
 
-/* S4 전체 배경 */
-[class*="theme-"] #s4{background:var(--theme-bg-color);}
-
-/* 전역 다크 모드와 별개로, 완성된 배치표는 선택한 밝은 출력 테마를 유지한다. */
-html[data-theme="dark"] #s4.seating-light-output{background:var(--theme-bg-color,#F2F4FB)!important;color:var(--text)!important;}
-html[data-theme="dark"] #s4.seating-light-output .layout-area{background:var(--theme-bg,var(--bg))!important;color:var(--text)!important;}
-html[data-theme="dark"] #s4.seating-light-output .s4-top,
-html[data-theme="dark"] #s4.seating-light-output .hist-panel{background:var(--surface)!important;border-color:var(--border)!important;color:var(--text)!important;}
-html[data-theme="dark"] #s4.seating-light-output .s4-badge{color:var(--navy)!important;}
-html[data-theme="dark"] #s4.seating-light-output .theme-select,
-html[data-theme="dark"] #s4.seating-light-output .btn-secondary{background:var(--bg)!important;border-color:var(--border)!important;color:var(--navy)!important;}
+/* 다크모드에서도 화면 조작부는 어둡게 유지하고, 실제 출력 영역에만 선택 테마를 적용한다. */
+html[data-theme="dark"] .layout-area[class*="theme-"]{background:var(--theme-bg)!important;color:var(--theme-text)!important;}
 html[data-theme="dark"] #completeModal .modal{--bg:#F2F4FB!important;--surface:#fff!important;--text:#1A1E2E!important;--muted:#64748B!important;--border:#E0E5F0!important;--navy:#253E8A!important;--navy-dark:#182B6A!important;--navy-pale:#EEF2FB!important;background:#fff!important;color:#1A1E2E!important;}
 html[data-theme="dark"] #completeModal .modal .modal-title,
 html[data-theme="dark"] #completeModal .modal h1,
@@ -1945,32 +1945,16 @@ var THEMES={
   spring:'봄',summer:'여름',autumn:'가을',winter:'겨울',
   cute:'아기자기',kinder:'유치원'
 };
-var OUTPUT_PALETTE_VARS=['--bg','--surface','--text','--muted','--border','--navy','--navy-dark','--navy-pale','--theme-bg','--theme-bg-color','--theme-surface','--theme-seat','--theme-border','--theme-male-bg','--theme-male','--theme-female-bg','--theme-female','--theme-empty','--theme-gap','--theme-text','--theme-num','--theme-card-top','--theme-board-bg','--theme-board-text','--theme-comment-color','--theme-font'];
-var OUTPUT_LIGHT_PALETTE={
-  '--bg':'#F2F4FB','--surface':'#FFFFFF','--text':'#1A1E2E','--muted':'#64748B','--border':'#E0E5F0','--navy':'#253E8A','--navy-dark':'#182B6A','--navy-pale':'#EEF2FB',
-  '--theme-bg':'#F8F9FA','--theme-bg-color':'#F8F9FA','--theme-surface':'#FFFFFF','--theme-seat':'#FFFFFF','--theme-border':'#DEE2E6',
-  '--theme-male-bg':'#EAF3FF','--theme-male':'#3B82F6','--theme-female-bg':'#FFF0F7','--theme-female':'#EC4899','--theme-empty':'#F1F3F5','--theme-gap':'#868E96',
-  '--theme-text':'#1A1E2E','--theme-num':'#64748B','--theme-card-top':'#DEE2E6','--theme-board-bg':'#253E8A','--theme-board-text':'#FFFFFF','--theme-comment-color':'#1A1E2E','--theme-font':'Noto Sans KR'
-};
 function refreshOutputPalette(){
-  var output=document.getElementById('s4');
-  if(!output)return;
-  OUTPUT_PALETTE_VARS.forEach(function(name){output.style.removeProperty(name);});
-  var root=document.documentElement;
-  var dark=root.dataset.theme==='dark';
-  output.classList.toggle('seating-light-output',dark);
-  if(!dark)return;
-  /* 출력물은 화면 테마와 무관하게 항상 명확한 밝은 인쇄 팔레트를 사용한다. */
-  OUTPUT_PALETTE_VARS.forEach(function(name){output.style.setProperty(name,OUTPUT_LIGHT_PALETTE[name]||'', 'important');});
+  var area=document.querySelector('.layout-area');
+  if(!area)return;
+  Object.keys(THEMES).forEach(function(k){area.classList.remove('theme-'+k);});
+  area.classList.add('theme-'+(THEMES[curTheme]?curTheme:'simple'));
 }
 function applyTheme(t){
-  curTheme=t;
+  curTheme=THEMES[t]?t:'simple';
   var body=document.body;
   Object.keys(THEMES).forEach(function(k){body.classList.remove('theme-'+k);});
-  if(t!=='simple') body.classList.add('theme-'+t);
-  /* 배치 영역 배경 */
-  var la=document.querySelector('.layout-area');
-  if(la) la.style.background='var(--theme-bg,var(--bg))';
   refreshOutputPalette();
 }
 window.addEventListener('dogae-theme-change',refreshOutputPalette);
@@ -2068,9 +2052,9 @@ function buildImageCanvas(isTeacher,cmt){
   cmt=cmt||'';
 
   /* 테마 변수 */
-  /* 최종 화면에 고정한 밝은 출력 팔레트를 기준으로 이미지도 생성한다. */
+  /* 화면의 배치표 영역에 적용된 출력 테마를 그대로 이미지에 사용한다. */
   refreshOutputPalette();
-  var cs=getComputedStyle(document.getElementById('s4'));
+  var cs=getComputedStyle(document.querySelector('.layout-area'));
   function tv(n){return cs.getPropertyValue(n).trim()||'';}
   var bgColor  =tv('--theme-bg-color')||'#ffffff';
   var seatBg   =tv('--theme-seat')||'#ffffff';

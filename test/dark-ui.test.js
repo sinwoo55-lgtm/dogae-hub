@@ -58,3 +58,13 @@ test('특수 설정 안내와 선택·미리보기 상태를 따로 표시한다
   assert.match(page, /b\.classList\.remove\('active'\)/);
   assert.match(page, /btn\.classList\.add\('active'\)/);
 });
+
+test('자리 배치 테마는 다크 UI가 아닌 출력 영역에만 적용한다', () => {
+  const page = readFileSync(new URL('../seating.html', import.meta.url), 'utf8');
+  assert.match(page, /\.layout-area\[class\*="theme-"\]/);
+  assert.match(page, /area\.classList\.add\('theme-'\+\(THEMES\[curTheme\]\?curTheme:'simple'\)\)/);
+  assert.match(page, /getComputedStyle\(document\.querySelector\('\.layout-area'\)\)/);
+  assert.match(page, /#layoutClassName,[\s\S]*color:var\(--theme-text\)!important/);
+  assert.doesNotMatch(page, /body\.classList\.add\('theme-'/);
+  assert.doesNotMatch(page, /OUTPUT_LIGHT_PALETTE|seating-light-output/);
+});
