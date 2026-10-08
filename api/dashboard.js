@@ -1,3 +1,4 @@
+import {initialDesktopRelease} from '../lib/desktop-release-initial.js';
 import desktopAccessHandler from '../lib/desktop-access-handler.js';
 import {desktopAdminAccess} from '../lib/desktop-admin.js';
 import {createDistributionHandler} from '../lib/desktop-distribution-store.js';
@@ -221,7 +222,7 @@ async function trashSnapshot(res) {
   return res.status(200).json({ trash: trash.docs.map((doc) => ({ id: doc.id, ...asJson(doc.data()) })) });
 }
 
-const desktopDistributionHandler=createDistributionHandler({db,authorize:desktopAdminAccess,network:requireSchoolNetwork});
+const desktopDistributionHandler=createDistributionHandler({db,authorize:desktopAdminAccess,network:requireSchoolNetwork,initialRelease:initialDesktopRelease});
 export default async function handler(req, res) {
   if(req.query?.desktopRoute==='access')return desktopAccessHandler(req,res);
   if(req.query?.desktopRoute==='distribution')return desktopDistributionHandler(req,res);
