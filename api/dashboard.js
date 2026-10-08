@@ -1,3 +1,6 @@
+import desktopAccessHandler from '../lib/desktop-access-handler.js';
+import {desktopAdminAccess} from '../lib/desktop-admin.js';
+import {createDistributionHandler} from '../lib/desktop-distribution-store.js';
 import { FieldValue } from 'firebase-admin/firestore';
 import { db, firebaseProjectId } from '../lib/firebase-admin.js';
 import { allowJson, text } from '../lib/http.js';
@@ -218,7 +221,10 @@ async function trashSnapshot(res) {
   return res.status(200).json({ trash: trash.docs.map((doc) => ({ id: doc.id, ...asJson(doc.data()) })) });
 }
 
+const desktopDistributionHandler=createDistributionHandler({db,authorize:desktopAdminAccess,network:requireSchoolNetwork});
 export default async function handler(req, res) {
+  if(req.query?.desktopRoute==='access')return desktopAccessHandler(req,res);
+  if(req.query?.desktopRoute==='distribution')return desktopDistributionHandler(req,res);
   if (!allowJson(req, res, ['GET', 'POST'])) return;
   if (!requireSchoolNetwork(req, res)) return;
 

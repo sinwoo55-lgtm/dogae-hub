@@ -1,6 +1,22 @@
 {
   "crons": [
-    { "path": "/api/discipline-sync", "schedule": "0 13 * * *" },
-    { "path": "/api/calendar-refresh", "schedule": "0 14 * * *" }
+    {
+      "path": "/api/discipline-sync",
+      "schedule": "0 13 * * *"
+    },
+    {
+      "path": "/api/calendar-refresh",
+      "schedule": "0 14 * * *"
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/desktop-access",
+      "destination": "/api/dashboard?desktopRoute=access"
+    },
+    {
+      "source": "/api/desktop-distribution",
+      "destination": "/api/dashboard?desktopRoute=distribution"
+    }
   ]
 }

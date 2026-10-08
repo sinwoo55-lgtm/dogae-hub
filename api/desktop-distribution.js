@@ -1,1 +1,0 @@
-import {db} from '../lib/firebase-admin.js';import {desktopAdminAccess} from '../lib/desktop-admin.js';import {requireSchoolNetwork} from '../lib/school-access.js';import {createDistributionHandler} from '../lib/desktop-distribution-store.js';export default createDistributionHandler({db,authorize:desktopAdminAccess,network:requireSchoolNetwork});
