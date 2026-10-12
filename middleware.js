@@ -1,3 +1,4 @@
+import {clientIp,schoolIpAllowed} from './lib/school-ip.js';
 import { desktopAdminAccess } from './lib/desktop-admin.js';
 export const config = { matcher: '/:path*' };
 
@@ -7,10 +8,8 @@ export default async function middleware(request) {
   const forwarded = request.headers.get('x-vercel-forwarded-for') || request.headers.get('x-forwarded-for') || '';
   // 프록시 체인으로 쉼표 구분 IP 목록이 들어올 수 있으므로 실제 클라이언트 IP만 사용한다.
   // IPv4-mapped IPv6(::ffff:...)나 프록시 부가 문자열이 있어도 IPv4 주소만 추출한다.
-  const ip = forwarded.match(/(?:\d{1,3}\.){3}\d{1,3}/)?.[0] || forwarded.split(',')[0].trim();
-  // 학교 유선망 대역과 확인된 무선망 공인 IP만 허용한다.
-  const ALLOWED_PREFIXES = ['117.110.113.', '117.111.141.213', '127.0.0.1', '::1'];
-  const allowed = ALLOWED_PREFIXES.some(function(prefix) { return ip === prefix || ip.startsWith(prefix); });
+  const ip=clientIp(forwarded);
+  const allowed=schoolIpAllowed(ip,process.env.SCHOOL_ALLOWED_CIDRS,true);
 
   if (!allowed) {
     return new Response(

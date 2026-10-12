@@ -228,6 +228,7 @@ export default async function handler(req, res) {
   if(req.query?.desktopRoute==='distribution')return desktopDistributionHandler(req,res);
   if (!allowJson(req, res, ['GET', 'POST'])) return;
   if (!requireSchoolNetwork(req, res)) return;
+  if(req.method==='GET'&&req.query?.scope==='network-check'){res.setHeader('Cache-Control','no-store');return res.status(200).json({schoolAllowed:true});}
 
   try {
     if (req.method === 'GET') {
