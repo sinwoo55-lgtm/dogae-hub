@@ -17,6 +17,10 @@
     {
       "source": "/api/desktop-distribution",
       "destination": "/api/dashboard?desktopRoute=distribution"
+    },
+    {
+      "source": "/login.html",
+      "destination": "/api/dashboard?scope=network-check"
     }
   ]
 }
