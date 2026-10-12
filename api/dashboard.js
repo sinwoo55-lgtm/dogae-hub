@@ -1,3 +1,4 @@
+import {networkCheck} from '../lib/network-check.js';
 import {initialDesktopRelease} from '../lib/desktop-release-initial.js';
 import desktopAccessHandler from '../lib/desktop-access-handler.js';
 import {desktopAdminAccess} from '../lib/desktop-admin.js';
@@ -226,6 +227,7 @@ const desktopDistributionHandler=createDistributionHandler({db,authorize:desktop
 export default async function handler(req, res) {
   if(req.query?.desktopRoute==='access')return desktopAccessHandler(req,res);
   if(req.query?.desktopRoute==='distribution')return desktopDistributionHandler(req,res);
+  if(req.query?.scope==='network-check')return networkCheck(req,res);
   if (!allowJson(req, res, ['GET', 'POST'])) return;
   if (!requireSchoolNetwork(req, res)) return;
 
