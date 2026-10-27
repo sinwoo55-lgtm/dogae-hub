@@ -13,6 +13,7 @@ import { parseTimetableWorkbook } from '../lib/timetable-swap.js';
 import { googleDriveDownloadUrl, isGoogleDriveFileLink } from '../lib/resource-library.js';
 import { timetableTerm } from '../lib/timetable-term.js';
 import { normalizedMenuOrder } from '../lib/menu-order.js';
+import { SCHOOL_MENU_IDS, normalizeSavedMenu } from '../lib/school-menu.js';
 
 const POSTS = db.collection('dashboard_posts');
 const POST_TRASH = db.collection('dashboard_post_trash');
@@ -23,7 +24,7 @@ const MENU_SETTINGS = db.collection('dashboard_meta').doc('menu_settings');
 const TIMETABLE = db.collection('dashboard_meta').doc('teacher_timetable');
 const SCHEDULE_VERSION = db.collection('dashboard_meta').doc('schedule_version');
 const SCHEDULE_CHANGES = db.collection('schedule_changes');
-const MENU_IDS = ['calendar', 'links', 'resources', 'organization', 'students', 'career', 'seating', 'timetable', 'classTimetable'];
+const MENU_IDS = SCHOOL_MENU_IDS;
 
 function asJson(value) {
   if (Array.isArray(value)) return value.map(asJson);
@@ -88,16 +89,6 @@ function departmentList(value) {
     color: text(item?.color, 20),
   }));
   if (list.some((item) => !item.id || !item.name || !/^#[0-9A-Fa-f]{6}$/.test(item.color))) return null;
-  return list;
-}
-
-function menuList(value) {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
-  const list = {};
-  for (const id of MENU_IDS) {
-    if (typeof value[id] !== 'boolean') return null;
-    list[id] = value[id];
-  }
   return list;
 }
 
@@ -315,10 +306,15 @@ export default async function handler(req, res) {
       if (!list) return res.status(400).json({ error: '부서 목록 입력값이 올바르지 않습니다.' });
       await DEPARTMENTS.set({ list });
     } else if (action === 'menu:save') {
-      const items = menuList(data?.items || data);
+      const input = data?.items || data;
       const order = data?.order === undefined ? MENU_IDS : menuOrder(data.order);
-      if (!items || !order) return res.status(400).json({ error: '메뉴 설정이 올바르지 않습니다.' });
-      await MENU_SETTINGS.set({ items, order, updatedAt: FieldValue.serverTimestamp() });
+      if (!normalizeSavedMenu(input) || !order) return res.status(400).json({ error: '메뉴 설정이 올바르지 않습니다.' });
+      const items = await db.runTransaction(async tx => {
+        const old = await tx.get(MENU_SETTINGS);
+        const next = normalizeSavedMenu(input, old.exists ? old.data().items : {});
+        tx.set(MENU_SETTINGS, { items: next, order, updatedAt: FieldValue.serverTimestamp() });
+        return next;
+      });
       return res.status(200).json({ menu: items, menuOrder: order });
     } else if (action === 'timetable:save') {
       const fileName = text(data?.fileName, 120);
