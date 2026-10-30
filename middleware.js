@@ -3,6 +3,7 @@ import { desktopAdminAccess } from './lib/desktop-admin.js';
 export const config = { matcher: '/:path*' };
 
 export default async function middleware(request) {
+  if (new URL(request.url).pathname === '/api/calendar-refresh' && process.env.CRON_SECRET && request.headers.get('authorization') === `Bearer ${process.env.CRON_SECRET}`) return;
   if(new URL(request.url).pathname.startsWith('/api/')&&await desktopAdminAccess(request.headers))return;
   // Vercel이 설정한 헤더를 사용한다. x-vercel-forwarded-for는 프록시 설정에도 원본 값을 보존한다.
   const forwarded = request.headers.get('x-vercel-forwarded-for') || request.headers.get('x-forwarded-for') || '';

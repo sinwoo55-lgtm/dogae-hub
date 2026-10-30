@@ -1,3 +1,4 @@
+import onlineBoardHandler from '../lib/online-board-handler.js';
 import {networkCheck} from '../lib/network-check.js';
 import {initialDesktopRelease} from '../lib/desktop-release-initial.js';
 import desktopAccessHandler from '../lib/desktop-access-handler.js';
@@ -216,6 +217,7 @@ async function trashSnapshot(res) {
 
 const desktopDistributionHandler=createDistributionHandler({db,authorize:desktopAdminAccess,network:requireSchoolNetwork,initialRelease:initialDesktopRelease});
 export default async function handler(req, res) {
+  if(req.query?.desktopRoute==='online-board')return onlineBoardHandler(req,res);
   if(req.query?.desktopRoute==='access')return desktopAccessHandler(req,res);
   if(req.query?.desktopRoute==='distribution')return desktopDistributionHandler(req,res);
   if(req.query?.scope==='network-check')return networkCheck(req,res);
@@ -224,6 +226,7 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === 'GET') {
+      if (req.query?.scope === 'departments') { const doc = await DEPARTMENTS.get(); return res.status(200).json({ departments: doc.exists ? asJson(doc.data().list || []) : [] }); }
       if (req.query?.scope === 'home') return homeSnapshot(res);
       if (req.query?.scope === 'trash') return trashSnapshot(res);
       if (req.query?.scope === 'menu') return menuSnapshot(res);
@@ -342,3 +345,4 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: '대시보드 데이터를 처리하지 못했습니다.' });
   }
 }
+

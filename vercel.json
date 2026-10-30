@@ -10,6 +10,7 @@
     }
   ],
   "rewrites": [
+    { "source": "/api/online-board", "destination": "/api/dashboard?desktopRoute=online-board" },
     {
       "source": "/api/desktop-access",
       "destination": "/api/dashboard?desktopRoute=access"
@@ -24,3 +25,4 @@
     }
   ]
 }
+
