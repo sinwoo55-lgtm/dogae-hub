@@ -4,6 +4,7 @@ import { refreshCalendarYear } from './calendar-events.js';
 import { markDisciplineSyncFailure, syncDisciplineRecords } from './discipline-sync.js';
 import { createWeeklyBackup } from '../lib/weekly-backup.js';
 import { DEFAULT_CALENDAR_REFRESH_SPAN, calendarRefreshYears } from '../lib/calendar-refresh-window.js';
+import { purgeBoard } from '../lib/online-board-handler.js';
 
 function koreaYear() {
   return Number(new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Seoul', year: 'numeric' }).format(new Date()));
@@ -43,6 +44,7 @@ export default async function handler(req, res) {
   // Cron에서는 오래 걸릴 수 있는 학사일정 갱신보다 먼저 핵심 동기화를 끝낸다.
   // 이렇게 하면 일정 원본 응답이 지연돼도 매일 지적사항 수집은 놓치지 않는다.
   if (isCronRequest(req)) {
+    try { await purgeBoard(); } catch (error) { console.error('board cleanup error', error.message); }
     try { discipline = await syncDisciplineRecords(); }
     catch (error) { console.error('discipline cron sync error', error); await markDisciplineSyncFailure(error); discipline = { synced: false, error: '지적사항 동기화 실패' }; }
     if (isKoreaSunday()) {
@@ -53,3 +55,4 @@ export default async function handler(req, res) {
   const results = await runWithConcurrency(years, 3, refreshCalendarYear);
   return res.status(200).json({ center, span, refreshed: results.filter((item) => item.ok).map((item) => item.year), failed: results.filter((item) => !item.ok).map((item) => item.year), discipline, backup });
 }
+

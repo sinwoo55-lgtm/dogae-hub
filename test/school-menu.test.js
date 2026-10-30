@@ -4,7 +4,7 @@ import {SCHOOL_MENU_IDS,normalizeSavedMenu} from '../lib/school-menu.js';
 import {normalizedMenuOrder} from '../lib/menu-order.js';
 
 test('도구 모음은 공용 메뉴의 표시 설정과 기존 순서에 포함된다',()=>{
- const old=SCHOOL_MENU_IDS.filter(id=>id!=='tools'),input=Object.fromEntries(old.map(id=>[id,true]));
+ const old=SCHOOL_MENU_IDS.filter(id=>id!=='tools'&&id!=='onlineBoard'),input=Object.fromEntries(old.map(id=>[id,true]));
  assert.equal(normalizeSavedMenu({...input,tools:false}).tools,false);
  assert.equal(normalizeSavedMenu(input,{tools:false}).tools,false);
  assert.equal(normalizeSavedMenu(input,{tools:true}).tools,true);

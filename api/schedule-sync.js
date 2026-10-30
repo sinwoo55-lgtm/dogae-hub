@@ -26,7 +26,14 @@ function recentHistoryKey() {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit' }).format(date);
 }
 
-async function fullSnapshot(version) {
+async function fullSnapshot(version, fullHistory = false) {
+  if (fullHistory) {
+    // Read the version and records from the same snapshot to avoid missing a concurrent edit.
+    return db.runTransaction(async tx => {
+      const [revision, posts] = await Promise.all([tx.get(VERSION), tx.get(POSTS.orderBy('ts', 'desc'))]);
+      return { version: Number(revision.exists ? revision.data().version : 0), mode: 'full', complete: true, posts: posts.docs.map(doc => ({ id: doc.id, ...asJson(doc.data()) })) };
+    }, { readOnly: true });
+  }
   const posts = await POSTS.where('realtimeUntil', '>=', recentHistoryKey()).get();
   return { version, mode: 'full', posts: posts.docs.map((doc) => ({ id: doc.id, ...asJson(doc.data()) })) };
 }
@@ -42,13 +49,13 @@ export default async function handler(req, res) {
     if (Number.isInteger(since) && since === current) return res.status(200).json({ version: current, mode: 'unchanged' });
 
     if (!Number.isInteger(since) || since < 0 || since > current || current - since > MAX_DELTAS) {
-      return res.status(200).json(await fullSnapshot(current));
+      return res.status(200).json(await fullSnapshot(current, req.query?.history === 'all'));
     }
 
     const changes = await CHANGES.where('version', '>', since).orderBy('version').limit(MAX_DELTAS + 1).get();
     const rows = changes.docs.map((doc) => asJson(doc.data()));
     const complete = rows.length === current - since && rows.every((row, index) => row.version === since + index + 1);
-    if (!complete) return res.status(200).json(await fullSnapshot(current));
+    if (!complete) return res.status(200).json(await fullSnapshot(current, req.query?.history === 'all'));
     return res.status(200).json({ version: current, mode: 'delta', changes: rows });
   } catch (error) {
     console.error('schedule sync error', error);
