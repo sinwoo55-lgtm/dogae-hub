@@ -3,7 +3,7 @@ import { desktopAdminAccess } from './lib/desktop-admin.js';
 export const config = { matcher: '/:path*' };
 
 export default async function middleware(request) {
-  if (['/about.html','/privacy.html'].includes(new URL(request.url).pathname) && ['GET','HEAD'].includes(request.method)) return;
+  if (['/about.html','/privacy.html','/terms.html'].includes(new URL(request.url).pathname) && ['GET','HEAD'].includes(request.method)) return;
   if (new URL(request.url).pathname === '/googlecc36f043a831400c.html' && ['GET','HEAD'].includes(request.method)) return;
   if (new URL(request.url).pathname === '/api/calendar-refresh' && process.env.CRON_SECRET && request.headers.get('authorization') === `Bearer ${process.env.CRON_SECRET}`) return;
   if(new URL(request.url).pathname.startsWith('/api/')&&await desktopAdminAccess(request.headers))return;
