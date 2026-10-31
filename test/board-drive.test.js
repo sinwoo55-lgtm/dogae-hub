@@ -24,6 +24,22 @@ test('invalid identifiers and file types are rejected before contacting Drive', 
 
 test('upload session URL must point to the Google Drive upload endpoint', async () => {
   const drive=createBoardDrive({clientId:'client',clientSecret:'secret',refreshToken:'refresh',fetchImpl:async url => url.includes('oauth2.googleapis.com') ? Response.json({access_token:'temporary',expires_in:3600}) : new Response(null,{status:200,headers:{location:'https://attacker.example/upload/drive/v3/files'}})});
-  await assert.rejects(drive.beginUpload('valid','file','image/png',1024),/Invalid upload session/);
+  await assert.rejects(drive.beginUpload('valid','file','image/png',1024,'folder_id'),/Invalid upload session/);
+});
+
+test('existing board folder is reused and uploads are placed inside it', async () => {
+  const bodies=[];
+  const drive=createBoardDrive({clientId:'client',clientSecret:'secret',refreshToken:'refresh',fetchImpl:async (url,options)=>{
+    if (url.includes('oauth2.googleapis.com')) return Response.json({access_token:'temporary',expires_in:3600});
+    if (options.method === 'POST' && url.includes('uploadType')) {
+      bodies.push(JSON.parse(options.body));
+      return new Response(null,{status:200,headers:{location:'https://www.googleapis.com/upload/drive/v3/files?upload_id=abc'}});
+    }
+    if (options.method === 'POST') return new Response(null,{status:409});
+    return Response.json({id:'folder_id',mimeType:'application/vnd.google-apps.folder',trashed:false});
+  }});
+  await drive.ensureFolder('folder_id');
+  await drive.beginUpload('image_id','board-image','image/png',1024,'folder_id');
+  assert.deepEqual(bodies[0].parents,['folder_id']);
 });
 
