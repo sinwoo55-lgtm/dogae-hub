@@ -2,6 +2,7 @@ import onlineBoardHandler from '../lib/online-board-handler.js';
 import {networkCheck} from '../lib/network-check.js';
 import {initialDesktopRelease} from '../lib/desktop-release-initial.js';
 import desktopAccessHandler from '../lib/desktop-access-handler.js';
+import delegatedHandler from '../lib/delegated-handler.js';
 import {desktopAdminAccess} from '../lib/desktop-admin.js';
 import {createDistributionHandler} from '../lib/desktop-distribution-store.js';
 import { FieldValue } from 'firebase-admin/firestore';
@@ -219,6 +220,7 @@ const desktopDistributionHandler=createDistributionHandler({db,authorize:desktop
 export default async function handler(req, res) {
   if(req.query?.desktopRoute==='online-board')return onlineBoardHandler(req,res);
   if(req.query?.desktopRoute==='access')return desktopAccessHandler(req,res);
+  if(req.query?.desktopRoute==='delegated')return delegatedHandler(req,res);
   if(req.query?.desktopRoute==='distribution')return desktopDistributionHandler(req,res);
   if(req.query?.scope==='network-check')return networkCheck(req,res);
   if (!allowJson(req, res, ['GET', 'POST'])) return;
