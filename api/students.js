@@ -1,13 +1,13 @@
 import { FieldValue } from 'firebase-admin/firestore';
 import { db } from '../lib/firebase-admin.js';
 import { allowJson, text } from '../lib/http.js';
-import { requireSchoolNetwork } from '../lib/school-access.js';
+import { requireSchoolNetwork, isSchoolNetwork } from '../lib/school-access.js';
 import { markSchoolGuardSyncFailure, syncSchoolGuardRoster } from '../lib/school-guard-roster.js';
 import { hasRosterUploadData } from '../lib/roster-upload.js';
 import { markDisciplineSyncFailure, syncDisciplineRecords } from './discipline-sync.js';
 import { desktopAdminAccess } from '../lib/desktop-admin.js';
 import { authorizedDelegate } from '../lib/delegated-handler.js';
-import { studentActionRequiresAdmin } from '../lib/delegated-access.js';
+import { studentActionRequiresAdmin, allowLegacyStudentWrite } from '../lib/delegated-access.js';
 
 const STUDENTS = db.collection('student_roster');
 const ACTIVITIES = db.collection('student_activities');
@@ -87,7 +87,7 @@ export default async function handler(req, res) {
     }
     const { action, id, data } = req.body || {};
     if (studentActionRequiresAdmin(action)) {
-      if (!await desktopAdminAccess(req.headers) && !await authorizedDelegate(req.headers,'students')) return res.status(403).json({error:'학생관리 관리자 인증이 필요합니다.'});
+      if (!await desktopAdminAccess(req.headers) && !await authorizedDelegate(req.headers,'students') && !allowLegacyStudentWrite(req.headers,isSchoolNetwork(req.headers))) return res.status(403).json({error:'학생관리 관리자 인증이 필요합니다.'});
     }
     if (action === 'roster:sync') {
       try {
