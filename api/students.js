@@ -7,6 +7,7 @@ import { authorizedDelegate } from '../lib/delegated-handler.js';
 import { studentActionRequiresAdmin, allowLegacyStudentWrite } from '../lib/delegated-access.js';
 import { markSchoolGuardSyncFailure, syncSchoolGuardRoster } from '../lib/school-guard-roster.js';
 import { createRosterSyncCoordinator } from '../lib/roster-sync-coordinator.js';
+import { applyRosterBatch, rosterRevision } from '../lib/roster-batch.js';
 import { hasRosterUploadData } from '../lib/roster-upload.js';
 import { markDisciplineSyncFailure, syncDisciplineRecords } from './discipline-sync.js';
 
@@ -45,7 +46,7 @@ function normalizeActivity(value) {
 }
 async function snapshot(res) {
   const [students, activities] = await Promise.all([STUDENTS.get(), ACTIVITIES.orderBy('startDate').get()]);
-  return res.status(200).json({ students: students.docs.map(doc => ({ id: doc.id, ...doc.data() })), activities: activities.docs.map(doc => ({ id: doc.id, ...doc.data() })) });
+  return res.status(200).json({ students: students.docs.map(doc => ({ id: doc.id, ...doc.data(), _revision: rosterRevision(doc) })), activities: activities.docs.map(doc => ({ id: doc.id, ...doc.data() })) });
 }
 
 function classList(rows) {
@@ -86,7 +87,7 @@ export default async function handler(req, res) {
       if (selectedClass) {
         if (!/^(?:\d{1,10}|중[1-3])-\d{1,10}$/.test(selectedClass)) return res.status(400).json({ error: '학급 정보가 올바르지 않습니다.' });
         const students = await STUDENTS.where('classKey', '==', selectedClass).get();
-        return res.status(200).json({ students: students.docs.map(doc => ({ id: doc.id, ...doc.data() })) });
+        return res.status(200).json({ students: students.docs.map(doc => ({ id: doc.id, ...doc.data(), _revision: rosterRevision(doc) })) });
       }
       return snapshot(res);
     }
@@ -94,7 +95,17 @@ export default async function handler(req, res) {
     if (studentActionRequiresAdmin(action)) {
       if (!await desktopAdminAccess(req.headers) && !await authorizedDelegate(req.headers,'students') && !allowLegacyStudentWrite(req.headers,isSchoolNetwork(req.headers))) return res.status(403).json({error:'학생관리 관리자 인증이 필요합니다.'});
     }
-    if (action === 'roster:sync') {
+    if (action === 'roster:batch') {
+      if (!deferredRosterSync()) return res.status(503).json({ error: '서버의 일괄 편집 설정을 확인해 주세요.' });
+      const requestId = req.body?.requestId, adds = data?.adds, deletes = data?.deletes;
+      if (typeof requestId !== 'string' || !/^[a-zA-Z0-9-]{16,80}$/.test(requestId) || !Array.isArray(adds) || !Array.isArray(deletes) || !adds.length && !deletes.length || adds.length + deletes.length > 200) return res.status(400).json({ error: '변경사항을 확인해 주세요. 한 번에 최대 200명까지 저장할 수 있습니다.' });
+      const rows = adds.map(normalizeStudent);
+      if (rows.some(row => !row || !studentIdOk(row.key)) || deletes.some(row => !studentIdOk(row?.id) || typeof row?.revision !== 'string' || !/^\d+:\d+$/.test(row.revision))) return res.status(400).json({ error: '학생 정보 또는 변경 확인 정보가 올바르지 않습니다.' });
+      try {
+        const result = await applyRosterBatch({ db, students: STUDENTS, rosterMeta: ROSTER_META, syncRevision: SYNC_REVISION, receiptRef: ROSTER_META.collection('batch_receipts').doc(requestId), adds: rows, deletes: deletes.map(row => ({ id: row.id, revision: row.revision })), requestId, timestamp: FieldValue.serverTimestamp, increment: FieldValue.increment });
+        return res.status(200).json(result);
+      } catch (error) { if (error.status === 400 || error.status === 409) return res.status(error.status).json({ error: error.message }); throw error; }
+    } else if (action === 'roster:sync') {
       try {
         if (deferredRosterSync()) {
           await SYNC_REVISION.set({ revision: FieldValue.increment(1) }, { merge: true });

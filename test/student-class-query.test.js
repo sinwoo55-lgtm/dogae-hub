@@ -22,6 +22,7 @@ async function query(classKey) {
     allowJson: () => true,
     requireSchoolNetwork: () => true,
     createRosterSyncCoordinator: () => async () => ({}), syncSchoolGuardRoster: async () => ({}),
+    rosterRevision: () => '1:0',
     console,
   });
   vm.runInContext(source, context);
