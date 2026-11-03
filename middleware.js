@@ -1,8 +1,10 @@
 import {clientIp,schoolIpAllowed} from './lib/school-ip.js';
 import { desktopAdminAccess } from './lib/desktop-admin.js';
+import { rosterBridgeAuthorized } from './lib/roster-bridge-auth.js';
 export const config = { matcher: '/:path*' };
 
 export default async function middleware(request) {
+  if(new URL(request.url).pathname === '/api/roster-bridge' && request.method === 'POST' && await rosterBridgeAuthorized(request.headers))return;
   if (['/about.html','/privacy.html','/terms.html'].includes(new URL(request.url).pathname) && ['GET','HEAD'].includes(request.method)) return;
   if (new URL(request.url).pathname === '/googlecc36f043a831400c.html' && ['GET','HEAD'].includes(request.method)) return;
   if (new URL(request.url).pathname === '/api/calendar-refresh' && process.env.CRON_SECRET && request.headers.get('authorization') === `Bearer ${process.env.CRON_SECRET}`) return;

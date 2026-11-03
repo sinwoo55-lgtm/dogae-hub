@@ -2,16 +2,21 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { db } from '../lib/firebase-admin.js';
 import { allowJson, text } from '../lib/http.js';
 import { requireSchoolNetwork, isSchoolNetwork } from '../lib/school-access.js';
-import { markSchoolGuardSyncFailure, syncSchoolGuardRoster } from '../lib/school-guard-roster.js';
-import { hasRosterUploadData } from '../lib/roster-upload.js';
-import { markDisciplineSyncFailure, syncDisciplineRecords } from './discipline-sync.js';
 import { desktopAdminAccess } from '../lib/desktop-admin.js';
 import { authorizedDelegate } from '../lib/delegated-handler.js';
 import { studentActionRequiresAdmin, allowLegacyStudentWrite } from '../lib/delegated-access.js';
+import { markSchoolGuardSyncFailure, syncSchoolGuardRoster } from '../lib/school-guard-roster.js';
+import { createRosterSyncCoordinator } from '../lib/roster-sync-coordinator.js';
+import { hasRosterUploadData } from '../lib/roster-upload.js';
+import { markDisciplineSyncFailure, syncDisciplineRecords } from './discipline-sync.js';
 
 const STUDENTS = db.collection('student_roster');
 const ACTIVITIES = db.collection('student_activities');
 const ROSTER_META = db.collection('student_meta').doc('roster');
+const SYNC_REVISION = db.collection('student_meta').doc('school_guard_revision');
+const deferredRosterSync = () => process.env.SCHOOL_GUARD_DEFERRED_SYNC === 'true';
+const syncDeferredRoster = createRosterSyncCoordinator({ db, ref: SYNC_REVISION, sync: syncSchoolGuardRoster });
+function markRosterChange(batch) { if (deferredRosterSync()) batch.set(SYNC_REVISION, { revision: FieldValue.increment(1) }, { merge: true }); }
 const idOk = (value) => typeof value === 'string' && /^[A-Za-z0-9_-]{1,150}$/.test(value);
 const studentIdOk = (value) => typeof value === 'string' && value.trim().length > 0 && value.length <= 150 && !value.includes('/');
 const dateOk = (value) => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value);
@@ -91,6 +96,12 @@ export default async function handler(req, res) {
     }
     if (action === 'roster:sync') {
       try {
+        if (deferredRosterSync()) {
+          await SYNC_REVISION.set({ revision: FieldValue.increment(1) }, { merge: true });
+          const result = await syncDeferredRoster();
+          if (result.status !== 'synced') return res.status(409).json({ error: '명단 동기화가 진행 중입니다. 잠시 후 다시 확인해 주세요.' });
+          return res.status(200).json({ rosterSync: { synced: true, students: result.students } });
+        }
         const rosterSync = await syncSchoolGuardRoster();
         if (!rosterSync.synced) return res.status(503).json({ error: '선도부 명단 연동 설정이 완료되지 않았습니다.', detail: rosterSync.reason || null });
         return res.status(200).json({ rosterSync });
@@ -119,15 +130,19 @@ export default async function handler(req, res) {
       for (let offset = 0; offset < rows.length; offset += 450) {
         const batch = db.batch();
         rows.slice(offset, offset + 450).forEach(row => batch.set(STUDENTS.doc(row.key), { ...row, updatedAt: FieldValue.serverTimestamp() }, { merge: true }));
+        markRosterChange(batch);
         await batch.commit();
       }
       await mergeRosterMeta(rows);
     } else if (action === 'roster:save') {
       const row = normalizeStudent(data); if (!row) return res.status(400).json({ error: '학생 정보를 확인해주세요.' });
-      const ref = studentIdOk(id) ? STUDENTS.doc(id) : STUDENTS.doc(row.key); await ref.set({ ...row, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+      const ref = studentIdOk(id) ? STUDENTS.doc(id) : STUDENTS.doc(row.key);
+      if (deferredRosterSync()) { const batch = db.batch(); batch.set(ref, { ...row, updatedAt: FieldValue.serverTimestamp() }, { merge: true }); markRosterChange(batch); await batch.commit(); }
+      else await ref.set({ ...row, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
       await mergeRosterMeta([row]);
     } else if (action === 'roster:delete' && studentIdOk(id)) {
-      await STUDENTS.doc(id).delete();
+      if (deferredRosterSync()) { const batch = db.batch(); batch.delete(STUDENTS.doc(id)); markRosterChange(batch); await batch.commit(); }
+      else await STUDENTS.doc(id).delete();
     } else if (action === 'activity:save') {
       const activity = normalizeActivity(data); if (!activity) return res.status(400).json({ error: '활동 정보를 확인해주세요.' });
       if (idOk(id)) await ACTIVITIES.doc(id).set({ ...activity, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
@@ -135,11 +150,12 @@ export default async function handler(req, res) {
     } else if (action === 'activity:delete' && idOk(id)) await ACTIVITIES.doc(id).delete();
     else return res.status(400).json({ error: '알 수 없는 작업입니다.' });
     let rosterSync = null;
-    if (action.startsWith('roster:')) {
-      try { rosterSync = await syncSchoolGuardRoster(); }
+    if (action.startsWith('roster:') && !deferredRosterSync()) {
+      try { rosterSync = await syncSchoolGuardRoster({ includeSnapshot: true }); }
       catch (error) { console.error('school guard roster sync error', error); await markSchoolGuardSyncFailure(error); rosterSync = { synced: false }; }
     }
-    const [students, activities] = await Promise.all([STUDENTS.get(), ACTIVITIES.orderBy('startDate').get()]);
+    if (req.headers?.prefer === 'return=minimal') return res.status(200).json({ ok: true, rosterSync });
+    const [students, activities] = await Promise.all([rosterSync?.snapshot || STUDENTS.get(), ACTIVITIES.orderBy('startDate').get()]);
     return res.status(200).json({ students: students.docs.map(doc => ({ id: doc.id, ...doc.data() })), activities: activities.docs.map(doc => ({ id: doc.id, ...doc.data() })), rosterSync });
   } catch (error) { console.error('students API error', error); return res.status(500).json({ error: '학생관리 데이터를 처리하지 못했습니다.' }); }
 }

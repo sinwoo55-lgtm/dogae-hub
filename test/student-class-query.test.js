@@ -21,6 +21,7 @@ async function query(classKey) {
     db: { collection: () => collection },
     allowJson: () => true,
     requireSchoolNetwork: () => true,
+    createRosterSyncCoordinator: () => async () => ({}), syncSchoolGuardRoster: async () => ({}),
     console,
   });
   vm.runInContext(source, context);
