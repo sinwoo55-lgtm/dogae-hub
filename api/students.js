@@ -82,7 +82,7 @@ export default async function handler(req, res) {
   if (!requireSchoolNetwork(req, res)) return;
   try {
     if (req.method === 'GET') {
-      if (req.query?.meta === '1') return res.status(200).json({ classes: await rosterMeta() });
+      if (req.query?.meta === '1') return res.status(200).json({ classes: await rosterMeta(), batchEditVersion: 2 });
       const selectedClass = typeof req.query?.classKey === 'string' ? req.query.classKey : '';
       if (selectedClass) {
         if (!/^(?:\d{1,10}|중[1-3])-\d{1,10}$/.test(selectedClass)) return res.status(400).json({ error: '학급 정보가 올바르지 않습니다.' });
@@ -97,12 +97,14 @@ export default async function handler(req, res) {
     }
     if (action === 'roster:batch') {
       if (!deferredRosterSync()) return res.status(503).json({ error: '서버의 일괄 편집 설정을 확인해 주세요.' });
-      const requestId = req.body?.requestId, adds = data?.adds, deletes = data?.deletes;
-      if (typeof requestId !== 'string' || !/^[a-zA-Z0-9-]{16,80}$/.test(requestId) || !Array.isArray(adds) || !Array.isArray(deletes) || !adds.length && !deletes.length || adds.length + deletes.length > 200) return res.status(400).json({ error: '변경사항을 확인해 주세요. 한 번에 최대 200명까지 저장할 수 있습니다.' });
+      const requestId = req.body?.requestId, adds = data?.adds, updates = data?.updates ?? [], deletes = data?.deletes;
+      if (typeof requestId !== 'string' || !/^[a-zA-Z0-9-]{16,80}$/.test(requestId) || !Array.isArray(adds) || !Array.isArray(updates) || !Array.isArray(deletes) || !adds.length && !updates.length && !deletes.length || adds.length + updates.length + deletes.length > 200) return res.status(400).json({ error: '변경사항을 확인해 주세요. 한 번에 최대 200명까지 저장할 수 있습니다.' });
       const rows = adds.map(normalizeStudent);
-      if (rows.some(row => !row || !studentIdOk(row.key)) || deletes.some(row => !studentIdOk(row?.id) || typeof row?.revision !== 'string' || !/^\d+:\d+$/.test(row.revision))) return res.status(400).json({ error: '학생 정보 또는 변경 확인 정보가 올바르지 않습니다.' });
+      const changed = updates.map(row => { const normalized = normalizeStudent(row); return normalized ? { ...normalized, id: row.id, revision: row.revision } : null; });
+      const invalidVersion = row => !studentIdOk(row?.id) || typeof row?.revision !== 'string' || !/^\d+:\d+$/.test(row.revision);
+      if (rows.some(row => !row || !studentIdOk(row.key)) || changed.some(row => !row || !studentIdOk(row.key) || invalidVersion(row)) || deletes.some(invalidVersion)) return res.status(400).json({ error: '학생 정보 또는 변경 확인 정보가 올바르지 않습니다.' });
       try {
-        const result = await applyRosterBatch({ db, students: STUDENTS, rosterMeta: ROSTER_META, syncRevision: SYNC_REVISION, receiptRef: ROSTER_META.collection('batch_receipts').doc(requestId), adds: rows, deletes: deletes.map(row => ({ id: row.id, revision: row.revision })), requestId, timestamp: FieldValue.serverTimestamp, increment: FieldValue.increment });
+        const result = await applyRosterBatch({ db, students: STUDENTS, rosterMeta: ROSTER_META, syncRevision: SYNC_REVISION, receiptRef: ROSTER_META.collection('batch_receipts').doc(requestId), adds: rows, updates: changed, deletes: deletes.map(row => ({ id: row.id, revision: row.revision })), requestId, timestamp: FieldValue.serverTimestamp, increment: FieldValue.increment });
         return res.status(200).json(result);
       } catch (error) { if (error.status === 400 || error.status === 409) return res.status(error.status).json({ error: error.message }); throw error; }
     } else if (action === 'roster:sync') {
