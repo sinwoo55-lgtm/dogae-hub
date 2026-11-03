@@ -10,8 +10,18 @@
     }
   ],
   "rewrites": [
-    { "source": "/api/online-board", "destination": "/api/dashboard?desktopRoute=online-board" },
-    { "source": "/api/delegated-access", "destination": "/api/dashboard?desktopRoute=delegated" },
+    {
+      "source": "/api/roster-bridge",
+      "destination": "/api/dashboard?desktopRoute=roster-bridge"
+    },
+    {
+      "source": "/api/online-board",
+      "destination": "/api/dashboard?desktopRoute=online-board"
+    },
+    {
+      "source": "/api/delegated-access",
+      "destination": "/api/dashboard?desktopRoute=delegated"
+    },
     {
       "source": "/api/desktop-access",
       "destination": "/api/dashboard?desktopRoute=access"
@@ -26,4 +36,3 @@
     }
   ]
 }
-

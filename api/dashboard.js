@@ -1,3 +1,4 @@
+import rosterBridgeHandler from '../lib/roster-bridge-handler.js';
 import onlineBoardHandler from '../lib/online-board-handler.js';
 import {networkCheck} from '../lib/network-check.js';
 import {initialDesktopRelease} from '../lib/desktop-release-initial.js';
@@ -218,6 +219,7 @@ async function trashSnapshot(res) {
 
 const desktopDistributionHandler=createDistributionHandler({db,authorize:desktopAdminAccess,network:requireSchoolNetwork,initialRelease:initialDesktopRelease});
 export default async function handler(req, res) {
+  if(req.query?.desktopRoute==='roster-bridge')return rosterBridgeHandler(req,res);
   if(req.query?.desktopRoute==='online-board')return onlineBoardHandler(req,res);
   if(req.query?.desktopRoute==='access')return desktopAccessHandler(req,res);
   if(req.query?.desktopRoute==='delegated')return delegatedHandler(req,res);
