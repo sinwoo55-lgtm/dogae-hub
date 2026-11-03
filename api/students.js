@@ -98,6 +98,7 @@ export default async function handler(req, res) {
       try {
         if (deferredRosterSync()) {
           await SYNC_REVISION.set({ revision: FieldValue.increment(1) }, { merge: true });
+          if (req.body?.queueOnly === true) return res.status(200).json({ rosterSync: { queued: true } });
           const result = await syncDeferredRoster();
           if (result.status !== 'synced') return res.status(409).json({ error: '명단 동기화가 진행 중입니다. 잠시 후 다시 확인해 주세요.' });
           return res.status(200).json({ rosterSync: { synced: true, students: result.students } });

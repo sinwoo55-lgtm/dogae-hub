@@ -45,3 +45,16 @@ test('이전 앱의 전체 응답은 선도부 동기화에 사용한 명단을 
     assert.equal(response.body.activities.length, 0);
   }
 });
+
+test('동기화 예약은 관리자 검증 후 전체 명단 조회 없이 변경 번호만 올린다', async () => {
+  let writes = 0, syncs = 0;
+  const doc = { set: async () => { writes++; } };
+  const context = vm.createContext({ db: { collection: () => ({ doc: () => doc }) }, FieldValue: { increment: () => 1 },
+    process: { env: { SCHOOL_GUARD_DEFERRED_SYNC: 'true' } }, console, allowJson: () => true, requireSchoolNetwork: () => true,
+    studentActionRequiresAdmin: () => true, desktopAdminAccess: async () => true, authorizedDelegate: async () => false, allowLegacyStudentWrite: () => false, isSchoolNetwork: () => false,
+    syncSchoolGuardRoster: async () => ({}), createRosterSyncCoordinator: () => async () => { syncs++; return {}; } });
+  vm.runInContext(source, context);
+  const res = { status(code) { this.code = code; return this; }, json(body) { this.body = body; return this; } };
+  await context.handler({ method: 'POST', headers: {}, body: { action: 'roster:sync', queueOnly: true } }, res);
+  assert.equal(res.code, 200); assert.equal(res.body.rosterSync.queued, true); assert.equal(writes, 1); assert.equal(syncs, 0);
+});
