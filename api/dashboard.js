@@ -5,6 +5,8 @@ import {initialDesktopRelease} from '../lib/desktop-release-initial.js';
 import desktopAccessHandler from '../lib/desktop-access-handler.js';
 import delegatedHandler from '../lib/delegated-handler.js';
 import {desktopAdminAccess} from '../lib/desktop-admin.js';
+import {authorizedDelegate} from '../lib/delegated-handler.js';
+import {delegatedDashboardMenu} from '../lib/delegated-access.js';
 import {createDistributionHandler} from '../lib/desktop-distribution-store.js';
 import { FieldValue } from 'firebase-admin/firestore';
 import { db, firebaseProjectId } from '../lib/firebase-admin.js';
@@ -243,6 +245,11 @@ export default async function handler(req, res) {
     }
 
     const { action, id, ids, data, confirmation } = req.body || {};
+    const scopedMenu = delegatedDashboardMenu(action,data);
+    if (scopedMenu && (req.headers['x-dogae-scoped-client'] || req.headers['x-dogae-delegated'])) {
+      const fullAdmin=await desktopAdminAccess(req.headers);
+      if (!fullAdmin && (!await authorizedDelegate(req.headers,scopedMenu) || (scopedMenu==='calendarNotice' && id))) return res.status(403).json({error:'해당 기능의 관리자 인증이 필요합니다.'});
+    }
     if (action === 'backup:restore') {
       if (confirmation !== id) return res.status(400).json({ error: '대상 백업 ID를 다시 정확히 입력해야 합니다.' });
       return res.status(200).json({ restore: asJson(await restoreWeeklyBackup(id)) });

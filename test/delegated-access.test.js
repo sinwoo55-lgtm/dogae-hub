@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeGrant, hashPin, verifyPin, grantId, issueSession, readSession, studentActionRequiresAdmin, allowLegacyStudentWrite } from '../lib/delegated-access.js';
+import { normalizeGrant, hashPin, verifyPin, grantId, issueSession, readSession, studentActionRequiresAdmin, allowLegacyStudentWrite, delegatedDashboardMenu } from '../lib/delegated-access.js';
+
+test('공지 등록과 링크 및 자료 기능에만 해당 권한을 요구한다',()=>{assert.equal(delegatedDashboardMenu('post:save',{isNotice:true}),'calendarNotice');assert.equal(delegatedDashboardMenu('post:save',{isNotice:false}),null);assert.equal(delegatedDashboardMenu('link:delete'),'links');assert.equal(delegatedDashboardMenu('resource:save'),'resources');assert.equal(delegatedDashboardMenu('menu:save'),null);});
 
 test('교사 이름과 네 자리 번호 및 허용된 메뉴를 검증한다', () => {
   assert.deepEqual(normalizeGrant({name:' 교사 ',pin:'0031',menus:['students','students']}),{name:'교사',pin:'0031',menus:['students']});

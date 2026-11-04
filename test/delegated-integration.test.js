@@ -4,7 +4,7 @@ import {createDelegatedService} from '../lib/delegated-service.js';
 
 function setup(){
  const records=new Map(),snapshot=id=>({exists:records.has(id),data:()=>records.get(id)});
- const db={collection:()=>({doc:id=>({id,get:async()=>snapshot(id),set:async value=>records.set(id,value),delete:async()=>records.delete(id)}),get:async()=>({docs:[...records.values()].map(value=>({data:()=>value}))})}),runTransaction:async fn=>fn({get:async ref=>snapshot(ref.id),update:(ref,patch)=>records.set(ref.id,{...records.get(ref.id),...patch})})};
+ const db={collection:()=>({doc:id=>({id,get:async()=>snapshot(id),set:async value=>records.set(id,value),delete:async()=>records.delete(id)}),get:async()=>({docs:[...records.values()].map(value=>({data:()=>value}))})}),runTransaction:async fn=>fn({get:async ref=>snapshot(ref.id),set:(ref,value)=>records.set(ref.id,value),update:(ref,patch)=>records.set(ref.id,{...records.get(ref.id),...patch})})};
  const secret='test-only-secret-0123456789abcdef0123456789';
  const svc=createDelegatedService({db,secret:()=>secret,network:()=>true,authorize:async h=>h.admin==='yes'});
  async function call(body,headers={}){const result={};const res={setHeader(){},status(code){result.status=code;return this},json(data){result.data=data;return this},end(){return this}};await svc.delegatedHandler({method:'POST',body,headers},res);return result;}
@@ -26,4 +26,11 @@ test('인증번호를 다섯 번 틀리면 일시적으로 인증을 제한한�
  const {call}=setup();await call({action:'save',name:'교사',pin:'1234',menus:['students']},{admin:'yes'});
  for(let i=0;i<5;i++)assert.equal((await call({action:'login',name:'교사',pin:'0000'})).status,401);
  assert.equal((await call({action:'login',name:'교사',pin:'1234'})).status,429);
+});
+test('추가 권한은 지정한 메뉴만 사용할 수 있다',async()=>{
+ const {svc,call}=setup();const menus=['calendarNotice','onlineBoard','links','resources'];
+ for(const menu of menus){const name='교사-'+menu;assert.equal((await call({action:'save',name,pin:'1234',menus:[menu]},{admin:'yes'})).status,200);const login=await call({action:'login',name,pin:'1234'});const headers={'x-dogae-delegated':login.data.token};for(const expected of [...menus,'students'])assert.equal(await svc.authorizedDelegate(headers,expected),expected===menu);}
+});
+test('기존 인증번호를 유지하면서 권한을 변경할 수 있다',async()=>{
+ const {svc,call}=setup(),name='권한수정';assert.equal((await call({action:'save',name,pin:'1234',menus:['students']},{admin:'yes'})).status,200);const before=await call({action:'login',name,pin:'1234'});assert.equal((await call({action:'save',name,pin:'',menus:['links']},{admin:'yes'})).status,200);assert.equal(await svc.authorizedDelegate({'x-dogae-delegated':before.data.token},'students'),false);const after=await call({action:'login',name,pin:'1234'});assert.equal(after.status,200);assert.equal(await svc.authorizedDelegate({'x-dogae-delegated':after.data.token},'links'),true);assert.equal((await call({action:'save',name:'새 교사',pin:'',menus:['links']},{admin:'yes'})).status,400);
 });
